@@ -16,7 +16,7 @@
   button[data-custom-grouped-history-close],
   button[data-custom-grouped-finish-close],
   button[data-close-exercise-dialog],
-  button[data-client-workout-choice-close],
+  button[data-client-workout-choice-close="generate"]:not([hidden]),
   button[data-plan-close],
   button[data-one-rm-close],
   button[data-client-exercise-history-close],

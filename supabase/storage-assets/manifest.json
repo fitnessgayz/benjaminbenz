@@ -101,7 +101,8 @@
     "20261112172150_replace_popular_exercise_images.sql",
     "20261112172709_archive_duplicate_exercise_aliases.sql",
     "20261114192124_add_next_forty_popular_exercise_media.sql",
-    "20261121235444_replace_exercise_cards_with_anatomy.sql"
+    "20261121235444_replace_exercise_cards_with_anatomy.sql",
+    "20261122011529_consolidate_client_exercise_duplicates.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -11021,6 +11022,7 @@
     },
     {
       "name": "Bent-Over Fly",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/bent-over-fly.webp",
       "demoUrl": "https://www.youtube.com/watch?v=R0TK2cWM96s"
     },
@@ -11511,6 +11513,7 @@
     },
     {
       "name": "Rear-Delt Cable Fly",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/rear-delt-cable-fly.webp"
     },
     {
@@ -11781,6 +11784,7 @@
     },
     {
       "name": "hanging leg straight",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hanging-leg-straight.webp"
     },
     {
@@ -11865,6 +11869,7 @@
     },
     {
       "name": "Narrow grip lat pull down",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/narrow-grip-lat-pull-down.webp"
     },
     {
@@ -12386,6 +12391,7 @@
     },
     {
       "name": "Lat Pulldown Machine",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/lat-pulldown-machine.webp"
     },
     {

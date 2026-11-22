@@ -264,8 +264,39 @@
     return MUSCLE_ALIASES[normalized] || (normalized ? normalized.replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Other");
   }
 
+  function catalogRecordKey(name) {
+    const key = normalize(displayName(name).replace(/°\s*(?:degrees?\b)?/gi, " degree "))
+      .replace(/[’']/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+    return key === "45 degree hip extension" ? "45 degree back extension" : key;
+  }
+
+  function consolidateRecords(records) {
+    const unique = new Map();
+    const priority = (record) => {
+      const entry = record.libraryEntry;
+      if (!entry) return 0;
+      if (record.name === "45-Degree Back Extension") return 4;
+      if (approvedLikenessMediaUrl(entry.image_url, "anatomy")) return 3;
+      return entry.image_url ? 2 : 1;
+    };
+    for (const record of records || []) {
+      const name = String(record?.name || "").trim();
+      const key = catalogRecordKey(name);
+      if (!key) continue;
+      const existing = unique.get(key);
+      const candidate = { ...record, name };
+      const winner = !existing || priority(candidate) > priority(existing) ? candidate : existing;
+      const aliases = new Set([
+        existing?.name, ...(existing?.aliases || []), name,
+        ...(Array.isArray(record.aliases) ? record.aliases : []),
+        ...(Array.isArray(record.libraryEntry?.aliases) ? record.libraryEntry.aliases : [])
+      ].filter((alias) => typeof alias === "string" && alias.trim() && alias !== winner.name));
+      unique.set(key, { ...winner, aliases: [...aliases] });
+    }
+    return [...unique.values()];
+  }
+
   function prepareRecords(records, recentNames = []) {
-    const seen = new Set();
     const recent = new Map();
     const useCounts = new Map();
     recentNames.forEach((name, index) => {
@@ -273,30 +304,25 @@
       if (key && !recent.has(key)) recent.set(key, index);
       if (key) useCounts.set(key, (useCounts.get(key) || 0) + 1);
     });
-    return (Array.isArray(records) ? records : []).flatMap((record) => {
-      const name = String(record?.name || "").trim();
-      const key = normalize(name);
-      if (!key || seen.has(key)) return [];
-      seen.add(key);
-      const entry = record.libraryEntry || {};
+    return consolidateRecords(records).map(({ name, aliases, libraryEntry }) => {
+      const entry = libraryEntry || {};
       const primary = muscleFor(entry.primary_muscle);
       const secondary = (Array.isArray(entry.secondary_muscles) ? entry.secondary_muscles : [])
         .map(muscleFor).filter((part) => part !== primary && part !== "Other");
-      const aliases = (Array.isArray(record.aliases) ? record.aliases : entry.aliases || [])
-        .filter((alias) => typeof alias === "string");
       const equipment = String(entry.equipment || "").trim();
       const motionUrl = approvedLikenessMediaUrl(entry.motion_url, "motion");
       const anatomyUrl = approvedLikenessMediaUrl(entry.image_url, "anatomy");
       const imageUrl = anatomyUrl || (motionUrl ? approvedLikenessMediaUrl(entry.image_url, "image") : "");
       const substitutionGroup = normalize(entry.substitution_group);
-      const recentRank = Math.min(...[name, ...aliases].map((label) => recent.get(normalize(label)) ?? Infinity));
-      const useCount = [name, ...aliases].reduce((total, label) => total + (useCounts.get(normalize(label)) || 0), 0);
-      return [{ name, primary, secondary: [...new Set(secondary)],
+      const nameKeys = [...new Set([name, ...aliases].map(normalize))];
+      const recentRank = Math.min(...nameKeys.map((key) => recent.get(key) ?? Infinity));
+      const useCount = nameKeys.reduce((total, key) => total + (useCounts.get(key) || 0), 0);
+      return { name, aliases, primary, secondary: [...new Set(secondary)],
         equipment, substitutionGroup, recentRank, useCount,
         imageUrl, anatomy: Boolean(anatomyUrl), motionUrl: imageUrl ? motionUrl : "", instructions: String(entry.instructions || "").trim(),
         highlightKey: muscleHighlightKey(entry),
         highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
-        searchText: searchWords([name, displayName(name), ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") }];
+        searchText: searchWords([name, displayName(name), ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") };
     }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -505,7 +531,9 @@
   function renderResults() {
     const query = dialog.querySelector(".client-exercise-library-search").value;
     const customButton = dialog.querySelector(".client-exercise-library-custom");
-    customButton.hidden = !query.trim();
+    const queryKey = catalogRecordKey(query);
+    customButton.hidden = !queryKey || sourceRecords.some(({ name, aliases }) =>
+      [name, ...aliases].some((label) => catalogRecordKey(label) === queryKey));
     customButton.textContent = query.trim() ? `Add “${query.trim()}” to this workout` : "";
     const matched = matchingRecords(sourceRecords, query, activeMuscle, activeEquipment, recentOnly);
     const count = dialog.querySelector(".client-exercise-library-count");
@@ -514,7 +542,9 @@
     const fragment = document.createDocumentFragment();
     if (!matched.length) fragment.append(element("p", "client-exercise-library-empty", "No library match. You can add the name you typed above."));
     const showRecentFirst = !recentOnly && !query.trim() && activeMuscle === "All" && activeEquipment === "All";
-    const reference = sourceRecords.find((record) => normalize(record.name) === normalize(referenceName));
+    const referenceKey = catalogRecordKey(referenceName);
+    const reference = referenceKey && sourceRecords.find(({ name, aliases }) =>
+      [name, ...aliases].some((label) => catalogRecordKey(label) === referenceKey));
     const alternatives = showRecentFirst && reference?.substitutionGroup
       ? matched.filter((record) => record.name !== reference.name && record.substitutionGroup === reference.substitutionGroup)
       : [];
@@ -522,6 +552,7 @@
     const recent = showRecentFirst ? matched.filter((record) => Number.isFinite(record.recentRank))
       .filter((record) => !alternativeNames.has(record.name))
       .sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank).slice(0, 8) : [];
+    const featured = new Set([...alternativeNames, ...recent.map((record) => record.name)]);
     const groups = query.trim() ? [["Search results", [...matched].sort((a, b) => {
       const needle = normalize(query);
       const rank = (record) => normalize(displayName(record.name)).startsWith(needle) ? 0
@@ -531,7 +562,7 @@
       ? [["Recent", [...matched].sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank)]]
       : [...(alternatives.length ? [["Suggested alternatives", alternatives]] : []),
         ...(recent.length ? [["Recently used", recent]] : []),
-        ...groupedRecords(matched, activeMuscle)];
+        ...groupedRecords(matched.filter((record) => !featured.has(record.name)), activeMuscle)];
     groups.forEach(([muscle, records]) => {
       const group = element("section", "client-exercise-library-group");
       if (!query.trim()) group.append(element("h3", "client-exercise-library-group-title", muscle));
@@ -668,7 +699,7 @@
     renderResults();
   }
 
-  root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close, refresh, displayName };
+  root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close, refresh, displayName, consolidateRecords };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = { muscleFor, displayName, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork };
   }

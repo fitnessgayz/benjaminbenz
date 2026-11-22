@@ -33,14 +33,18 @@ const router = [
 async function checkPickerNames(page) {
   await page.addScriptTag({ path: path.join(root, "js/client-exercise-library.js") });
   const picker = [
-    "isBrandedExerciseImage", "customWorkoutExerciseAddConfig", "renderCustomWorkoutPickerResults", "openCustomWorkoutExerciseDialog",
+    "isBrandedExerciseImage", "customWorkoutExerciseAddConfig", "renderCustomWorkoutPickerResults",
+    "addCustomWorkoutPickedExercises", "openCustomWorkoutExerciseDialog",
     ...Array.from(portal.matchAll(/^function (customWorkoutPicker\w+)\(/gm), match => match[1])
   ].map(production).join("\n");
   await page.addScriptTag({ content: `
     const trainingLogs = [], muscleMeta = {}, currentProgram = null, exerciseNameMatcher = null;
     const escapeHtml = String;
     const normalizeCustomWorkoutFormat = value => value;
-    const exerciseSuggestionRecords = () => [{ name: "Incline Dumbbell Press", libraryEntry: { primary_muscle: "chest", equipment: "dumbbell" } }];
+    const exerciseSuggestionRecords = () => [
+      { name: "Incline Dumbbell Press", libraryEntry: { primary_muscle: "chest", equipment: "dumbbell" } },
+      { name: "Cable Row", libraryEntry: { primary_muscle: "back", equipment: "cable" } }
+    ];
     const exerciseSuggestionMuscleLabel = entry => entry.primary_muscle;
     const customExerciseSuggestionMatches = () => [];
     const trustedExerciseImageUrl = () => "";
@@ -73,9 +77,19 @@ async function checkPickerNames(page) {
     assert.equal(await picker.locator("[data-workout-picker-queue-typed]").count(), 0);
     if (choice === "click") await result.click();
     else await search.press("Enter");
+    await picker.locator('[data-custom-exercise-suggestion="Cable Row"]').click();
+    const pickerSummary = picker.locator("[data-workout-picker-selected-list]");
+    assert.equal(await pickerSummary.locator(".is-filled").count(), 2);
+    assert.equal(await page.getByRole("button", { name: "Add to workout", exact: true }).count(), 0);
+    await picker.locator("[data-workout-picker-remove]").first().click();
+    assert.equal(await picker.getByRole("option", { name: /Incline Bench Press \(Dumbbell\)/ }).getAttribute("aria-selected"), "false");
+    await picker.getByRole("option", { name: /Incline Bench Press \(Dumbbell\)/ }).click();
+    await picker.getByRole("button", { name: "Add 2 exercises", exact: true }).click();
     await page.getByRole("button", { name: "Add to workout", exact: true }).click();
     await picker.waitFor({ state: "detached" });
-    assert.equal(await page.locator("#fixture-workout [data-fixture-saved-name]").last().getAttribute("data-fixture-saved-name"), "Incline Dumbbell Press");
+    const savedNames = await page.locator("#fixture-workout [data-fixture-saved-name]")
+      .evaluateAll(cards => cards.map(card => card.dataset.fixtureSavedName));
+    assert.deepEqual(savedNames.slice(-2), ["Cable Row", "Incline Dumbbell Press"]);
   }
 }
 
@@ -104,6 +118,7 @@ async function checkInlineMotion(page) {
       const log = { dataset: {}, querySelector: () => null };
       const customWorkoutGroupedLogElements = () => [log], currentExerciseLabel = () => exerciseName;
       const customWorkoutGroupedRows = () => [], exerciseLibraryMetaLabel = () => "", exerciseVideoUrl = () => "";
+      const selectedWorkoutExerciseRestSeconds = () => null, workoutExerciseRestOptions = [0];
       const workingSetType = "working", warmUpSetType = "warm_up", escapeHtml = String;
       ${methods}
       const grouped = document.createElement("section");

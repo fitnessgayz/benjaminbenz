@@ -131,7 +131,8 @@ test("both exercise counters and remove controls follow canonical cards, includi
     querySelectorAll: (selector) => selector === "[data-custom-exercise-card]" ? cards : selector === "[data-custom-exercise-count]" ? counters : selector === "[data-pick-custom-exercise]" ? adders : removers
   };
   const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "syncCustomWorkoutExerciseControls"], {
-    customWorkoutFormats: { single: {}, superset: {}, circuit: {} }, todayDate: () => "2026-11-12", workoutElapsedTimerState: null
+    customWorkoutFormats: { single: {}, superset: {}, circuit: {} }, todayDate: () => "2026-11-12",
+    workoutElapsedTimerState: null, syncFloatingWorkoutFinishButtons() {}
   });
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(counters.map((counter) => counter.textContent), ["3", "3"]);
@@ -268,8 +269,9 @@ test("successive picks fill the current superset or circuit before starting the 
   }
 });
 
-test("a single picker confirmation fills superset pairs and an extended circuit", () => {
+test("a single picker confirmation adds straight sets, fills superset pairs, or extends a circuit", () => {
   for (const [format, names, expectedSizes] of [
+    ["single", ["Bench Press", "Cable Row", "Curl"], [1, 1, 1]],
     ["superset", ["Bench Press", "Cable Row", "Curl", "Triceps Pushdown"], [2, 2]],
     ["circuit", ["Squat", "Push-up", "Row", "Jump Rope"], [4]]
   ]) {
@@ -292,7 +294,8 @@ test("a single picker confirmation fills superset pairs and an extended circuit"
     const panel = { dataset: { customWorkoutFormat: format, customWorkoutTitle: "Custom workout" },
       querySelector: (selector) => selector === "[data-workout-date]" ? { value: "2026-11-06" } : stack,
       querySelectorAll: (selector) => selector === "[data-exercise-log]" ? allCards().map((card) => card.log) : allCards() };
-    const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "customExerciseCode", "nextCustomExerciseCode", "addCustomWorkoutPickedExercise", "addCustomWorkoutPickedExercises"], {
+    const context = evaluate(["normalizeCustomWorkoutFormat", "normalizeCustomWorkoutInlineGroupType", "customWorkoutMixedGroups",
+      "customWorkoutExerciseAddConfig", "customExerciseCode", "nextCustomExerciseCode", "addCustomWorkoutPickedExercise", "addCustomWorkoutPickedExercises"], {
       customWorkoutFormats: { single: {}, superset: {}, circuit: {} }, customWorkoutTitle: "Custom workout",
       trainingLogs: [], todayDate: () => "2026-11-06", Event: class {},
       customWorkoutCarousels: () => carousels, customWorkoutCarouselCards: (carousel) => carousel?.list.children || [],
@@ -301,7 +304,10 @@ test("a single picker confirmation fills superset pairs and an extended circuit"
       updateExerciseLogField() {}, syncCustomWorkoutCarousel() {}, persistCustomWorkoutDraftFromPanel() {}
     });
     context.addCustomWorkoutPickedExercises(panel, names);
-    assert.deepEqual(carousels.map((carousel) => carousel.list.children.length), expectedSizes);
+    const groupSizes = format === "single"
+      ? plain(context.customWorkoutMixedGroups(allCards().map((card) => card.exercise)).map((group) => group.items.length))
+      : carousels.map((carousel) => carousel.list.children.length);
+    assert.deepEqual(groupSizes, expectedSizes);
     assert.deepEqual(allCards().map((card) => card.exercise.name), names);
     assert(allCards().every((card) => card.exercise.name && card.log.dataset.exerciseName));
   }
@@ -472,28 +478,34 @@ test("picker asks for the full superset or circuit before adding it", () => {
   }
 });
 
-test("straight sets stage a suggestion until Add exercise is pressed", () => {
+test("straight sets keep several exercises queued for one confirmation", () => {
   const fixture = dialogFixture("single");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
   assert.match(fixture.dialog.className, /is-grouped-picker/);
   assert.match(fixture.dialog.innerHTML, /data-picker-chip="recent"/);
   assert.match(fixture.dialog.innerHTML, /data-custom-exercise-browse/);
   assert.match(fixture.dialog.innerHTML, /Browse full library/);
-  fixture.click("[data-custom-exercise-suggestion]", {
-    dataset: { customExerciseSuggestion: "Hip Thrust Machine" }
-  });
+  const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
+  choose("Hip Thrust Machine");
+  choose("Goblet Squat");
+  choose("Cable Row");
+  fixture.click("[data-workout-picker-remove]", { dataset: { workoutPickerRemove: "1" } });
   assert.deepEqual(fixture.calls.add, []);
-  assert.equal(fixture.input.value, "Hip Thrust Machine");
+  assert.equal(fixture.confirmation.open, false);
+  assert.equal(fixture.submit["aria-label"], "Add 2 exercises");
+  assert.match(fixture.selectedList.innerHTML, /Hip Thrust Machine/);
+  assert.doesNotMatch(fixture.selectedList.innerHTML, /Goblet Squat/);
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.equal(fixture.confirmation.open, true);
-  assert.match(fixture.confirmation.innerHTML, /Add this exercise to your workout\?/);
+  assert.match(fixture.confirmation.innerHTML, /Add these 2 exercises to your workout\?/);
   assert.match(fixture.confirmation.innerHTML, /data-confirm-add-card>Add to workout<\/button>/);
-  assert.equal(fixture.confirmationDetail.textContent, "Hip Thrust Machine");
+  assert.equal(fixture.confirmationDetail.textContent, "Hip Thrust Machine, Cable Row");
   fixture.clickPrompt("[data-keep-choosing]");
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.equal(fixture.confirmation.open, true);
   assert.deepEqual(fixture.calls.add, [], "Add cannot skip the confirmation after Keep choosing");
   fixture.clickPrompt("[data-confirm-add-card]");
-  assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
+  assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine", "Cable Row"]);
   assert.equal(fixture.calls.start, fixture.panel);
 });
 
@@ -672,7 +684,7 @@ test("remove dialog deletes only the selected middle exercise", () => {
   assert.deepEqual(fixture.calls.add, []);
 });
 
-test("empty picker submission does not add a card and a named submission adds exactly once", () => {
+test("empty picker submission does not add a card and Enter queues a typed exercise", () => {
   const fixture = dialogFixture();
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
   const event = { preventDefault() {}, stopPropagation() {} };
@@ -680,6 +692,10 @@ test("empty picker submission does not add a card and a named submission adds ex
   fixture.handlers.submit(event);
   assert.deepEqual(fixture.calls.add, []);
   fixture.input.value = "  Cable Row  ";
+  fixture.handlers.keydown({ ...event, key: "Enter", target: Object.assign(fixture.input, {
+    matches: (selector) => selector === "#custom-workout-picker-search"
+  }) });
+  assert.deepEqual(fixture.calls.add, []);
   fixture.handlers.submit(event);
   assert.equal(fixture.confirmation.open, true);
   fixture.clickPrompt("[data-confirm-add-card]");
@@ -693,11 +709,12 @@ test("exercise selection survives a workout panel refresh while the picker is op
   fixture.panel.isConnected = false;
   fixture.context.document.getElementById = () => currentPanel;
   let target = null;
-  fixture.context.addCustomWorkoutPickedExercise = (panel, name) => { target = { panel, name }; return null; };
+  fixture.context.addCustomWorkoutPickedExercises = (panel, names) => { target = { panel, names: plain(names) }; return null; };
   fixture.input.value = "Lat Pulldown Machine";
+  fixture.click("[data-workout-picker-queue-typed]");
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   fixture.clickPrompt("[data-confirm-add-card]");
-  assert.deepEqual(target, { panel: currentPanel, name: "Lat Pulldown Machine" });
+  assert.deepEqual(target, { panel: currentPanel, names: ["Lat Pulldown Machine"] });
 });
 
 test("custom builder search results include primary and secondary muscles", () => {

@@ -1,3 +1,8 @@
+.client-workout-choice-dialog > .lifthardr-profile-return {
+  inline-size: 100%;
+  cursor: pointer;
+}
+
 .client-explore-program {
   background: var(--surface-soft, #25282c);
   border: 1px solid var(--client-settings-line, #43484e);

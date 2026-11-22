@@ -37,6 +37,7 @@ function activeCustomWorkoutDraft() { return null; }
 function normalizeCustomWorkoutFormat(value) { return value; }
 function normalizeCustomWorkoutInlineGroupType(value) { return value || 'single'; }
 function customWorkoutExercises() { return fixtureExercises; }
+function customWorkoutPanelHasEnteredExerciseContent(panel) { return Boolean(panel.querySelector('[data-custom-exercise-card]')); }
 function customWorkoutCopyStatusMessage() { return ''; }
 function syncCustomWorkoutExerciseControls() {}
 function syncAutoRestTimerPreference() {}
@@ -167,8 +168,10 @@ function renderAssignedCase(active) {
           `${format} has no second workout Start control`);
         assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
           `${format} logger setup hides the navigation bar`);
-        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), false,
-          `${format} Discard stays hidden before a workout starts`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), names.length > 0,
+          `${format} Discard appears as soon as exercises are chosen`);
+        assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), names.length > 0,
+          `${format} Finish appears before logging sets`);
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
           `${format} More hidden until workout starts`);
         const setupChips = page.locator('.custom-workout-setup-summary > button');
@@ -198,14 +201,28 @@ function renderAssignedCase(active) {
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
           `${format} has no duplicate More action`);
       }
+      await page.evaluate(() => {
+        const panel = document.querySelector('#client-workout-panels .client-workout-panel-custom');
+        panel.insertAdjacentHTML('beforeend', '<article class="ios-log-exercise-card"><div class="ios-log-exercise-controls"><label class="ios-log-rest-control"><span>Rest</span><select aria-label="Rest duration"><option>Use workout default</option><option selected>Off</option><option>90s</option></select></label><button type="button">Note</button></div></article>');
+      });
+      const restControl = page.locator('.ios-log-rest-control');
+      assert.equal(await restControl.evaluate(label => {
+        const text = label.querySelector('span');
+        const select = label.querySelector('select');
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        const [line] = range.getClientRects();
+        return range.getClientRects().length === 1 && line.right <= select.getBoundingClientRect().left + .5
+          && select.getBoundingClientRect().right <= label.getBoundingClientRect().right + .5;
+      }), true, 'Rest fits on one line next to the timer selector');
       for (const active of [false, true]) {
         await page.evaluate(active => renderAssignedCase(active), active);
         assert.equal(await page.locator('.client-workout-panel-assigned > .workout-start-control').isVisible(), false,
           'trainer Start control is replaced by the floating bar on mobile');
-        assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), !active,
-          'trainer floating Start follows session state');
-        assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), active,
-          'trainer floating Finish follows session state');
+        assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), false,
+          'trainer has no floating Start');
+        assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), true,
+          'trainer floating Finish is available before logging sets');
         assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
           'trainer logger keeps navigation hidden before and after Start');
         assert.equal(await page.locator('[data-floating-workout-more]').count(), 0,

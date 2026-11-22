@@ -105,10 +105,11 @@ test("custom and prescribed workouts both show Discard and Finish", () => {
   const assignedBar = barMarkup({ assigned: true });
 
   assert.match(customBar, /data-reset-custom-workout>Discard Workout<\/button>/);
-  assert.match(customBar, /data-floating-workout-finish-action[^>]*hidden>Finish<\/button>/);
+  assert.match(customBar, /data-floating-workout-finish-action[^>]*>Finish<\/button>/);
   assert.match(assignedBar, /data-reset-assigned-workout>Discard Workout<\/button>/);
   assert.doesNotMatch(assignedBar, /data-floating-workout-more/);
-  assert.match(assignedBar, /data-floating-workout-finish-action[^>]*hidden>Finish<\/button>/);
+  assert.match(assignedBar, /data-floating-workout-finish-action[^>]*>Finish<\/button>/);
+  assert.doesNotMatch(customBar + assignedBar, /data-floating-workout-start-action/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /resetAssignedWorkout\(resetAssignedWorkoutButton\.closest/);
 });
 
