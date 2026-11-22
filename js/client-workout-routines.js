@@ -82,6 +82,43 @@
       }))
     };
   });
+  const atHome = Object.freeze([
+    ["foundations", "ce53c45b-8852-596c-8942-a9b8b7f73111", "Full Body Foundations", "Beginner", "Bodyweight", "full-body", 60, [
+      ["Bodyweight Squat", 2, "8-12 reps"],
+      ["Push-Up", 2, "5-8 reps"],
+      ["Glute Bridge", 2, "10-12 reps"],
+      ["Dead Bug", 2, "6-8 reps each side"],
+    ]],
+    ["lower-core", "cd4e1998-5d31-5f19-a1c7-59ce470010bd", "Lower Body & Core", "Intermediate", "Bodyweight", "abs-butt", 60, [
+      ["Reverse Lunge", 3, "8-10 reps each side"],
+      ["Single-Leg Glute Bridge", 3, "8-12 reps each side"],
+      ["Bodyweight Squat", 3, "12-15 reps"],
+      ["Dead Bug", 3, "8-10 reps each side"],
+      ["Side Plank", 2, "20-30 sec/side"],
+    ]],
+    ["upper-strength", "b6f78ddd-d1d3-5a98-ae63-7050f61ce5ff", "Upper Body Strength", "Intermediate", "Dumbbells", "benjamin-push-day", 75, [
+      ["Dumbbell Floor Press", 3, "8-12 reps"],
+      ["One-Arm Dumbbell Row", 3, "8-12 reps each side"],
+      ["Standing Dumbbell Shoulder Press", 3, "8-12 reps"],
+      ["Dumbbell Reverse Fly", 2, "10-15 reps"],
+      ["Hammer Curl", 2, "10-15 reps"],
+    ]],
+    ["full-strength", "88aef37c-78fd-5f5c-9800-2b862b514837", "Full Body Strength", "Advanced", "Dumbbells", "upper-lower", 90, [
+      ["Goblet Squat", 4, "8-12 reps"],
+      ["Dumbbell Romanian Deadlift", 4, "8-12 reps"],
+      ["Dumbbell Floor Press", 4, "6-10 reps"],
+      ["One-Arm Dumbbell Row", 4, "8-12 reps each side"],
+      ["Dumbbell Reverse Lunge", 3, "8-10 reps each side"],
+      ["Front Plank", 3, "30-45 sec"],
+    ]],
+  ].map(([slug, id, title, level, focus, cover, rest, movements]) => Object.freeze({
+    slug, id, title, level, focus, collection: "at-home", cover,
+    format: "single", warmUpCount: 0,
+    exercises: Object.freeze(movements.map(([name, sets, target]) => Object.freeze({
+      name, sets, prescription: `${target} x ${sets} sets`, rest: `${rest}s rest`, timed: / sec/.test(target)
+    })))
+  })));
+
   const legacyGroups = [
     {
       title: "Benjamin’s Routine",
@@ -143,7 +180,7 @@
   }
 
   function find(id) {
-    return [...benjaminLevels, ...programs(), targeted, ...legacyGroups]
+    return [...benjaminLevels, ...programs(), targeted, { routines: atHome }, ...legacyGroups]
       .flatMap(group => group.routines).find(routine => routine.id === id);
   }
 
@@ -164,6 +201,20 @@
         <span class="client-explore-program-title"><strong>${escape(routine.title)}</strong><small>${routine.exercises.length} exercises</small></span>
       </summary>
       <ol>${routine.exercises.map(exercise => `<li><span>${escape(exercise.name)}</span><small>${escape(exercise.prescription)}</small></li>`).join("")}</ol>
+      <button type="button" class="button" data-client-explore-routine="${escape(routine.id)}">Open workout</button>
+    </details>`;
+  }
+
+  function atHomeMarkup(routine, escape) {
+    return `<details class="client-routine client-at-home-card" data-client-at-home-template="${escape(routine.id)}">
+      <summary class="client-explore-routine-summary">
+        ${coverMarkup(routine.cover, escape)}
+        <span class="client-at-home-card-copy">
+          <span class="client-at-home-card-title"><strong>${escape(routine.title)}</strong><span aria-hidden="true">→</span></span>
+          <small>${escape(routine.level + " · " + routine.focus)}</small>
+        </span>
+      </summary>
+      <ol>${routine.exercises.map((exercise,index) => `<li><button type="button" class="client-at-home-exercise-guide" data-client-at-home-guide="${index}" aria-label="View ${escape(exercise.name)} guide">${escape(exercise.name)}</button><small>${escape(exercise.prescription + " · " + exercise.rest)}</small></li>`).join("")}</ol>
       <button type="button" class="button" data-client-explore-routine="${escape(routine.id)}">Open workout</button>
     </details>`;
   }
@@ -209,6 +260,10 @@
     <section class="client-routine-group" aria-label="${targeted.title}">
       <h4>${targeted.title}</h4>
       ${targeted.routines.map(routine => routineMarkup(routine, escape)).join("")}
+    </section>
+    <section class="client-routine-group" aria-label="At-home routines">
+      <h4>At-home routines</h4>
+      <div class="client-at-home-grid">${atHome.map(routine => atHomeMarkup(routine, escape)).join("")}</div>
     </section>`;
   }
 

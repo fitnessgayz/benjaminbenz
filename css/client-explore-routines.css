@@ -152,3 +152,16 @@
 .client-workout-routines :is([data-client-explore-program], [data-client-explore-reset], [data-client-explore-empty], [data-client-explore-more])[hidden] {
   display: none !important;
 }
+
+.client-at-home-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:.75rem; }
+.client-at-home-grid .client-at-home-card { min-width:0; margin:0; padding:0; border:1px solid #33363b; border-radius:.95rem; overflow:hidden; background:#222428; color:#eef1f5; }
+.client-at-home-card > .client-explore-routine-summary { display:grid; gap:0; padding:0; }
+.client-at-home-card > .client-explore-routine-summary::after { display:none; }
+.client-at-home-card .client-explore-cover { display:block; width:100%; aspect-ratio:3/2; border-radius:0; object-fit:contain; background:#121316; }
+.client-at-home-card-copy { display:grid; min-width:0; gap:.26rem; padding:.65rem; }
+.client-at-home-card-title { display:flex; align-items:start; justify-content:space-between; gap:.28rem; color:#8dbaff; line-height:1.16; overflow-wrap:anywhere; }
+.client-at-home-card-title > span { flex:none; }
+.client-at-home-card-copy > small { color:#b9bdc4; overflow-wrap:anywhere; }
+.client-at-home-card > ol { padding-inline:1.5rem .65rem; overflow-wrap:anywhere; }
+.client-at-home-card > button { margin:.5rem; max-width:calc(100% - 1rem); white-space:normal; overflow-wrap:anywhere; }
+.client-at-home-exercise-guide { appearance:none; border:0; background:none; color:inherit; font:inherit; text-align:start; padding:0; cursor:pointer; text-decoration:underline; }

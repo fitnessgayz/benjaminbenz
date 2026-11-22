@@ -2868,14 +2868,16 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   stage.replaceChildren(image);
 }
 
-function openExerciseMedia(button) {
+function openExerciseMedia(button, exercise = null) {
+  const media = exercise ? exerciseMedia(exercise) : null;
   const dialog = ensureExerciseMediaDialog();
-  const name = String(button?.dataset.exerciseMediaName || "Exercise").trim();
-  const staticUrl = trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
-  const videoUrl = trustedExerciseMotionUrl(button?.dataset.exerciseMediaVideo);
-  const demoUrl = exerciseVideoUrl({ name, video: button?.dataset.exerciseMediaDemo });
-  const instructions = String(button?.dataset.exerciseMediaInstructions || "").trim();
-  if (!staticUrl) return;
+  const name = String(exercise?.name || button?.dataset.exerciseMediaName || "Exercise").trim();
+  const staticUrl = media?.imageUrl || trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
+  const videoUrl = media?.motionUrl || trustedExerciseMotionUrl(button?.dataset.exerciseMediaVideo);
+  const demoUrl = media?.demoUrl || exerciseVideoUrl({ name, video: button?.dataset.exerciseMediaDemo });
+  const copy = String(media?.instructions || button?.dataset.exerciseMediaInstructions || "").trim();
+  const instructions = exercise ? [exercise.prescription, exercise.rest, copy].filter(Boolean).join(" · ") : copy;
+  if (!staticUrl && !exercise) return;
   dialog.querySelector("h2").textContent = name;
   const instructionsBlock = dialog.querySelector("[data-exercise-media-instructions-block]");
   const instructionsCopy = dialog.querySelector("[data-exercise-media-instructions]");
@@ -2885,9 +2887,10 @@ function openExerciseMedia(button) {
   dialog.dataset.exerciseMediaStatic = staticUrl;
   dialog.dataset.exerciseMediaVideo = videoUrl;
   dialog.dataset.exerciseMediaDemo = demoUrl;
-  renderExerciseMediaDialog(dialog, Boolean(videoUrl));
+  if (exercise) renderExerciseMediaDialog(dialog, false);
+  else renderExerciseMediaDialog(dialog, Boolean(videoUrl));
   dialog.showModal();
-  dialog.querySelector("video")?.play().catch(() => {});
+  if (!exercise) dialog.querySelector("video")?.play().catch(() => {});
 }
 
 function exerciseVideoUrl(exercise) {
@@ -7864,7 +7867,7 @@ function syncAutoRestTimerPreference() {
   document.querySelectorAll("[data-auto-rest-timer]").forEach((input) => { input.value = String(seconds); });
   document.querySelectorAll("[data-ios-log-rest]").forEach((input) => {
     const { logElement } = iosLogExerciseContext(input);
-    if (logElement) input.value = String(workoutExerciseRestSeconds(logElement, seconds));
+    if (logElement) input.value = String(selectedWorkoutExerciseRestSeconds(logElement) ?? "");
   });
   document.querySelectorAll("[data-complete-set]").forEach((button) => {
     const label = (button.getAttribute("aria-label") || "").replace(/ and start rest timer$/, "");
@@ -8423,9 +8426,51 @@ function openRestTimer(button) {
   overlay.querySelector("[data-rest-timer-start]")?.focus();
 }
 
+const workoutExerciseRestOptions = Object.freeze([0, 15, 30, 45, 60, 90, 120, 150, 180, 240, 300]);
+
+function validWorkoutRestOverrides(values) {
+  return Object.fromEntries(Object.entries(values && typeof values === "object" ? values : {})
+    .filter(([key, seconds]) => /^[a-z0-9_-]{1,80}$/i.test(key)
+      && !["__proto__", "prototype", "constructor"].includes(key) && workoutExerciseRestOptions.includes(seconds)));
+}
+
+function workoutExerciseRestSessionKey(logElement) {
+  const state = workoutElapsedTimerState;
+  if (!state || state.clientEmail !== workoutElapsedTimerClientEmail() ||
+    !logElement?.closest(".client-workout-panel-custom") || state.panelIndex !== clientCustomWorkoutPanelIndex()) return "";
+  const key = String(logElement.dataset.exerciseCode || "");
+  return /^[a-z0-9_-]{1,80}$/i.test(key) && !["__proto__", "prototype", "constructor"].includes(key) ? key : "";
+}
+
+function selectedWorkoutExerciseRestSeconds(logElement) {
+  const key = workoutExerciseRestSessionKey(logElement);
+  const values = workoutElapsedTimerState?.restTimerOverrides;
+  const override = key && values && Object.hasOwn(values, key) ? values[key] : logElement?.dataset.workoutRestSeconds;
+  if (override === "" || override === undefined) return null;
+  const seconds = Number(override);
+  return workoutExerciseRestOptions.includes(seconds) ? seconds : null;
+}
+
 function workoutExerciseRestSeconds(logElement, defaultSeconds = automaticRestSeconds()) {
-  const override = logElement?.dataset.workoutRestSeconds;
-  return override === undefined ? defaultSeconds : Number(override);
+  return selectedWorkoutExerciseRestSeconds(logElement) ?? defaultSeconds;
+}
+
+function storeWorkoutExerciseRestChoice(logElement, value) {
+  if (!logElement) return;
+  const seconds = value === "" ? null : Number(value);
+  if (seconds !== null && !workoutExerciseRestOptions.includes(seconds)) return;
+  const key = workoutExerciseRestSessionKey(logElement);
+  if (!key) {
+    if (seconds === null) delete logElement.dataset.workoutRestSeconds;
+    else logElement.dataset.workoutRestSeconds = String(seconds);
+    return;
+  }
+  delete logElement.dataset.workoutRestSeconds;
+  const values = { ...workoutElapsedTimerState.restTimerOverrides };
+  if (seconds === null) delete values[key];
+  else values[key] = seconds;
+  workoutElapsedTimerState.restTimerOverrides = values;
+  persistWorkoutElapsedTimerState();
 }
 
 function startAutomaticRestTimer(button, seconds = automaticRestSeconds()) {
@@ -9443,7 +9488,8 @@ function readWorkoutElapsedTimerState() {
       updatedAt: Math.max(0, Number(parsed.updatedAt) || Number(parsed.startedAt) || 0),
       running: Boolean(parsed.running),
       dismissed: Boolean(parsed.dismissed),
-      startedAfterRound: Math.max(0, Number(parsed.startedAfterRound) || 0)
+      startedAfterRound: Math.max(0, Number(parsed.startedAfterRound) || 0),
+      ...(parsed.restTimerOverrides ? { restTimerOverrides: validWorkoutRestOverrides(parsed.restTimerOverrides) } : {})
     };
     const activeMilliseconds = state.running && state.startedAt
       ? Math.max(0, Date.now() - state.startedAt)
@@ -11198,7 +11244,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     const workoutFormat = carousel?.closest(".client-workout-panel-custom")?.dataset?.customWorkoutFormat || format;
     const alternateFormats = [["single", "Straight sets"], ["superset", "Superset"], ["circuit", "Circuit"]]
       .filter(([value]) => value !== workoutFormat);
-    const restSeconds = typeof workoutExerciseRestSeconds === "function" ? workoutExerciseRestSeconds(logElement) : 0;
+    const restSeconds = selectedWorkoutExerciseRestSeconds(logElement);
     const noteOpen = logElement.dataset.exerciseNotesOpen === "true";
     const rowMarkup = (row, setType, index) => {
       const isWarmUp = setType === warmUpSetType;
@@ -11244,7 +11290,8 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         <div class="ios-log-exercise-controls">
           <label class="ios-log-rest-control"><span>Rest</span>
             <select data-ios-log-rest aria-label="Rest duration for ${escapeHtml(exerciseName)}">
-              ${[0, 15, 30, 45, 60, 90, 120, 150, 180, 240, 300].map((seconds) => `<option value="${seconds}"${seconds === restSeconds ? " selected" : ""}>${seconds ? `${seconds}s` : "Off"}</option>`).join("")}
+              <option value=""${restSeconds === null ? " selected" : ""}>Use workout default</option>
+              ${workoutExerciseRestOptions.map((seconds) => `<option value="${seconds}"${seconds === restSeconds ? " selected" : ""}>${seconds ? `${seconds}s` : "Off"}</option>`).join("")}
             </select>
           </label>
           <button type="button" data-ios-log-note-toggle aria-expanded="${noteOpen}">Note</button>
@@ -20813,6 +20860,14 @@ function handleWorkoutInteractions() {
       }
       return;
     }
+    const atHomeGuide = event.target.closest("[data-client-at-home-guide]");
+    if (atHomeGuide) {
+      const id = atHomeGuide.closest("[data-client-at-home-template]")?.dataset.clientAtHomeTemplate;
+      const routine = window.FWB_CLIENT_WORKOUT_ROUTINES?.find(id);
+      const exercise = routine?.exercises[Number(atHomeGuide.dataset.clientAtHomeGuide)];
+      if (exercise) openExerciseMedia(atHomeGuide, exercise);
+      return;
+    }
     const routineButton = event.target.closest("[data-client-explore-routine]");
     if (routineButton) {
       const routine = window.FWB_CLIENT_WORKOUT_ROUTINES?.find(routineButton.dataset.clientExploreRoutine);
@@ -22032,7 +22087,7 @@ function handleWorkoutInteractions() {
     const rest = event.target.closest("[data-ios-log-rest]");
     if (rest) {
       const { logElement } = iosLogExerciseContext(rest);
-      if (logElement) logElement.dataset.workoutRestSeconds = rest.value;
+      storeWorkoutExerciseRestChoice(logElement, rest.value);
       return;
     }
     const groupedSetCount = event.target.closest("[data-custom-grouped-warmup-count], [data-custom-grouped-working-count]");
