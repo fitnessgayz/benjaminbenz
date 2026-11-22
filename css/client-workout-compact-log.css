@@ -294,6 +294,14 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
     object-fit: cover;
   }
 
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image > .exercise-muscle-fallback {
+    height: 100%;
+  }
+
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image > .exercise-muscle-fallback img {
+    object-fit: contain;
+  }
+
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button {
     width: 100% !important;
     height: 100% !important;
@@ -303,7 +311,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-title {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 6px;
     min-width: 0;
     margin: 0;
@@ -324,14 +332,17 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-marker {
     display: inline-grid;
     flex: none;
-    width: 23px;
-    height: 23px;
+    min-inline-size: 23px;
+    min-block-size: 23px;
+    padding: 3px 4px;
     place-items: center;
     border: 1px solid #40a7ff;
     border-radius: 6px;
     color: #40a7ff;
     font-size: .8rem;
     line-height: 1;
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-name {

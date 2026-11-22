@@ -798,6 +798,21 @@ test("exercise search indexes are reused until source data changes", () => {
   assert.equal(context.approvedExerciseForName("Cable Row").name, "Cable Row");
 });
 
+test("client picker keeps retired labels out of approved and past workout suggestions", () => {
+  const context = evaluate(["approvedExerciseForName", "exerciseSuggestionRecords"], {
+    exerciseLibraryEntries: [{ name: "Super incoming dumbbell chest press" }, { name: "Incline Dumbbell Press" }],
+    exerciseNameMatcher: require("../js/exercise-name-matcher.js"),
+    currentProgram: { workouts: [{ exercises: [{ name: "Assisted pull-up or lat pulldown" }] }] },
+    trainingLogs: [
+      { exercise_name: "  BIKING FROM CALTRAIN  ", exercise_code: "A1" },
+      { exercise_name: "Goblet Squat", exercise_code: "A2" }
+    ],
+    warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO"
+  });
+  assert.deepEqual(plain(context.exerciseSuggestionRecords()).map(({ name }) => name),
+    ["Assisted pull-up or lat pulldown", "Goblet Squat", "Incline Dumbbell Press"]);
+});
+
 test("exercise-name refreshes coalesce while typing and flush on demand", () => {
   let nextTimer = 0;
   const callbacks = new Map();

@@ -92,6 +92,45 @@
   color: var(--profile-ink);
 }
 
+.lifthardr-profile-measurements label {
+  display: block;
+  margin: 14px 0 5px;
+  color: var(--profile-muted);
+  font-size: .82rem;
+}
+
+.lifthardr-profile-measurements select {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--profile-border);
+  border-radius: 10px;
+  background: var(--profile-card);
+  color: var(--profile-ink);
+  font: inherit;
+}
+
+.lifthardr-profile-measurements .progress-chart {
+  margin-block: 12px;
+}
+
+.lifthardr-profile-measurements .progress-chart-summary strong {
+  font-size: 1.15rem;
+}
+
+.lifthardr-profile-measurements .progress-chart svg {
+  min-height: 0;
+  max-height: 180px;
+}
+
+.lifthardr-profile-measurements .progress-chart .progress-metric-line {
+  stroke: var(--profile-link);
+}
+
+.lifthardr-profile-measurements-actions button {
+  min-width: 0;
+}
+
 .lifthardr-profile-snapshot-heading > span,
 .lifthardr-profile-chart-range {
   color: var(--profile-muted);

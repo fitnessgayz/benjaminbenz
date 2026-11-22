@@ -77,9 +77,9 @@
   <link rel="stylesheet" href="css/client-workout-back.css?v=2" />
   <link rel="stylesheet" href="css/client-mobile-tab-gold.css?v=3" />
   <link rel="stylesheet" href="css/client-bottom-tabs.css?v=2" />
-  <link rel="stylesheet" href="css/lifthardr-profile.css?v=1" />
+  <link rel="stylesheet" href="css/lifthardr-profile.css?v=2" />
   <link rel="stylesheet" href="css/client-exercise-history-detail.css?v=4&amp;blue-gold=1" />
-  <link rel="stylesheet" href="css/client-workout-compact-log.css?v=19&amp;blue-gold=1" />
+  <link rel="stylesheet" href="css/client-workout-compact-log.css?v=20&amp;blue-gold=1" />
   <link rel="stylesheet" href="css/client-custom-workout-launcher.css?v=7&amp;blue-gold=1" />
   <link rel="stylesheet" href="css/client-personal-bests-list.css?v=1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=2" />
@@ -723,7 +723,6 @@
         </section>
 
         <section class="progress-panel client-stats-panel" data-client-dashboard-panel="stats" id="client-stats-panel" aria-labelledby="client-stats-title" hidden>
-          <button class="button button-ghost client-settings-return" type="button" data-client-settings-destination="notifications" aria-label="Back to Settings">‹ Settings</button>
           <div class="panel-heading">
             <div>
               <p class="kicker">Client profile</p>
@@ -1107,6 +1106,27 @@
               </button>
             </div>
           </div>
+          <section class="lifthardr-profile-card lifthardr-profile-measurements" id="client-profile-measurements" aria-labelledby="client-profile-measurements-title">
+            <h3 id="client-profile-measurements-title">Stats &amp; Measurements</h3>
+            <div class="client-progress-preview-values" id="client-profile-measurement-values" aria-live="polite"><p class="client-progress-preview-empty">Loading measurements…</p></div>
+            <label for="client-profile-measurement-metric">Trend</label>
+            <select id="client-profile-measurement-metric">
+              <option value="bodyweight">Bodyweight</option>
+              <option value="bodyfat">Body fat</option>
+              <option value="lean_mass">DEXA lean mass</option>
+              <option value="muscle_mass">Muscle mass</option>
+              <option value="chest">Chest</option>
+              <option value="waist">Waist</option>
+              <option value="hips">Hips</option>
+              <option value="arm">Arm</option>
+              <option value="thigh">Thigh</option>
+            </select>
+            <div class="progress-chart" id="client-profile-measurement-chart" aria-live="polite"></div>
+            <div class="lifthardr-profile-links lifthardr-profile-measurements-actions">
+              <button type="button" data-client-progress-stats-open data-client-profile-measurement-edit aria-controls="client-stats-panel">Update measurements</button>
+              <button type="button" data-client-progress-stats-open aria-controls="client-stats-panel">View all stats <span aria-hidden="true">›</span></button>
+            </div>
+          </section>
           <section class="lifthardr-profile-card" aria-labelledby="lifthardr-profile-snapshot">
             <div class="lifthardr-profile-snapshot-heading">
               <h3 id="lifthardr-profile-snapshot">Training Snapshot</h3>
@@ -1129,7 +1149,6 @@
           <nav class="lifthardr-profile-links" aria-label="Profile tools">
             <button type="button" data-client-summary-go-tab="logs">Workout Logs <span aria-hidden="true">›</span></button>
             <button type="button" data-client-summary-go-tab="progress">Progress <span aria-hidden="true">›</span></button>
-            <button type="button" data-client-progress-stats-open>Stats &amp; Measurements <span aria-hidden="true">›</span></button>
             <button type="button" data-client-summary-go-tab="nutrition">Nutrition <span aria-hidden="true">›</span></button>
             <button type="button" data-client-summary-go-tab="sessions">Sessions <span aria-hidden="true">›</span></button>
             <button type="button" data-client-summary-go-tab="questionnaire">PAR-Q <span aria-hidden="true">›</span></button>
@@ -1157,11 +1176,6 @@
             <button class="client-settings-shortcut" type="button" data-client-settings-open="bottom-tabs" aria-controls="client-settings-bottom-tabs">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1" fill="currentColor"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>
               <span class="client-settings-shortcut-copy"><strong>Customize bottom tabs</strong><small>Reorder or hide tabs on your phone</small></span>
-              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
-            </button>
-            <button class="client-settings-shortcut" type="button" data-client-settings-destination="stats">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
-              <span class="client-settings-shortcut-copy"><strong>Stats &amp; measurements</strong><small>Measurements, progress photos, and DEXA reports</small></span>
               <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
             </button>
             <button class="client-settings-shortcut" type="button" data-client-settings-destination="nutrition">
@@ -1521,7 +1535,7 @@
   <script src="js/workout-csv-import.js?v=1"></script>
   <script src="js/client-personal-bests-list.js?v=1"></script>
   <script src="js/client-workout-calendar.js?v=2"></script>
-<script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=3&amp;grouped-add=2&amp;google-health=1&amp;exercise-defaults=3&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=3&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=4&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=2&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=11&amp;atari-mascot=1&amp;atari-words=1&amp;back-control=2&amp;compact-set-menus=1&amp;grouped-set-counts=2&amp;generated-counts=1&amp;progress-snapshot=2&amp;first-login-intake=2&amp;client-login-alert=1&amp;bottom-tabs=1&amp;exercise-history-detail=1&amp;muscle-highlights=2&amp;workout-calendar=1&amp;copy-past-workout=1&amp;custom-polish=1&amp;grouped-controls=1&amp;grouped-rest=1&amp;exercise-library-merge=1&amp;gym-picker=1&amp;muscle-fallback=1&amp;cardio-intervals=1&amp;compact-setup=4&amp;home-next-workout=1&amp;logs-readable=2&amp;android-search=1&amp;android-selection=1&amp;grouped-picker=3&amp;quick-workout=1&amp;home-wall-atari=1&amp;centered-exercise=1&amp;quick-workout-controls=1&amp;floating-finish=1&amp;straight-picker=2&amp;setup-popups=1&amp;setup-icons=1&amp;timer-auto-hide=1&amp;setup-row=1&amp;gym-scroll-cue=1&amp;floating-actions=1&amp;grey-set-defaults=1&amp;finish-confirm=1&amp;picker-focus-crop=1&amp;android-workout-photo-crop=2&amp;compact-mobile-picker=5&amp;logs-title=2&amp;trainer-program=1&amp;dashboard-back=1&amp;format-switch=1&amp;source-hide=1&amp;workout-card-order=1&amp;exercise-collapse=1&amp;android-zoom=1&amp;card-controls=2&amp;add-card-prompt=3&amp;gym-finder=0&amp;log-workout-label=1&amp;auto-workout-title=1&amp;grouped-log-parity=1&amp;lifthardr=1&amp;workout-mobility=2&amp;logger-parity=1&amp;exercise-search-simple=1&amp;exercise-guide-motion=1&amp;explore-programs=1&amp;anatomy-images=1&amp;inline-exercise-motion=1&amp;gruntr-brand=2&amp;rest-preference-resume=1&amp;picker-logger-controls=1"></script>
+<script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=3&amp;grouped-add=2&amp;google-health=1&amp;exercise-defaults=3&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=3&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=4&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=2&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=11&amp;atari-mascot=1&amp;atari-words=1&amp;back-control=2&amp;compact-set-menus=1&amp;grouped-set-counts=2&amp;generated-counts=1&amp;progress-snapshot=2&amp;first-login-intake=2&amp;client-login-alert=1&amp;bottom-tabs=1&amp;exercise-history-detail=1&amp;muscle-highlights=2&amp;workout-calendar=1&amp;copy-past-workout=1&amp;custom-polish=1&amp;grouped-controls=1&amp;grouped-rest=1&amp;exercise-library-merge=1&amp;gym-picker=1&amp;muscle-fallback=1&amp;cardio-intervals=1&amp;compact-setup=4&amp;home-next-workout=1&amp;logs-readable=2&amp;android-search=1&amp;android-selection=1&amp;grouped-picker=3&amp;quick-workout=1&amp;home-wall-atari=1&amp;centered-exercise=1&amp;quick-workout-controls=1&amp;floating-finish=1&amp;straight-picker=2&amp;setup-popups=1&amp;setup-icons=1&amp;timer-auto-hide=1&amp;setup-row=1&amp;gym-scroll-cue=1&amp;floating-actions=1&amp;grey-set-defaults=1&amp;finish-confirm=1&amp;picker-focus-crop=1&amp;android-workout-photo-crop=2&amp;compact-mobile-picker=5&amp;logs-title=2&amp;trainer-program=1&amp;dashboard-back=1&amp;format-switch=1&amp;source-hide=1&amp;workout-card-order=1&amp;exercise-collapse=1&amp;android-zoom=1&amp;card-controls=2&amp;add-card-prompt=3&amp;gym-finder=0&amp;log-workout-label=1&amp;auto-workout-title=1&amp;grouped-log-parity=1&amp;lifthardr=1&amp;workout-mobility=2&amp;logger-parity=1&amp;exercise-search-simple=1&amp;exercise-guide-motion=1&amp;explore-programs=1&amp;anatomy-images=1&amp;inline-exercise-motion=1&amp;gruntr-brand=2&amp;rest-preference-resume=1&amp;picker-logger-controls=1&amp;profile-measurements=1"></script>
 <script src="js/client-progress-redesign.js?v=1"></script>
 <script src="js/client-settings-redesign.js?v=1"></script>
   <script src="js/client-home-parity.js?v=10"></script>
