@@ -108,7 +108,8 @@
     "20261122025449_replace_t_bar_row_photo.sql",
     "20261122030158_illustrate_t_bar_row.sql",
     "20261122030620_expand_exercise_anatomy_illustrations.sql",
-    "20261122034245_illustrate_approved_custom_exercises.sql"
+    "20261122034245_illustrate_approved_custom_exercises.sql",
+    "20261122034819_publish_selected_side_saddle_art.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -11333,6 +11334,13 @@
       "objectPath": "anatomy/2026-11-21/lat-pull-down-wide-neutral-grip.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/incline-machine-chest-press-single-arm-side-saddle.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/incline-machine-chest-press-single-arm-side-saddle.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -13257,6 +13265,10 @@
     {
       "name": "Hack squat Bulgarian lunge",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/hack-squat-bulgarian-lunge.webp"
+    },
+    {
+      "name": "Incline Machine Chest Press - single arm side saddle",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/incline-machine-chest-press-single-arm-side-saddle.webp"
     }
   ]
 }
