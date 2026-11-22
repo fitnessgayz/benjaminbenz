@@ -46,6 +46,8 @@ test('workout chooser separates routines, personal training and FWB Trainer', ()
   assert.match(trainer, /data-client-saved-workout-plans/);
   assert.doesNotMatch(declaration('customWorkoutPanelMarkup'), /data-client-saved-workout-plans/);
   assert.match(markup, /data-client-workout-picker-choose="0"/);
+  assert.match(markup, /<dialog[^>]*data-client-workout-choice-dialog[^>]*>\s*<button[^>]*class="lifthardr-profile-return"[^>]*data-client-workout-choice-close="explore"[^>]*>Close<\/button>/);
+  assert.match(markup, /<button[^>]*data-client-workout-choice-close="generate"[^>]*>✕<\/button>/);
   assert.match(markup, /data-client-generate-workout-plan/);
   assert.match(markup, /data-generate-workout data-generator-preset="today"/);
   assert.doesNotMatch(markup, /data-generator-preset="mobility"|data-log-cardio/);

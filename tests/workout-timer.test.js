@@ -204,54 +204,48 @@ test("resume state preserves the workout date and exact workout panel", () => {
   assert.doesNotMatch(resumeSource, /startWorkoutElapsedTimer/);
 });
 
-test("floating custom workout actions appear after the workout starts automatically", () => {
+test("floating workout actions appear after exercises are picked, before any set is logged", () => {
+  let hasExercise = false;
+  let isAssigned = false;
   const panel = {
     hidden: false,
-    classList: { contains: (name) => ["is-active", "client-workout-panel-custom"].includes(name) },
+    classList: { contains: (name) => name === "is-active" || name === (isAssigned
+      ? "client-workout-panel-assigned" : "client-workout-panel-custom") },
     querySelector: (selector) => selector === "[data-workout-start]"
       ? { dataset: { workoutTitle: "Custom Workout" } }
       : selector === "[data-workout-date]" ? { value: "2026-11-06" } : null
   };
-  const controls = Object.fromEntries([
-    "[data-floating-workout-start-action]", "[data-floating-workout-finish-action]",
-    "[data-floating-workout-reset-action]", "[data-floating-workout-more]"
-  ].map((selector) => [selector, {
-    hidden: selector !== "[data-floating-workout-reset-action]",
-    open: false,
-    toggleAttribute: (attribute, hidden) => { controls[selector].hidden = hidden; }
-  }]));
-  const bar = { hidden: true, closest: () => panel, querySelector: (selector) => controls[selector] };
+  const bar = { hidden: true, closest: () => panel };
   const document = { querySelectorAll: () => [bar], getElementById: () => null };
-  const fixture = Function("document", "todayDate", `
+  const fixture = Function("document", "todayDate", "customWorkoutPanelHasEnteredExerciseContent", `
     let workoutElapsedTimerState = null;
     ${sourceForFunction("syncFloatingWorkoutFinishButtons")}
     return {
       sync: syncFloatingWorkoutFinishButtons,
       setSession: (session) => { workoutElapsedTimerState = session; }
     };
-  `)(document, () => "2026-11-06");
+  `)(document, () => "2026-11-06", () => hasExercise);
 
   fixture.sync();
   assert.equal(bar.hidden, true);
-  assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
-  assert.equal(controls["[data-floating-workout-reset-action]"].hidden, false);
-  assert.equal(controls["[data-floating-workout-finish-action]"].hidden, true);
+  hasExercise = true;
+  fixture.sync();
+  assert.equal(bar.hidden, false);
   fixture.setSession({ workoutTitle: "Custom Workout", workoutDate: "2026-11-06" });
   fixture.sync();
   assert.equal(bar.hidden, false);
-  assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
-  assert.equal(controls["[data-floating-workout-reset-action]"].hidden, false);
-  assert.equal(controls["[data-floating-workout-finish-action]"].hidden, false);
-  assert.equal(controls["[data-floating-workout-more]"].hidden, true);
   panel.hidden = true;
   fixture.sync();
   assert.equal(bar.hidden, true);
   panel.hidden = false;
-  fixture.setSession(null);
+  fixture.setSession({ workoutTitle: "A different workout", workoutDate: "2026-11-06" });
   fixture.sync();
   assert.equal(bar.hidden, true);
-  assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
-  assert.equal(controls["[data-floating-workout-more]"].hidden, true);
+  fixture.setSession(null);
+  hasExercise = false;
+  isAssigned = true;
+  fixture.sync();
+  assert.equal(bar.hidden, false);
 });
 
 test("resume cards mirror running, paused, title, and elapsed timer state", () => {
