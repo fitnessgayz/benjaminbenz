@@ -71,3 +71,41 @@
     -webkit-backdrop-filter: none;
   }
 }
+
+/* Keep the floating dock inside both horizontal safe areas in landscape and
+   reserve scroll space for its height, bottom margin and home indicator. */
+@media (max-width: 900px) {
+  :root body.client-dashboard-page {
+    --client-mobile-dock-height: 86px;
+    scroll-padding-block-end: calc(var(--client-mobile-dock-height) + env(safe-area-inset-bottom) + 24px);
+  }
+  :root body.client-dashboard-page .client-dashboard-tabs,
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs {
+    inset-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    width: auto;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 340px;
+    padding: 5px;
+    touch-action: pan-x pan-y pinch-zoom;
+    color: #e6ebf0;
+    background: #24282e;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab[data-client-dashboard-tab]:not(.is-active) .client-dashboard-tab-label {
+    color: #e6ebf0 !important;
+  }
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab[data-client-dashboard-tab] .client-dashboard-tab-label {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1.18;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab[data-client-dashboard-tab]:focus-visible {
+    outline: 2px solid #ffe455;
+    outline-offset: -2px;
+  }
+}

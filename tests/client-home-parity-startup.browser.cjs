@@ -19,6 +19,7 @@ const root = path.resolve(__dirname, '..');
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.setContent(`<main>${home}<div data-community-wall-list></div></main>`);
+    await page.addScriptTag({ path: path.join(root, 'js/client-next-workout.js') });
     await page.addScriptTag({ path: path.join(root, 'js/client-home-parity.js') });
     await page.evaluate(() => {
       window.FWB_CLIENT_HOME_PARITY.configure(null, 'client@example.com', true);
@@ -32,6 +33,21 @@ const root = path.resolve(__dirname, '..');
     assert.equal(await page.locator('[data-client-last-title]').textContent(), 'Custom Workout');
     assert.equal(await page.locator('[data-client-home-suggestion]').textContent(), 'Strength Day');
     assert.equal(await page.locator('[data-client-home-next-day]').textContent(), 'Ready when you are');
+    assert.equal(await page.locator('[data-client-home-start-next]').getAttribute('data-client-home-next-section'), 'personal');
+    await page.evaluate(() => {
+      const today = new Date();
+      const date = [today.getFullYear(), String(today.getMonth()+1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+      const result = [{ id: 'synthetic-plan', planned_date: date, title: 'Synthetic Saved Strength', source_type: 'generated' }];
+      const query = {
+        select() { return this; }, eq() { return this; }, gte() { return this; },
+        lte() { return this; }, order() { return this; }, limit() { return this; },
+        then(resolve) { return Promise.resolve({ data: result, error: null }).then(resolve); }
+      };
+      window.FWB_CLIENT_HOME_PARITY.configure({ from: () => query }, 'synthetic@example.invalid', false, 'synthetic-owner');
+      window.FWB_CLIENT_HOME_PARITY.render([], { workouts: [] });
+    });
+    await page.waitForFunction(() => document.querySelector('[data-client-home-start-next]').dataset.clientHomeNextSection === 'trainer');
+    assert.equal(await page.locator('[data-client-home-suggestion]').textContent(), 'Synthetic Saved Strength');
     assert.equal(await page.locator('[data-copy-workout-to-custom]').getAttribute('data-copy-workout-to-custom'), 'session:session-1');
     assert.match(await page.locator('[data-client-home-week-streak]').textContent(), /^\d+$/);
     assert.equal(await page.locator('.client-home-reward-card').count(), 0);
@@ -43,9 +59,9 @@ const root = path.resolve(__dirname, '..');
         wall.append(card);
       }
     });
-    await page.waitForFunction(() => document.querySelectorAll('[data-client-home-community-feed] article').length === 2);
-    assert.deepEqual(await page.locator('[data-client-home-community-feed] article strong').allTextContents(), ['Recent A', 'Recent B']);
-    assert.equal(await page.locator('[data-community-wall-list] article').count(), 3, 'View all retains the full wall');
+    assert.equal(await page.locator('[data-client-home-community-feed]').count(), 0, 'Home does not embed the Social feed');
+    assert.equal(await page.locator('[data-community-wall-list] article').count(), 3, 'Social retains the full wall');
+    assert.deepEqual(errors, []);
     console.log('Home parity startup rendered without a page error.');
   } finally {
     await browser.close();

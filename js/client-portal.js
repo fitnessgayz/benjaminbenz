@@ -893,7 +893,7 @@ function renderClientHomeSnapshots(nutrition = nutritionPlanFromProgram(currentP
 
 function renderClientHomeSummary() {
   window.FWB_WEEKLY_ACTIVITY?.configure(supabaseClient, activeClientEmail, isCoachDashboardPreview);
-  window.FWB_CLIENT_HOME_PARITY?.configure(supabaseClient, activeClientEmail, isCoachDashboardPreview);
+  window.FWB_CLIENT_HOME_PARITY?.configure(supabaseClient, activeClientEmail, isCoachDashboardPreview, activeDashboardUser?.id);
   const homePanel = document.querySelector('[data-client-dashboard-panel="home"]');
 
   if (!homePanel || !currentProgram) {
@@ -9717,7 +9717,7 @@ function renderWorkoutResumeActions() {
   const homeAction = document.querySelector(".client-home-workout-action");
   if (homeAction) homeAction.hidden = !hasActiveWorkout;
   const startNext = document.querySelector("[data-client-home-start-next]");
-  if (startNext) startNext.hidden = false;
+  if (startNext) startNext.hidden = hasActiveWorkout;
   const nextWorkoutCard = document.querySelector(".client-home-next");
   if (nextWorkoutCard) nextWorkoutCard.hidden = false;
   if (homeActionLabel) homeActionLabel.textContent = "Resume Workout";
@@ -15001,10 +15001,21 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     <svg class="workout-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h16m-7-7 7 7-7 7"/></svg>`;
 }
 
+function selectClientWorkoutHubSection(section) {
+  clientWorkoutHubSection = section;
+  document.querySelectorAll("[data-client-workout-hub-tab]").forEach(tab => {
+    const active = tab.dataset.clientWorkoutHubTab === section;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (panel) panel.hidden = !active;
+  });
+}
+
 function clientWorkoutListMarkup(workouts) {
   if (!clientPreviewProgramSelected) {
     const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
-    const sections = [["routines", "Routines"], ["personal", "Personal Training"], ["trainer", "FWB Trainer"]];
+    const sections = [["routines", "Routines"], ["personal", "Personal Training"], ["trainer", "GRUNTR Trainer"]];
     const active = typeof clientWorkoutHubSection === "undefined" ? "routines" : clientWorkoutHubSection;
     const panel = (id, content) => `<section id="workout-hub-${id}" class="workout-choice-list client-workout-hub-section"
       role="tabpanel" aria-labelledby="workout-hub-tab-${id}" ${id === active ? "" : "hidden"}>${content}</section>`;
@@ -15034,8 +15045,8 @@ function clientWorkoutListMarkup(workouts) {
         ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan upcoming workouts.", "workout-calendar")}
       `)}
       ${panel("trainer", `
-        ${card("data-client-generate-workout-plan", "sparkles", "Start with FWB Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer")}
-        ${card("data-client-saved-workout-plans", "saved", "Saved FWB Workout", "Open one of your saved plans.", "workout-fwb-saved")}
+        ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer")}
+        ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved")}
         ${card('data-generate-workout data-generator-preset="today"', "plus", "Build one session", "Generate a workout for today.", "workout-fwb-today")}
       `)}
     </div>${clientWorkoutChoiceDialogMarkup()}`;
@@ -19334,6 +19345,7 @@ function setClientDashboardTab(tabName, options = {}) {
     window.requestAnimationFrame(() => window.scrollTo({ top: savedWorkoutScrollY, behavior: "auto" }));
   }
 
+  if (nextTab === "home") window.FWB_CLIENT_HOME_PARITY?.refreshNext();
   window.FWB_GRUNTR_SOCIAL?.selectTab(nextTab);
   window.FWB_GRUNTR_PROFILE_ACTIVITY?.selectTab(nextTab);
   if (nextTab === "logs") flushScheduledClientTrainingLogsRender();
@@ -19918,7 +19930,18 @@ function handleClientSummaryActions() {
 
     const startNext = event.target.closest("[data-client-home-start-next]");
     if (startNext) {
+      if (workoutElapsedTimerState) {
+        resumeActiveWorkout();
+        return;
+      }
+      const section = startNext.dataset.clientHomeNextSection;
+      selectClientWorkoutHubSection(["personal", "trainer"].includes(section) ? section : "routines");
       setClientDashboardTab("workouts");
+      if (clientPreviewProgramSelected) {
+        clientPreviewProgramSelected = false;
+        const picker = document.getElementById("client-workout-tabs");
+        if (picker) picker.innerHTML = clientWorkoutListMarkup(clientWorkoutPickerItems(currentProgram?.workouts || []));
+      }
       showClientWorkoutPicker();
       return;
     }
@@ -20903,14 +20926,7 @@ function handleWorkoutInteractions() {
     }
     const hubTab = event.target.closest("[data-client-workout-hub-tab]");
     if (hubTab) {
-      clientWorkoutHubSection = hubTab.dataset.clientWorkoutHubTab;
-      const hub = hubTab.closest(".client-workout-hub");
-      hub.querySelectorAll("[data-client-workout-hub-tab]").forEach((tab) => {
-        const active = tab === hubTab;
-        tab.setAttribute("aria-selected", String(active));
-        tab.tabIndex = active ? 0 : -1;
-        document.getElementById(tab.getAttribute("aria-controls")).hidden = !active;
-      });
+      selectClientWorkoutHubSection(hubTab.dataset.clientWorkoutHubTab);
       return;
     }
     const workoutChoiceDialog = event.target.closest("[data-client-workout-choice-dialog]");
@@ -23835,22 +23851,6 @@ async function handleSignOut() {
   });
 }
 
-function disableClientDashboardZoom() {
-  const preventGestureZoom = (event) => {
-    event.preventDefault();
-  };
-
-  document.addEventListener("gesturestart", preventGestureZoom, { passive: false });
-  document.addEventListener("gesturechange", preventGestureZoom, { passive: false });
-  document.addEventListener("gestureend", preventGestureZoom, { passive: false });
-  document.addEventListener("touchmove", (event) => {
-    if (event.touches.length > 1) {
-      event.preventDefault();
-    }
-  }, { passive: false });
-}
-
-disableClientDashboardZoom();
 initializeRestTimerNotifications();
 configureAutoRestTimerPreference();
 configureClientTrainingPreferences();

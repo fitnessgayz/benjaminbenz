@@ -1188,7 +1188,7 @@
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(input, textarea)::placeholder {
-    color: #858982 !important;
+    color: var(--client-input-placeholder-on-light, #58665d) !important;
     opacity: 1;
   }
 
