@@ -97,8 +97,8 @@
       notified = true;
       save();
       const details = {
-        body: "Done with your workout? Open FWB, then hit Finish and save.",
-        icon: "/fwb-brand-icon-gold-192-v5.png",
+        body: "Done with your workout? Open GRUNTR, then hit Finish and save.",
+        icon: "/images/gruntr/icon-192.png",
         badge: "/favicon-32.png",
         tag: "fwb-unfinished-workout",
         data: { url: "/client-dashboard.html?tab=workouts" }

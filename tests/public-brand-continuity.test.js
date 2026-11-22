@@ -62,7 +62,10 @@ test("sets expectations and privacy context before the public questionnaire", ()
   assert.match(questionnaire, /Send questionnaire to Benjamin/);
 });
 
-test("uses the approved client product name on public app-interest pages", () => {
+test("uses the approved GRUNTR brand on public client pages", () => {
+  for (const page of [...publicConversionPages, read("app-preview.html")]) {
+    assert.match(page, /aria-label="GRUNTR home"><img src="\/images\/gruntr\/icon-192\.png" alt=""[^>]*><b>GRUNTR<\/b><\/a>/);
+  }
   for (const page of [interest, privateInterest]) {
     assert.match(page, /GRUNTR app interest list/);
     assert.match(page, /GRUNTR brings your workouts, progress, and connection with Benjamin together/);

@@ -196,7 +196,12 @@ async function check(engine, label, width) {
       });
     ` });
     assert.equal(await page.title(), "GRUNTR");
-    assert.equal(await page.getByRole("heading", { name: "GRUNTR Home" }).isVisible(), true);
+    const homeHeading = page.getByRole("heading", { name: "GRUNTR Home" });
+    assert.equal(await homeHeading.isVisible(), true);
+    const logo = homeHeading.locator("img");
+    assert.equal(await logo.getAttribute("src"), "/images/gruntr/icon-192.png");
+    await logo.evaluate((image) => image.decode());
+    assert.equal(await logo.evaluate((image) => image.naturalWidth), 192);
     const dock = page.locator(".client-dashboard-tabs");
     assert.equal(await dock.evaluate(node => node.parentElement.tagName), "BODY");
     assert.deepEqual(await dock.locator("[data-client-dashboard-tab]").evaluateAll(nodes => nodes.map(node => node.getAttribute("aria-label"))),
