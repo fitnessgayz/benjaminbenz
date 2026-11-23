@@ -8283,6 +8283,9 @@ async function initializeClientWebNotifications(user) {
     user,
     role: "client",
     root,
+    openWeeklyCheckIn: !isCoachPortalEmail(user.email)
+      ? focus => window.FWB_CLIENT_HOME_PARITY?.openWeeklyCheckIn?.(focus)
+      : undefined,
     unreadBadges: document.querySelectorAll("[data-client-notification-unread]"),
     unreadStatus: document.querySelector("[data-client-notification-unread-status]"),
     serviceWorkerUrl: restTimerNotificationServiceWorkerUrl
@@ -8982,7 +8985,7 @@ function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, diffic
 }
 
 function workoutCompletionShareText(summary = {}) {
-  return window.FWBWorkoutShareCard?.text(summary) || `${summary.title || "Workout"} · ${summary.durationLabel || ""}`;
+  return window.FWBWorkoutShareCard?.text(summary) || `${summary.title || "Workout"} · ${summary.durationLabel || ""}\nShared with GRUNTR.`;
 }
 
 function workoutCompletionSharePromptMarkup() {
@@ -9000,7 +9003,7 @@ function workoutCompletionSharePromptMarkup() {
         <p class="workout-completion-atari-message"><span>Atari says:</span> <span data-workout-share-atari-message>You did it! I’m doing a happy dance for you.</span></p>
         <section class="achievement-celebration" data-workout-achievements aria-label="New workout achievements" hidden></section>
         <article class="workout-completion-share-card" aria-label="Workout completion share preview">
-          <span class="workout-completion-share-brand">FWB</span>
+          <span class="workout-completion-share-brand">GRUNTR</span>
           <p data-workout-share-state>Workout complete</p>
           <h2 data-workout-share-workout-title>Workout</h2>
           <small class="workout-completion-share-date" data-workout-share-date></small>
@@ -9152,7 +9155,7 @@ async function shareCompletedWorkout(button) {
 
   const text = workoutCompletionShareText(summary);
   const url = `${window.location.origin}/`;
-  const shareData = { title: summary.isComplete === false ? "Workout saved" : "Workout complete", text, url };
+  const shareData = { title: summary.isComplete === false ? "Workout saved with GRUNTR" : "Workout complete with GRUNTR", text, url };
   const file = pendingWorkoutCompletionShareFile;
 
   if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
@@ -15116,16 +15119,17 @@ function clientWorkoutListMarkup(workouts) {
         </button>
         ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore", "explore")}
         ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous", "previous")}
+        ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan sessions from your coach or saved workouts.", "workout-calendar", "calendar")}
       `)}
       ${panel("personal", access.state === "available" ? `
         ${programs.map(program => {
           const count = (program.workouts || []).length;
           const index = clientAvailablePrograms.indexOf(program);
-          return card(`data-preview-program="${index}"`, "calendar", program.program_title || "Personal Trainer Program",
-            count ? `${count} ${count === 1 ? "workout" : "workouts"}` : "Your coach’s assigned workouts will appear here.",
-            `workout-personal-${index}`);
+          const name = program.program_title || "Your assigned program";
+          const description = count ? `${name} · ${count} ${count === 1 ? "workout" : "workouts"}` : name;
+          return card(`data-preview-program="${index}"`, "calendar", "Trainer Program", description,
+            `workout-personal-${index}`, "personal-training");
         }).join("")}
-        ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan upcoming workouts.", "workout-calendar")}
       ` : "")}
       ${panel("trainer", `
         ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer", "trainer")}
@@ -18300,9 +18304,12 @@ async function deleteClientWorkoutHistory(historyKey) {
     setClientWorkoutCopyStatus("Workout deleted.");
     document.getElementById("client-logs-title")?.focus({ preventScroll: true });
     return true;
-  } catch (_error) {
+  } catch (error) {
     if (normalizeClientEmail(activeClientEmail) === email) {
-      setClientWorkoutCopyStatus("Could not confirm deletion. Your workout is still shown here. Try again.");
+      const targetChanged = ["42501", "22023"].includes(error?.code);
+      setClientWorkoutCopyStatus(targetChanged
+        ? "This workout or your account changed. Refresh your logs and try again."
+        : "Could not confirm deletion. Your workout is still shown here. Try again.");
     }
     return false;
   } finally {

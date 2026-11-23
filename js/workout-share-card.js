@@ -93,7 +93,7 @@
     if (data.appleMetrics.length) lines.push("", "Apple Workout", ...data.appleMetrics.map((metric) => `${metric.label}: ${metric.value}`));
     if (data.exerciseNames.length) lines.push("", `${data.exerciseHeading}:`, ...data.exerciseNames.map((name) => `• ${name}`));
     if (data.moreExercises) lines.push(`+ ${data.moreExercises} more exercise${data.moreExercises === 1 ? "" : "s"}`);
-    lines.push("", data.praise, "#FitnessWithBenjamin");
+    lines.push("", data.praise, "Shared with GRUNTR.", "#GRUNTR");
     return lines.join("\n");
   }
 
@@ -162,10 +162,10 @@
     context.fillStyle = palette.brand;
     context.fillRect(left, 58, 108, 108);
     context.fillStyle = palette.brandText;
-    setFont(context, 38, 900);
+    setFont(context, 21, 900);
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText("FWB", left + 54, 112);
+    context.fillText("GRUNTR", left + 54, 112, 96);
     context.fillStyle = palette.text;
     setFont(context, 27, 700);
     context.textAlign = "right";
@@ -260,7 +260,7 @@
       drawCard(context, summary, new Date(), document.documentElement?.dataset?.clientTheme === "light" ? "light" : "dark");
       return await new Promise((resolve) => {
         canvas.toBlob((blob) => {
-          try { resolve(blob ? new File([blob], summary.isComplete === false ? "fwb-workout-saved.png" : "fwb-workout-complete.png", { type: "image/png" }) : null); }
+          try { resolve(blob ? new File([blob], summary.isComplete === false ? "gruntr-workout-saved.png" : "gruntr-workout-complete.png", { type: "image/png" }) : null); }
           catch (_error) { resolve(null); }
         }, "image/png");
       });

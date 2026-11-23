@@ -38,11 +38,12 @@
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[alias] || paths.trophy}</svg>`;
   }
 
-  function dateLabel(value) {
+  function dateLabel(value, { short = false } = {}) {
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ""));
-    if (!match) return "Earned";
+    if (!match) return short ? "" : "Earned";
     const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
-    return `Earned ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+    const label = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: short ? undefined : "numeric" });
+    return short ? label : `Earned ${label}`;
   }
 
   function badgeArtworkMarkup(id, fallbackIcon) {
@@ -66,21 +67,21 @@
       </div></div>`;
   }
 
-  function nextBadge(snapshot) {
-    return snapshot.badges.filter((badge) => !badge.unlocked).sort((a, b) => (
-      (b.current / Math.max(1, b.target)) - (a.current / Math.max(1, a.target))
-    ))[0];
-  }
-
   function homeMarkup(snapshot) {
-    const next = nextBadge(snapshot);
-    const earned = snapshot.badges.filter((badge) => badge.unlocked).length;
-    return `<header class="achievement-section-heading"><div><p class="kicker">Every effort counts</p><h3>Your wins</h3></div>
-      <button type="button" class="achievement-link" data-client-summary-go-tab="progress">Trophy room <span aria-hidden="true">↗</span></button></header>
-      ${levelMarkup(snapshot, true)}
-      <div class="achievement-home-next"><span class="achievement-mini-icon achievement-medal-preview" aria-hidden="true">${badgeArtworkMarkup(next?.id || "workout-250", next?.icon)}</span><div><small>${next ? "Next badge" : "Collection complete"}</small>
-      <strong>${escape(next?.title || "All badges unlocked")}</strong><span>${next ? `${count(Math.min(next.current, next.target))} / ${count(next.target)} · ${escape(next.detail)}` : "Look at everything you’ve accomplished."}</span></div>
-      <span class="achievement-earned-count">${earned}<small>badges earned</small></span></div>`;
+    const latestPR = snapshot.events.findLast(event => event.kind === "pr");
+    const latestBadgeEvent = snapshot.events.findLast(event => event.kind === "badge");
+    const latestBadge = snapshot.badges.find(badge => badge.id === latestBadgeEvent?.badgeId);
+    const earned = snapshot.badges.filter(badge => badge.unlocked).length;
+    const prDetail = latestPR && [latestPR.detail, dateLabel(latestPR.date, { short: true })].filter(Boolean).join(" · ");
+    return `<header class="achievement-section-heading"><h3>Your wins</h3>
+      <button type="button" class="achievement-link" data-achievements-dialog-open aria-haspopup="dialog"
+        aria-controls="client-achievements-dialog">See all <span class="sr-only">achievements</span></button></header>
+      <div class="achievement-home-win"><span class="achievement-home-win-icon" aria-hidden="true">${iconMarkup("trophy")}</span>
+        <div><small>Latest PR</small><strong>${escape(latestPR?.title || "Your first personal record is ahead")}</strong>
+          ${prDetail ? `<span>${escape(prDetail)}</span>` : ""}</div></div>
+      <div class="achievement-home-win"><span class="achievement-home-win-icon" aria-hidden="true">${badgeArtworkMarkup(latestBadge?.id, latestBadge?.icon || "star")}</span>
+        <div><small>Achievements · ${count(earned)} earned</small><strong>${escape(latestBadge?.title || "Your first badge is ahead")}</strong>
+          ${latestBadge ? `<span>${escape(dateLabel(latestBadge.earnedOn))}</span>` : ""}</div></div>`;
   }
 
   function badgeMarkup(badge) {
@@ -108,7 +109,7 @@
 
   function stateMarkup(status, compact) {
     const error = status === "error";
-    return `<header class="achievement-section-heading"><div><p class="kicker">Every effort counts</p><h3${compact ? "" : ' id="client-trophy-room-title"'}>${compact ? "Your wins" : "Your trophy room"}</h3></div></header>
+    return `<header class="achievement-section-heading"><div>${compact ? "" : '<p class="kicker">Every effort counts</p>'}<h3${compact ? "" : ' id="client-trophy-room-title"'}>${compact ? "Your wins" : "Your trophy room"}</h3></div></header>
       <p class="achievement-state" role="status">${error ? "Couldn’t load your wins. Your workout history is safe. Try again when you’re connected." : "Loading your wins…"}</p>
       ${error ? '<button class="achievement-retry" type="button" data-achievement-retry>Retry</button>' : ""}`;
   }

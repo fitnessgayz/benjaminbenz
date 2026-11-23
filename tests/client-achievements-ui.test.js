@@ -72,13 +72,18 @@ test("every badge has its own local fitness medal and unexpected IDs cannot crea
   assert.doesNotMatch(invalid, /<img|onerror|private/);
 });
 
-test("home links to Progress and displays the next reachable badge and XP", () => {
-  const html = ui.homeMarkup(evaluate([row()]));
-  assert.match(html, /data-client-summary-go-tab="progress"/);
-  assert.match(html, /200 XP/);
-  assert.match(html, /100 XP to Finding Your Groove/);
-  assert.match(html, /Next badge/);
-  assert.match(html, /1 \/ 3/);
+test("Home shows the latest PR, badge count and a direct link to the trophy room", () => {
+  const html = ui.homeMarkup(evaluate([
+    row({ entry_date: "2026-09-24" }),
+    row({ session_id: "second", weight_used: 120 })
+  ]));
+  assert.match(html, /data-achievements-dialog-open/);
+  assert.match(html, /Latest PR[\s\S]*New PR · Squat[\s\S]*120 lb × 8 reps · Sep 25/);
+  assert.match(html, /Achievements · 2 earned/);
+  assert.match(html, /Earned Sep 25, 2026/);
+  const empty = ui.homeMarkup(evaluate([]));
+  assert.match(empty, /Your first personal record is ahead/);
+  assert.match(empty, /Your first badge is ahead/);
 });
 
 test("Progress keeps the badge collection reachable from Body", () => {

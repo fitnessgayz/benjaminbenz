@@ -52,7 +52,8 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym|data-client-saved-workout-plans/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym/);
   assert.doesNotMatch(html, /gym-directory-dialog|client-gym-directory\.js|client-gym-directory\.css/);
-  assert.match(markup, /data-client-workout-calendar-open/);
+  assert.match(routines, /data-client-workout-calendar-open[\s\S]*workout-shortcuts\/calendar\.jpg/);
+  assert.match(markup, /data-preview-program="0"[\s\S]*workout-shortcuts\/personal-training\.jpg[\s\S]*Trainer Program/);
   assert.doesNotMatch(markup, /Form Checks/);
   assert.match(markup, /data-preview-program="0"/);
   assert.match(trainer, /data-client-saved-workout-plans/);

@@ -20,7 +20,8 @@ test("Home keeps the primary actions and removes the More disclosure", () => {
   assert.match(home, /data-client-home-start-next\b[^>]*>Start workout/);
   assert.match(home, /client-home-planner[\s\S]*data-client-home-start-next[\s\S]*client-home-last-workout/);
   assert.doesNotMatch(home, /More from your dashboard|client-home-more|client-home-snapshot-deck/);
-  assert.doesNotMatch(home, /data-client-achievements-home|client-home-mood-form/);
+  assert.match(home, /client-home-last-workout[\s\S]*data-client-achievements-home/);
+  assert.doesNotMatch(home, /client-home-mood-form/);
 });
 
 test("Home shows the GRUNTR logo as its profile button beside notifications", () => {

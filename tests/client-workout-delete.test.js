@@ -41,6 +41,7 @@ function fixture(options = {}) {
     syncCustomWorkoutCarousels() {}, syncAssignedWorkoutCarousels() {},
     renderClientTrainingLogs: () => refreshed.push("logs"), renderMonthlyProgressReport: () => refreshed.push("progress"), renderClientHomeSummary: () => refreshed.push("home"),
     updateExerciseLogField() {}, formatLogDate: (value) => value,
+    automaticCustomWorkoutDisplayTitle: (title) => title,
     withTimeout: (request) => request,
     setClientWorkoutCopyStatus: (message) => messages.push(message),
     supabaseClient: { rpc: async (name, params) => { calls.push({ name, params: plain(params) }); return options.response ? options.response() : { data: { deleted_count: 2, session_id: first }, error: null }; } }
@@ -132,6 +133,16 @@ test("confirmed deletion removes only chosen logs and ratings and refreshes hist
   assert.deepEqual(f.refreshed, ["logs", "progress", "home"]);
   assert.equal(f.messages.at(-1), "Workout deleted.");
   assert.ok(f.buttons.every((button) => !button.disabled));
+});
+
+test("a changed workout target keeps local logs and asks the client to refresh", async () => {
+  for (const code of ["42501", "22023"]) {
+    const f = fixture({ response: () => ({ error: { code } }) });
+    assert.equal(await f.context.deleteClientWorkoutHistory(`session:${first}`), false);
+    assert.match(f.messages.at(-1), /Refresh your logs and try again/);
+    assert.equal(f.context.trainingLogs.length, 3);
+    assert.equal(f.calls.length, 1);
+  }
 });
 
 test("network failure preserves history and allows a deliberate retry", async () => {

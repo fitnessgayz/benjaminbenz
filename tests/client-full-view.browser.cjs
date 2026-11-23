@@ -206,6 +206,17 @@ async function checkDock(page) {
 async function checkSections(page) {
   const homeBackground = await page.locator(".client-home-panel").evaluate(node => getComputedStyle(node).backgroundImage);
   assert.equal(homeBackground, "none");
+  for (const file of ["client-achievements.js", "client-achievements-ui.js"]) {
+    await page.addScriptTag({ path: path.join(root, "js", file) });
+  }
+  await page.evaluate(() => FWB_ACHIEVEMENTS_UI.createController(document).render(FWB_ACHIEVEMENTS.evaluate([]), "ready"));
+  const wins = page.getByRole("region", { name: "Your wins" });
+  assert.equal(await wins.getByText("Your first personal record is ahead").isVisible(), true);
+  await wins.getByRole("button", { name: "See all achievements" }).tap();
+  const achievements = page.getByRole("dialog", { name: "Your trophy room" });
+  await achievements.waitFor({ state: "visible" });
+  await achievements.getByRole("button", { name: "Close badges" }).tap();
+
   await flat(page, ".client-home-next");
   await flat(page, ".client-home-planner");
   const homeLogo = page.getByRole("button", { name: "Open profile", exact: true });
