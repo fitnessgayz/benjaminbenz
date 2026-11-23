@@ -10224,7 +10224,9 @@ function workoutActionsMarkup(workout, options = {}) {
 function floatingWorkoutFinishMarkup(options = {}) {
   const resetAction = options.assigned ? "data-reset-assigned-workout" : "data-reset-custom-workout";
   return `<div class="workout-floating-finish" data-floating-workout-finish hidden>
-    <button type="button" class="workout-floating-secondary" data-floating-workout-reset-action ${resetAction}>Discard Workout</button>
+    <button type="button" class="workout-floating-secondary" data-floating-workout-reset-action ${resetAction} aria-label="Discard workout" title="Discard workout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></svg>
+    </button>
     <button type="button" class="workout-floating-primary" data-floating-workout-finish-action aria-label="Save and finish workout">Finish</button>
   </div>`;
 }
@@ -10709,6 +10711,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
         min="0"
         step="${step}"
         inputmode="decimal"
+        enterkeyhint="done"
         value="${escapeHtml(value)}"
         placeholder="${escapeHtml(placeholder)}"
         data-custom-grouped-field="${field}"
@@ -11183,7 +11186,8 @@ function openCustomWorkoutGroupedHistory(button) {
       customWorkoutGroupedCopyValue(record.weight_used) !== null &&
       customWorkoutGroupedCopyValue(record.reps, "reps") !== null
     ));
-    const best = personalBestWeightLog(history);
+    const gym = normalizeWorkoutGymName(workoutGymLocationForElement(logElement));
+    const best = gym ? personalBestWeightLog(logsForExerciseDisplay(logElement)) : null;
     const recent = [...history].sort((a, b) =>
       String(b.entry_date).localeCompare(String(a.entry_date)) ||
       Number(b.set_number || 1) - Number(a.set_number || 1));
@@ -11191,7 +11195,7 @@ function openCustomWorkoutGroupedHistory(button) {
     const rows = records.map((record) => {
       const choiceIndex = choices.push({ exerciseIndex, record }) - 1;
       return `<button type="button" data-custom-grouped-history-choice="${choiceIndex}">
-        ${record === best ? "<strong>PR · </strong>" : ""}${escapeHtml(record.weight_used)} lb × ${escapeHtml(record.reps)} reps
+        ${record === best ? "<strong>PR at this gym · </strong>" : ""}${escapeHtml(record.weight_used)} lb × ${escapeHtml(record.reps)} reps
         <small>${escapeHtml(normalizeWorkoutGymName(record.gym_name) || "Gym not recorded")} · ${escapeHtml(formatLogDate(record.entry_date))} · Set ${escapeHtml(record.set_number || 1)}</small>
       </button>`;
     }).join("");
@@ -20879,6 +20883,18 @@ function handleIosLogExerciseAction(button) {
   }
 }
 
+function handleGroupedWorkoutLogEnter(event) {
+  if (event.key !== "Enter" || event.defaultPrevented || event.repeat || event.isComposing ||
+    event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+  const input = event.target.closest?.("input[data-custom-grouped-field]");
+  const row = input?.closest(".custom-workout-grouped-row:not(.is-complete)");
+  const button = row?.querySelector('[data-custom-grouped-set-toggle][aria-pressed="false"]:not(:disabled)');
+  if (!button) return false;
+  event.preventDefault();
+  button.click();
+  return true;
+}
+
 function handleWorkoutInteractions() {
   document.addEventListener("error", (event) => {
     const image = event.target?.closest?.("img[data-exercise-media-fallback], .ios-log-exercise-image .exercise-media-button > img");
@@ -22214,6 +22230,9 @@ function handleWorkoutInteractions() {
 
   document.addEventListener("keydown", (event) => {
     const nextExerciseOverlay = document.querySelector("[data-next-exercise-overlay]");
+
+    if (nextExerciseOverlay?.hidden !== false && customGroupedFinishPanel?.hidden !== false &&
+      handleGroupedWorkoutLogEnter(event)) return;
 
     if (event.key === "Tab" && customGroupedFinishPanel?.hidden === false) {
       const buttons = Array.from(customGroupedFinishPanel.querySelectorAll("button:not([disabled])"));

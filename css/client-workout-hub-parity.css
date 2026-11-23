@@ -271,7 +271,7 @@ body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidde
   cursor: pointer;
 }
 
-#client-workouts-panel.is-compact-workout-log .client-logger-clock svg {
+#client-workouts-panel.is-compact-workout-log :is(.client-logger-clock, .client-logger-later) svg {
   width: 21px;
   height: 21px;
 }
@@ -423,4 +423,14 @@ body.client-dashboard-page .rest-timer-overlay {
   .client-workout-plan-dialog [data-fwb-plan-page]:not([hidden]) {
     animation: none;
   }
+}
+
+:root[data-client-theme="light"] #client-workouts-panel.is-compact-workout-log .client-logger-later:not([hidden]) {
+  background: #e8f1f8;
+  color: #07528a;
+}
+
+#client-workouts-panel.is-compact-workout-log .client-logger-later:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }

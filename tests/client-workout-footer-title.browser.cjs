@@ -86,6 +86,7 @@ const fixture = (theme, size) => `<!doctype html>
               `${label}: footer hit target ${JSON.stringify(result)}`);
           }
           assert.ok(discard.right <= finish.left && finish.width > discard.width, `${label}: secondary must not crowd primary`);
+          assert.ok(Math.abs((finish.left + finish.right) / 2 - width / 2) <= 1, label + ": centered Finish");
           assert.ok(result.dock.bottom <= result.view.height - 7, `${label}: bottom inset`);
           assert.ok(result.title.right <= result.title.menu + 1 && result.title.textFits && result.title.whiteSpace === 'normal' && result.title.textOverflow === 'clip',
             `${label}: complete exercise title ${JSON.stringify(result.title)}`);

@@ -706,9 +706,10 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     padding: 16px max(20px, env(safe-area-inset-right)) 8px max(20px, env(safe-area-inset-left));
     background: linear-gradient(transparent, rgba(12, 13, 16, .96) 38%, #0c0d10);
     pointer-events: none;
-    display: flex;
-    align-items: stretch;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) minmax(88px, 9rem) minmax(44px, 1fr);
+    align-items: center;
+    column-gap: 8px;
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-finish [hidden] {
@@ -720,13 +721,12 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     align-items: center;
     justify-content: center;
     gap: 10px;
-    /* Do not let a global full-width button rule size either footer item. */
-    flex: 52 1 0 !important;
-    width: 0 !important;
-    inline-size: 0 !important;
+    grid-column: 2;
+    width: 100% !important;
+    inline-size: 100% !important;
     min-width: 0 !important;
     min-inline-size: 0 !important;
-    min-height: 56px;
+    min-height: 44px;
     padding: 6px 8px;
     text-align: center;
     white-space: normal;
@@ -758,18 +758,21 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary {
-    flex: 48 1 0 !important;
-    width: 0 !important;
-    inline-size: 0 !important;
-    min-width: 0 !important;
-    min-inline-size: 0 !important;
-    padding: 6px;
-    color: #ff8d95;
-    font-size: .8125rem !important;
-    line-height: 1.25;
-    text-align: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    width: 44px !important;
+    inline-size: 44px !important;
+    min-width: 44px !important;
+    min-inline-size: 44px !important;
+    min-height: 44px;
+    padding: 0;
+    color: #42b3ff;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-secondary svg {
+    width: 20px;
+    height: 20px;
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-more {
@@ -829,7 +832,7 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
   }
 
   :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary {
-    color: var(--danger, #a34434);
+    color: #07528a;
   }
 
   :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-more button { color: #1b291f; }
