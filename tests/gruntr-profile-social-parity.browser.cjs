@@ -82,10 +82,22 @@ const fixture = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
    const comments=shared.getByRole('button',{name:'Comments'});
    const props=await shared.getByText('0 props',{exact:true}).boundingBox(), commentBox=await comments.boundingBox();
    const share=shared.getByRole('button',{name:'Share workout'}), shareBox=await share.boundingBox();
-   assert.ok(props.x<commentBox.x && commentBox.x+commentBox.width<=shareBox.x);
+   assert.ok(commentBox.x + commentBox.width <= shareBox.x);
+   // Match native ViewThatFits: stack Props and Comments if two labels do not fit.
+   if (width === 320 && props.x === commentBox.x) {
+    assert.ok(props.y + props.height <= commentBox.y);
+   } else {
+    assert.ok(props.x + props.width <= commentBox.x);
+    assert.ok(props.y >= commentBox.y && props.y + props.height <= commentBox.y + commentBox.height);
+   }
    assert.ok(commentBox.height>=44 && shareBox.height>=44 && shareBox.x+shareBox.width<=width);
    const colors=await comments.evaluate(el=>[getComputedStyle(el).color,getComputedStyle(el).backgroundColor]);
+   const luminance = value => value.match(/\d+/g).slice(0,3).map(Number)
+    .map(c=>{const x=c/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;})
+    .reduce((sum, channel, i)=>sum+channel*[.2126,.7152,.0722][i],0);
    assert.notEqual(colors[1],'rgba(0, 0, 0, 0)');
+   const [bright,dark] = colors.map(luminance).sort((a,b)=>b-a);
+   assert.ok((bright+.05)/(dark+.05) >= 4.5, colors.join(' against '));
    await comments.focus(); await page.keyboard.press('Enter');
    const dialog=page.getByRole('dialog',{name:'Comments'});
    await dialog.getByText('Comments could not load. Try again.').waitFor();
@@ -107,7 +119,7 @@ const fixture = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
    assert.equal(await page.locator('.gruntr-profile-activity-comments').count(),0);
    await page.evaluate(()=>fixtureState.preview());
    assert.equal(await page.locator('[data-gruntr-profile-activity]').isVisible(),false);
-   console.log(width+' '+theme+': shared/private, props, comments retry and exact write, keyboard focus, summary, revoked/stale/beta-preview guard');
+   console.log(width+' '+theme+': shared/private, props, comments retry and exact write, keyboard focus, summary, revoked/stale/preview guard');
    await page.close();
   }
  } finally { await browser.close(); }
