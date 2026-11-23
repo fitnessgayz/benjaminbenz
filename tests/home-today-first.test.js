@@ -17,7 +17,7 @@ test("Home keeps the primary actions and removes the More disclosure", () => {
   assert.doesNotMatch(home, /id="client-home-community-title"/);
   assert.doesNotMatch(home, /client-home-glance-title|client-home-note-title/);
   assert.match(home, /data-home-workout-action-label>Resume Workout/);
-  assert.match(home, /data-client-home-start-next>Start workout/);
+  assert.match(home, /data-client-home-start-next\b[^>]*>Start workout/);
   assert.match(home, /client-home-planner[\s\S]*data-client-home-start-next[\s\S]*client-home-last-workout/);
   assert.doesNotMatch(home, /More from your dashboard|client-home-more|client-home-snapshot-deck/);
   assert.doesNotMatch(home, /data-client-achievements-home|client-home-mood-form/);
