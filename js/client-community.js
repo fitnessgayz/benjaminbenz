@@ -16,7 +16,7 @@
     },
     connections: {
       title: 'Train With Your People',
-      body: 'Exchange invite codes, accept Squad requests, and choose which milestones to share.'
+      body: 'Add Squad members from the Feed or their Social profile, and choose which milestones to share.'
     },
     challenges: {
       title: 'Move Together',

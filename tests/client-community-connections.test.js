@@ -20,7 +20,7 @@ test('community upload includes earned badge IDs and XP, never workout or health
 test('accepted connection shows shared achievements without reading workout records', async () => {
   const owner = 'owner-id', peer = 'peer-id';
   const calls = [];
-  let createdChallenge;
+  let createdChallenge, allowCancel = false;
   function node() {
     return {
       hidden: false, value: '', textContent: '', children: [], listeners: {}, dataset: {},
@@ -67,8 +67,14 @@ test('accepted connection shows shared achievements without reading workout reco
       calls.push(name);
       assert.ok(['community_shared_progress', 'community_props_summary', 'community_give_props',
         'community_public_progress', 'community_wall_feed', 'community_give_wall_props',
-        'community_challenge_summary', 'community_create_challenge'].includes(name));
+        'community_challenge_summary', 'community_create_challenge', 'community_cancel_squad_request_capability',
+        'community_cancel_outgoing_squad_request', 'community_accept_connection', 'community_remove_connection'].includes(name));
       if (name === 'community_create_challenge') createdChallenge = params;
+      if (name === 'community_cancel_squad_request_capability') return Promise.resolve({ data: allowCancel, error: null });
+      if (name === 'community_cancel_outgoing_squad_request') {
+        rows.client_community_connections[0].status = 'accepted';
+        return Promise.resolve({ data: false, error: null });
+      }
       return Promise.resolve({ data: name === 'community_shared_progress' ? rows.shared
         : name === 'community_props_summary' ? rows.props
           : name === 'community_public_progress' ? [{ nickname: 'Sam', avatar_id: 'star',
@@ -104,7 +110,7 @@ test('accepted connection shows shared achievements without reading workout reco
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(elements['[data-community-member]'].hidden, false);
-  assert.equal(elements['#client-community-own-code'].textContent, 'AAAAAAAAAAAAAAAA');
+  assert.equal(elements['#client-community-own-code'].textContent, '');
   assert.equal(elements['[data-community-own-props]'].textContent, '2');
   const connection = elements['[data-community-connection-list]'].children[0];
   assert.equal(connection.children[0].textContent, '🏃');
@@ -142,4 +148,38 @@ test('accepted connection shows shared achievements without reading workout reco
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
   assert.ok(calls.some(call => call.profileUpdate?.display_name === 'Alex Fit' && call.profileUpdate.avatar_id === 'yoga'));
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  const buttons = () => elements['[data-community-connection-list]'].children[0].children
+    .find(child => child.className === 'client-community-connection-actions').children;
+  rows.client_community_connections[0].status = 'pending';
+  await controller.refresh();
+  assert.deepEqual(buttons(), [], 'Missing/false capability means no outgoing cancel or generic removal');
+  allowCancel = true;
+  await controller.refresh();
+  assert.equal(buttons()[0].textContent, 'Cancel Request');
+  buttons()[0].listeners.click();
+  await settle(); await settle();
+  assert.equal(calls.includes('community_cancel_outgoing_squad_request'), true);
+  assert.equal(calls.includes('community_remove_connection'), false, 'race cannot fall back to removing accepted connection');
+  assert.match(elements['[data-community-connection-status]'].textContent, /may have changed/);
+  assert.equal(buttons().at(-1).textContent, 'Remove from Squad');
+  const previousConfirm = globalThis.confirm;
+  try {
+    globalThis.confirm = () => false;
+    buttons().at(-1).listeners.click();
+    assert.equal(calls.includes('community_remove_connection'), false);
+    globalThis.confirm = () => true;
+    buttons().at(-1).listeners.click();
+    await settle();
+    assert.equal(calls.filter(value=>value==='community_remove_connection').length,1);
+  } finally { if (previousConfirm) globalThis.confirm = previousConfirm; else delete globalThis.confirm; }
+  rows.client_community_connections[0].status = 'pending';
+  rows.client_community_connections[0].requested_by = peer;
+  await controller.refresh();
+  assert.deepEqual(buttons().map(btn => btn.textContent), ['Accept']);
+  const staleAccept = buttons()[0];
+  controller.configure(client, owner, true);
+  staleAccept.listeners.click();
+  assert.equal(calls.includes('community_accept_connection'), false);
+
 });

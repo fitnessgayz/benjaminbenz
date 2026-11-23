@@ -73,6 +73,8 @@
     let ownProfile, connections = [], feed = [], leaderboard, metric = metrics[0], reacting = false, setting = false;
     let activeEvent, activeMember, threadBusy = false;
     const lifetime = new Set();
+    const requesting = new Set(), recentlyRequested = new Set();
+    let squadReady = false;
 
     const el = (tag, className = '', value = '') => {
       const node = document.createElement(tag);
@@ -197,35 +199,53 @@
       if (exercises.children.length) card.append(exercises);
     }
 
+    const hasConnection = owner => connections.find(row => row.user_a === owner || row.user_b === owner);
+    const canRequest = owner => !disabled && squadReady && Boolean(ownProfile) && Boolean(owner) &&
+      owner !== user && !hasConnection(owner) && !recentlyRequested.has(owner);
+
+    async function sendToSquad(owner, control, status) {
+      if (!canRequest(owner) || requesting.has(owner)) return;
+      const generation = epoch;
+      requesting.add(owner);
+      control.disabled = true;
+      try {
+        const saved = await bridge.requestCircle(owner);
+        if (generation !== epoch) return;
+        if (saved) recentlyRequested.add(owner);
+        status.textContent = saved ? 'Squad request sent.' : 'Could not send the Squad request. Try again.';
+      } catch (_) {
+        if (generation === epoch) status.textContent = 'Could not send the Squad request. Try again.';
+      } finally {
+        if (generation === epoch) {
+          requesting.delete(owner);
+          if (!canRequest(owner)) {
+            control.textContent = 'Squad request pending';
+            control.disabled = true;
+          } else control.disabled = false;
+          if (activeMember?.owner === owner) renderMemberCircleAction(activeMember);
+        }
+      }
+    }
+
     function renderMemberCircleAction(member) {
-      const connection = connections.find(row => row.user_a === member.owner || row.user_b === member.owner);
-      if (connection || member.requested) {
+      const connection = hasConnection(member.owner);
+      if (connection || recentlyRequested.has(member.owner)) {
         member.action.replaceChildren(el('small', 'client-social-circle-status',
           connection?.status === 'accepted' ? 'In your Squad' : 'Squad request pending'));
         return;
       }
-      const add = button('Add to Squad', () => {
-        if (!ownProfile) {
+      if (disabled || member.owner === user) { member.action.replaceChildren(); return; }
+      if (!ownProfile) {
+        member.action.replaceChildren(button('Set up your Social profile', () => {
           memberDialog.close();
           bridge.openCircles();
-          return;
-        }
-        if (member.sending) return;
-        member.sending = true;
-        add.disabled = true;
-        void bridge.requestCircle(member.owner).then(saved => {
-          if (activeMember !== member) return;
-          member.requested = saved;
-          member.status.textContent = saved ? 'Squad request sent.' : 'Could not send the Squad request. Try again.';
-        }).finally(() => {
-          member.sending = false;
-          if (activeMember === member) {
-            if (member.requested) renderMemberCircleAction(member);
-            else add.disabled = false;
-          }
-        });
-      }, 'client-social-control client-social-add');
-      add.disabled = member.sending === true;
+        }));
+        return;
+      }
+      if (!canRequest(member.owner)) { member.action.replaceChildren(); return; }
+      const add = button('Add to Squad', () => void sendToSquad(member.owner, add, member.status),
+        'client-social-control client-social-add');
+      add.disabled = requesting.has(member.owner);
       add.setAttribute('aria-label', 'Add ' + member.nickname + ' to Squad');
       member.action.replaceChildren(add);
     }
@@ -270,6 +290,13 @@
           member.setAttribute('aria-label', 'View ' + event.nickname + '’s Social profile');
           member.append(icon, identity);
           author.append(member);
+          if (canRequest(owner)) {
+            const direct = button('Add to Squad', () => void sendToSquad(owner, direct, wallStatus),
+              'client-social-control client-social-inline-add');
+            direct.disabled = requesting.has(owner);
+            direct.setAttribute('aria-label', 'Add ' + event.nickname + ' to Squad');
+            author.append(direct);
+          }
         } else author.append(icon, identity);
         card.append(author, el('h3', 'client-social-post-title', event.summary?.title || event.headline));
         appendWorkoutSummary(card, event.summary);
@@ -482,6 +509,7 @@
         if (client === api && user === account && disabled === (preview || !api || !account)) return;
         client = api; user = account; disabled = preview || !api || !account; epoch++;
         ownProfile = null; activeMember = null; connections = []; feed = []; leaderboard = null;
+        squadReady = false; requesting.clear(); recentlyRequested.clear();
         setting = false; reacting = false; threadBusy = false;
         if (thread.open) thread.close();
         if (memberDialog.open) memberDialog.close();
@@ -494,10 +522,16 @@
       },
       refreshFeed,
       refreshBoard,
-      setMembers(profile, peers) {
+      setMembers(profile, peers, ready = true) {
+        const signature = () => JSON.stringify([Boolean(ownProfile), squadReady,
+          connections.map(x => [x.user_a, x.user_b, x.status])]);
+        const before = signature();
         ownProfile = profile;
         connections = peers;
-        if (activeMember && !activeMember.sending) renderMemberCircleAction(activeMember);
+        squadReady = ready;
+        for (const owner of recentlyRequested) if (hasConnection(owner)) recentlyRequested.delete(owner);
+        if (activeMember && !requesting.has(activeMember.owner)) renderMemberCircleAction(activeMember);
+        if (feed.length && before !== signature()) renderFeed();
       },
       enhancePhotos
     };
