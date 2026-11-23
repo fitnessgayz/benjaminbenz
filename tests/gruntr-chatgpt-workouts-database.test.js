@@ -70,6 +70,10 @@ test("two synthetic accounts load the real GRUNTR migration, exercise RLS and se
   const db = new PGlite();
   try {
     await bootstrap(db);
+    await db.query("insert into public.client_programs (client_email, client_name) values ($1, $2), ($3, $4)",
+      [alice.email, "Synthetic Alice", bob.email, "Synthetic Bob"]);
+    const account = await as(db, alice, "select client_name, workouts from public.client_programs where active and not client_archived");
+    assert.deepEqual(account, [{ client_name: "Synthetic Alice", workouts: [] }]);
     const date = { occurred_on: "2026-11-01", workout_title: "Upper Body A" };
     const startId = randomUUID();
     await assert.rejects(write(db, null, "start", startId, date), /permission denied/);
