@@ -330,7 +330,6 @@
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
-    border-block-start: 1px solid color-mix(in srgb, currentColor 22%, transparent) !important;
   }
 }
 

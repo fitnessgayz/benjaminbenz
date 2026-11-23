@@ -333,7 +333,14 @@ async function checkViewport(page, useCDP, { appOrigin = origin, standalone = fa
   await checkDock(page);
   await checkSections(page);
   await page.goto(`${appOrigin}/client-login.html`);
-  await flat(page, ".access-panel");
+  for (const selector of [".access-panel", ".access-demo"]) {
+    await flat(page, selector);
+    const verticalBorders = await page.locator(selector).evaluate(node => {
+      const css = getComputedStyle(node);
+      return [css.borderBlockStartWidth, css.borderBlockEndWidth];
+    });
+    assert.deepEqual(verticalBorders, ["0px", "0px"], selector);
+  }
   await noOverflow(page);
   const form = page.locator("#client-login-form");
   const email = form.locator('input[type="email"]');
