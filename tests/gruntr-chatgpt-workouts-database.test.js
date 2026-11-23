@@ -202,3 +202,32 @@ test("routine preview keeps a plan unchanged until the owner approves in GRUNTR"
     await db.close();
   }
 });
+
+test("only the owner can identify a pending GRUNTR OAuth request", {
+  skip: !PGlite && "Install @electric-sql/pglite or set GRUNTR_PGLITE_PATH",
+}, async () => {
+  const db = new PGlite();
+  try {
+    await bootstrap(db);
+    await db.exec(`create table auth.oauth_authorizations (
+      authorization_id text, user_id uuid, resource text, status text, expires_at timestamptz, client_id uuid
+    );`);
+    const insert = "insert into auth.oauth_authorizations values ($1, $2, $3, 'pending', $4, $5)";
+    const gruntrResource = "https://mcp.benjaminbenz.com/client/mcp";
+    const upcoming = new Date(Date.now() + 10 * 60_000);
+    await db.query(insert, ["dynamic", alice.sub, gruntrResource, upcoming, alice.client_id]);
+    await db.query(insert, ["coaching", alice.sub, "https://mcp.benjaminbenz.com/mcp", upcoming, alice.client_id]);
+    await db.query(insert, ["expired", alice.sub, gruntrResource, new Date(0), alice.client_id]);
+    await db.query(insert, ["registered", alice.sub, null, upcoming, "d255584a-e437-4743-80de-b2ad377c0739"]);
+    await db.exec(read("supabase/migrations/20261123060427_gruntr_oauth_resource_consent.sql"));
+    const lookup = "select public.is_gruntr_oauth_authorization($1) as matches";
+    for (const [id, matches] of [["dynamic", true], ["registered", true], ["coaching", false], ["expired", false]]) {
+      assert.deepEqual(await as(db, aliceWeb, lookup, [id]), [{ matches }]);
+    }
+    assert.deepEqual(await as(db, bobWeb, lookup, ["dynamic"]), [{ matches: false }]);
+    await assert.rejects(as(db, null, lookup, ["dynamic"]), /permission denied/);
+    await assert.rejects(as(db, aliceWeb, "select * from auth.oauth_authorizations"), /permission denied/);
+  } finally {
+    await db.close();
+  }
+});
