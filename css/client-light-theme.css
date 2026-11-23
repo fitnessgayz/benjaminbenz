@@ -587,9 +587,6 @@ body.client-dashboard-page { --client-input-placeholder-on-light: #58665d; }
   }
   :root[data-client-theme="light"] body.client-dashboard-page [data-client-dashboard-panel="home"] {
     background-color: var(--canvas) !important;
-    background-image:
-      linear-gradient(rgb(244 245 239 / 88%), rgb(244 245 239 / 88%)),
-      var(--client-fascia-image, none) !important;
   }
   :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel :is(
     .workout-choice-card, .workout-exercise-card, .client-workout-picker-card,

@@ -204,6 +204,8 @@ async function checkDock(page) {
 }
 
 async function checkSections(page) {
+  const homeBackground = await page.locator(".client-home-panel").evaluate(node => getComputedStyle(node).backgroundImage);
+  assert.equal(homeBackground, "none");
   await flat(page, ".client-home-next");
   await flat(page, ".client-home-planner");
   const homeLogo = page.getByRole("button", { name: "Open profile", exact: true });

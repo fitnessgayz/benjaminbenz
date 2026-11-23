@@ -62,12 +62,14 @@ function contrast(a, b) {
           const carouselPlaceholders = [...loggerFixture.querySelectorAll("input, textarea")].map(placeholder);
           loggerFixture.remove();
           return { theme: selected, pageWidth: document.documentElement.scrollWidth,
+            homeBackgroundImage: getComputedStyle(planner.closest(".client-home-panel")).backgroundImage,
             weekBackground: getComputedStyle(surface).backgroundColor,
             weekLabel: getComputedStyle(label).color,
             nav: { left: box.left, right: box.right, height: box.height, bottom: box.bottom, position: getComputedStyle(nav).position, background: getComputedStyle(nav).backgroundColor },
             buttons, clearance, searchPlaceholder, carouselPlaceholders, viewportHeight: innerHeight };
         }, theme);
         assert.equal(resolved.pageWidth, width, `${width}px ${theme} viewport overflow`);
+        assert.equal(resolved.homeBackgroundImage, "none", `${width}px ${theme} Home background`);
         assert.ok(contrast(resolved.weekLabel, resolved.weekBackground) >= 4.5, `Week label: ${JSON.stringify(resolved)}`);
         if (theme === "light") {
           assert.equal(resolved.searchPlaceholder.opacity, "1");
