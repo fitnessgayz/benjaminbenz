@@ -109,7 +109,8 @@
     "20261122030158_illustrate_t_bar_row.sql",
     "20261122030620_expand_exercise_anatomy_illustrations.sql",
     "20261122034245_illustrate_approved_custom_exercises.sql",
-    "20261122034819_publish_selected_side_saddle_art.sql"
+    "20261122034819_publish_selected_side_saddle_art.sql",
+    "20261123035902_gruntr_chatgpt_workouts.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
