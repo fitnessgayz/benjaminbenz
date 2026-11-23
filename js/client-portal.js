@@ -236,7 +236,6 @@ let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
 let workoutElapsedTimerPosition = null;
-let lastClientDashboardMobileTabPress = "";
 let activeRirButton = null;
 let pendingRirValue = null;
 let workoutDifficultyPromptResolve = null;
@@ -9373,20 +9372,20 @@ function workoutElapsedTimerDragBounds(timer) {
   const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
   const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
   const rect = timer.getBoundingClientRect();
-  const navigation = document.querySelector(".client-dashboard-tabs");
-  const navigationRect = navigation?.getBoundingClientRect();
-  const navigationIsBottomDock = Boolean(
-    navigationRect?.height > 0 &&
-    window.matchMedia?.("(max-width: 900px)")?.matches
-  );
-  const viewportMaxTop = Math.max(gap, viewportHeight - rect.height - gap);
-  const navigationMaxTop = navigationIsBottomDock
-    ? navigationRect.top - rect.height - gap
-    : viewportMaxTop;
+  const mobile = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+  const navigationRect = document.querySelector(".client-dashboard-tabs")?.getBoundingClientRect();
   const maxLeft = Math.max(gap, viewportWidth - rect.width - gap);
-  const sidebarMinLeft = navigationRect?.width > 0 && !navigationIsBottomDock
-    ? navigationRect.right + gap
-    : gap;
+  const sidebarMinLeft = !mobile && navigationRect?.width > 0 ? navigationRect.right + gap : gap;
+  let bottom = viewportHeight;
+  if (mobile) {
+    const profileRect = document.querySelector("[data-client-mobile-nav-toggle]:not([hidden])")?.getBoundingClientRect();
+    const finishRect = document.querySelector(
+      '#client-workouts-panel:not([hidden]) .client-workout-panel.is-active:not([hidden]) .workout-floating-finish:not([hidden])'
+    )?.getBoundingClientRect();
+    for (const control of [navigationRect, profileRect, finishRect]) {
+      if (control?.height > 0) bottom = Math.min(bottom, control.top);
+    }
+  }
   const minLeft = Math.min(maxLeft, Math.max(gap, sidebarMinLeft));
 
   return {
@@ -9395,7 +9394,7 @@ function workoutElapsedTimerDragBounds(timer) {
     width: rect.width,
     height: rect.height,
     maxLeft,
-    maxTop: Math.max(gap, Math.min(viewportMaxTop, navigationMaxTop))
+    maxTop: Math.max(gap, bottom - rect.height - gap)
   };
 }
 
@@ -19223,57 +19222,25 @@ function handleClientDashboardSidebar() {
   }
 }
 
-function syncClientDashboardMobileNavigationIcon(tabName = activeClientDashboardTab) {
+function setClientDashboardMobileNavigationExpanded(expanded, { focusNavigation = false } = {}) {
+  const navigation = document.getElementById("client-dashboard-navigation");
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
-  const iconHost = toggle?.querySelector("[data-client-mobile-nav-icon]");
-  const tabs = Array.from(document.querySelectorAll("[data-client-dashboard-tab]"));
-  const selectedTab = tabs.find((tab) => tab.dataset.clientDashboardTab === tabName)
-    || tabs.find((tab) => tab.classList.contains("is-active"));
-  const selectedIcon = selectedTab?.querySelector(".client-dashboard-tab-icon");
+  if (!navigation || !toggle) return;
 
-  if (!toggle || !iconHost || !selectedTab || !selectedIcon) {
-    return;
+  const mobile = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+  const collapsed = mobile && !expanded;
+  const toggleHadFocus = document.activeElement === toggle;
+  toggle.hidden = !collapsed;
+  toggle.setAttribute("aria-expanded", String(!collapsed));
+  navigation.classList.toggle("is-mobile-collapsed", collapsed);
+  navigation.inert = collapsed;
+
+  if (!collapsed && (focusNavigation || toggleHadFocus)) {
+    const active = navigation.querySelector(".client-dashboard-tab.is-active:not(.is-mobile-tab-hidden)");
+    (active || navigation.querySelector('[data-client-dashboard-tab="profile"]'))?.focus({ preventScroll: true });
   }
 
-  const icon = selectedIcon.cloneNode(true);
-  const selectedLabel = selectedTab.getAttribute("aria-label") || "Selected tab";
-
-  icon.classList.remove("client-dashboard-tab-icon");
-  icon.classList.add("client-dashboard-mobile-nav-icon");
-  iconHost.replaceChildren(icon);
-  toggle.setAttribute("aria-label", `Open navigation, ${selectedLabel} selected`);
-}
-
-function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
-  const navigation = document.querySelector(".client-dashboard-tabs");
-  const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
-  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-  const isExpanded = mobileNavigation;
-
-  if (!navigation || !toggle) {
-    return;
-  }
-
-  toggle.hidden = true;
-  toggle.setAttribute("aria-expanded", String(isExpanded));
-  navigation.classList.toggle("is-mobile-expanded", isExpanded);
-  document.body.classList.toggle("client-dashboard-mobile-nav-expanded", isExpanded);
-
-  if (mobileNavigation) {
-    navigation.inert = false;
-    navigation.removeAttribute("aria-hidden");
-  } else {
-    navigation.inert = false;
-    navigation.removeAttribute("aria-hidden");
-  }
-
-  if (isExpanded && options.focusNavigation) {
-    navigation.querySelector(".client-dashboard-tab.is-active")?.focus({ preventScroll: true });
-  }
-
-  window.requestAnimationFrame?.(() => {
-    applyWorkoutElapsedTimerPosition();
-  });
+  window.requestAnimationFrame?.(() => applyWorkoutElapsedTimerPosition());
 }
 
 function syncClientDashboardMobileNavigationMount() {
@@ -19326,46 +19293,93 @@ function handleClientDashboardMobileNavigation() {
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
   const navigation = document.querySelector(".client-dashboard-tabs");
   const mobileQuery = window.matchMedia?.("(max-width: 900px)");
+  const content = document.getElementById("dashboard-content");
 
-  if (!toggle || !navigation || !mobileQuery) {
-    return;
-  }
+  if (!toggle || !navigation || !mobileQuery || !content) return;
+
+  const offsets = new WeakMap();
+  const scrollRoot = document.scrollingElement;
+  const viewport = window.visualViewport;
+  let activeScroller = scrollRoot;
+  let travel = 0;
 
   syncClientDashboardMobileNavigationMount();
-  syncClientDashboardMobileNavigationIcon();
   setClientDashboardMobileNavigationExpanded(true);
+  if (scrollRoot) offsets.set(scrollRoot, scrollRoot.scrollTop);
 
   toggle.addEventListener("click", () => {
-    lastClientDashboardMobileTabPress = "";
+    travel = 0;
     setClientDashboardMobileNavigationExpanded(true, { focusNavigation: true });
   });
 
-  const handleMobileChange = () => {
-    lastClientDashboardMobileTabPress = "";
+  const photo = toggle.querySelector("[data-client-settings-avatar-image]");
+  const profileIcon = toggle.querySelector("[data-client-settings-avatar-placeholder]");
+  photo?.addEventListener("error", () => {
+    photo.hidden = true;
+    profileIcon.hidden = false;
+  });
+
+  function syncKeyboard() {
+    const editing = document.activeElement?.matches(
+      'textarea, input:not([type]), input:is([type="text"], [type="search"], [type="email"], [type="password"], [type="number"], [type="tel"], [type="url"]), [contenteditable]:not([contenteditable="false"])'
+    );
+    const keyboard = mobileQuery.matches && editing && viewport?.scale === 1 &&
+      document.documentElement.clientHeight - viewport.height > 120;
+    document.body.classList.toggle("client-dock-keyboard-open", Boolean(keyboard));
+    if (keyboard) travel = 0;
+  }
+
+  function handleScroll(event) {
+    const scroller = event.target === document ? scrollRoot : event.target;
+    if (!scroller || (scroller !== scrollRoot && !content.contains(scroller))) return;
+
+    // Ignore Safari's elastic overscroll and nested horizontal carousels.
+    const range = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const top = Math.max(0, Math.min(scroller.scrollTop, range));
+    const delta = top - (offsets.get(scroller) ?? 0);
+    offsets.set(scroller, top);
+    if (!mobileQuery.matches || content.hidden || !range || !delta) return;
+    if (document.body.classList.contains("client-dock-keyboard-open") ||
+        scroller.closest('[role="dialog"], dialog') ||
+        document.querySelector('dialog[open], .workout-exercise-dock-open')) {
+      travel = 0;
+      return;
+    }
+
+    if (scroller !== activeScroller || Math.sign(delta) !== Math.sign(travel)) travel = 0;
+    activeScroller = scroller;
+    travel += delta;
+
+    const collapsed = navigation.classList.contains("is-mobile-collapsed");
+    if (collapsed && (travel <= -16 || top <= 4)) {
+      setClientDashboardMobileNavigationExpanded(true);
+      travel = 0;
+    } else if (!collapsed && travel >= 24 &&
+        !(navigation.contains(document.activeElement) && document.activeElement.matches(":focus-visible"))) {
+      setClientDashboardMobileNavigationExpanded(false);
+      travel = 0;
+    }
+  }
+
+  function handleMobileChange() {
+    travel = 0;
+    if (scrollRoot) offsets.set(scrollRoot, scrollRoot.scrollTop);
     syncClientDashboardMobileNavigationMount();
     setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
-  };
+    syncKeyboard();
+  }
 
+  document.addEventListener("scroll", handleScroll, { capture: true, passive: true });
+  if (viewport) {
+    viewport.addEventListener("resize", syncKeyboard);
+    document.addEventListener("focusin", syncKeyboard);
+    document.addEventListener("focusout", () => window.requestAnimationFrame(syncKeyboard));
+  }
   if (typeof mobileQuery.addEventListener === "function") {
     mobileQuery.addEventListener("change", handleMobileChange);
   } else if (typeof mobileQuery.addListener === "function") {
     mobileQuery.addListener(handleMobileChange);
   }
-
-}
-
-function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPress, expanded) {
-  const targetTab = String(tabName || "home");
-  const shouldCollapse = Boolean(
-    expanded &&
-    targetTab === String(activeTab || "") &&
-    targetTab === String(previousTabPress || "")
-  );
-
-  return {
-    shouldCollapse,
-    nextTabPress: shouldCollapse ? "" : targetTab
-  };
 }
 
 function clientDashboardHistoryUrl(tabName, source = window.location.href) {
@@ -19448,7 +19462,6 @@ function setClientDashboardTab(tabName, options = {}) {
       button.removeAttribute("aria-current");
     }
   });
-  syncClientDashboardMobileNavigationIcon(navigationTab);
   panels.forEach((panel) => {
     const isActive = panel.dataset.clientDashboardPanel === nextTab;
 
@@ -20538,26 +20551,14 @@ function handleClientDashboardTabs() {
     }
 
     const tabName = tab.dataset.clientDashboardTab;
-    const navigation = tab.closest(".client-dashboard-tabs");
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
     if (mobileNavigation && tabName === "workouts" && activeClientDashboardTab === "workouts" &&
         window.WorkoutExerciseDock?.toggle()) {
-      lastClientDashboardMobileTabPress = "";
       return;
     }
-    const action = clientDashboardMobileTabPressAction(
-      tabName,
-      activeClientDashboardTab,
-      lastClientDashboardMobileTabPress,
-      navigation?.classList.contains("is-mobile-expanded")
-    );
-
     setClientDashboardTab(tabName);
     if (mobileNavigation && tabName === "workouts") {
       window.requestAnimationFrame?.(() => window.WorkoutExerciseDock?.open?.());
-    }
-    if (mobileNavigation) {
-      lastClientDashboardMobileTabPress = action.nextTabPress;
     }
     if (tabName === "home") {
       window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
