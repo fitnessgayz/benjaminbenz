@@ -11,6 +11,7 @@ describe("FWB Training Client plugin", () => {
   let client: Client;
   let server: ReturnType<typeof createClientWorkoutMcpServer>;
   const saved: WorkoutInput[] = [];
+  let workouts: GruntrWorkouts;
   const writes: { action: string; requestId: string; input: Record<string, unknown> }[] = [];
   const sessionId = "11111111-1111-4111-8111-111111111111";
   const requestId = "22222222-2222-4222-8222-222222222222";
@@ -18,7 +19,7 @@ describe("FWB Training Client plugin", () => {
   beforeEach(async () => {
     saved.length = 0;
     writes.length = 0;
-    const workouts = new GruntrWorkouts({} as SupabaseClient, "test@example.test", requestId);
+    workouts = new GruntrWorkouts({} as SupabaseClient, "test@example.test", requestId);
     vi.spyOn(workouts, "catalog").mockResolvedValue([]);
     vi.spyOn(workouts, "write").mockImplementation(async (action, id, input) => {
       writes.push({ action, requestId: id, input });
@@ -45,7 +46,7 @@ describe("FWB Training Client plugin", () => {
           created_at: "2026-11-02T18:00:00Z",
         }));
       },
-    }, workouts);
+    }, workouts, "https://staging.example.test/client-dashboard.html?tab=workouts");
     client = new Client({ name: "test-client", version: "1.0.0" });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
@@ -92,6 +93,24 @@ describe("FWB Training Client plugin", () => {
       expect(result.isError).toBe(true);
     }
     expect(writes).toHaveLength(0);
+  });
+
+  it("sends routine approvals to the configured staging dashboard", async () => {
+    vi.mocked(workouts.catalog).mockResolvedValue([{
+      id: sessionId, name: "Barbell Bench Press", aliases: [], equipment: "barbell",
+      default_reps: "8-12", default_sets: 3, default_rest_seconds: 90,
+    }]);
+    vi.spyOn(workouts, "proposeRoutine").mockResolvedValue({ state: "awaiting_approval", proposal_id: requestId });
+    const exercise = { exercise_id: sessionId, sets: 3, rep_min: 8, rep_max: 12, rest_seconds: 90 };
+    const result = await client.callTool({
+      name: "preview_my_routine",
+      arguments: { request_id: requestId, title: "Test split", split: "balanced", minutes: 45, goal: "fitness",
+        workouts: [{ title: "Monday", weekday: 0, exercises: [exercise] },
+          { title: "Thursday", weekday: 3, exercises: [exercise] }] },
+    });
+    expect(result.structuredContent).toMatchObject({
+      approval_url: `https://staging.example.test/client-dashboard.html?tab=workouts&routine_proposal=${requestId}`,
+    });
   });
 
   it("saves one completed workout and minimizes the response", async () => {

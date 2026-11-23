@@ -54,7 +54,7 @@ function windowDates(days: number, through = new Date().toISOString().slice(0, 1
 }
 
 export function registerGruntrTools(server: McpServer, workouts: GruntrWorkouts,
-  repository: Pick<CoachingRepository, "getActiveProgram">) {
+  repository: Pick<CoachingRepository, "getActiveProgram">, dashboardUrl: string) {
   server.registerTool("get_my_active_program", {
     description: "Read the signed-in user's active coach-assigned program and workout prescriptions.",
     annotations: annotations(true),
@@ -187,11 +187,13 @@ export function registerGruntrTools(server: McpServer, workouts: GruntrWorkouts,
   }, ({ request_id, plan_id, ...input }) => reportWorkout(async () => {
     const plan = buildRoutine(input, request_id, await workouts.catalog());
     const preview = await workouts.proposeRoutine(request_id, plan, plan_id);
-    return toolResult(preview.state === "awaiting_approval" ? "GRUNTR prepared the routine preview for your review."
-      : `GRUNTR reports this proposal is ${preview.state}.`, {
-      ...preview, ...(preview.state === "awaiting_approval" ? {
-        approval_url: `https://benjaminbenz.com/client-dashboard.html?routine_proposal=${encodeURIComponent(preview.proposal_id)}`,
-      } : {}),
+    if (preview.state !== "awaiting_approval") {
+      return toolResult(`GRUNTR reports this proposal is ${preview.state}.`, preview);
+    }
+    const approvalUrl = new URL(dashboardUrl);
+    approvalUrl.searchParams.set("routine_proposal", preview.proposal_id);
+    return toolResult("GRUNTR prepared the routine preview for your review.", {
+      ...preview, approval_url: approvalUrl.href,
     });
   }));
 

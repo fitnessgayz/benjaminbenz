@@ -3,6 +3,11 @@ import { z } from "zod/v4";
 const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   PUBLIC_BASE_URL: z.url().transform((value) => value.replace(/\/$/, "")),
+  CLIENT_DASHBOARD_URL: z.url().refine((value) => {
+    const url = new URL(value);
+    const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    return !url.username && !url.password && (url.protocol === "https:" || (url.protocol === "http:" && loopback));
+  }).default("https://benjaminbenz.com/client-dashboard.html"),
   SUPABASE_URL: z.url().transform((value) => value.replace(/\/$/, "")),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
   SUPABASE_AUTH_SERVER_URL: z.url().transform((value) => value.replace(/\/$/, "")),

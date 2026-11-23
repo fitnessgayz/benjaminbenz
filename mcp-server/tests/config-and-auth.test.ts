@@ -15,6 +15,7 @@ describe("configuration and bearer parsing", () => {
     });
 
     expect(config.PORT).toBe(4000);
+    expect(config.CLIENT_DASHBOARD_URL).toBe("https://benjaminbenz.com/client-dashboard.html");
     expect(config.PUBLIC_BASE_URL).toBe("https://mcp.benjaminbenz.com");
     expect(config.SUPABASE_AUTH_SERVER_URL).toBe("https://example.supabase.co/auth/v1");
     expect(config.ADDITIONAL_ALLOWED_HOSTS).toEqual(["preview.example.com"]);

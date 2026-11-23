@@ -131,7 +131,7 @@ export function createApp(config: AppConfig): Express {
   registerMcpEndpoint(
     "/client/mcp",
     "/.well-known/oauth-protected-resource/client/mcp",
-    createClientWorkoutMcpServer,
+    (repository, workouts) => createClientWorkoutMcpServer(repository, workouts, config.CLIENT_DASHBOARD_URL),
   );
 
   return app;

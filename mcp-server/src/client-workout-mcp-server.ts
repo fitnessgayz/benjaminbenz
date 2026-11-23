@@ -5,8 +5,7 @@ import { registerGruntrTools, reportWorkout, requestId, setDetails, toolResult }
 import { type GruntrWorkouts, resolveExercise, setFields, WorkoutRequestError } from "./gruntr-workouts.js";
 import type { CoachingRepository } from "./repository.js";
 
-type WorkoutRepository = Pick<CoachingRepository, "getConnectedAccount" | "recordWorkout"> &
-  Partial<Pick<CoachingRepository, "getActiveProgram">>;
+type WorkoutRepository = Pick<CoachingRepository, "getConnectedAccount" | "recordWorkout" | "getActiveProgram">;
 
 const instructions = `GRUNTR connects ChatGPT to the signed-in client's workout history, live workout drafts, and saved routines.
 Use a new request UUID per intended write and reuse it with identical input for retries. Always supply request_id to log_my_workout.
@@ -21,7 +20,9 @@ function toolError(error: unknown) {
   };
 }
 
-export function createClientWorkoutMcpServer(repository: WorkoutRepository, workouts?: GruntrWorkouts): McpServer {
+export function createClientWorkoutMcpServer(
+  repository: WorkoutRepository, workouts: GruntrWorkouts, dashboardUrl: string,
+): McpServer {
   const server = new McpServer(
     { name: "fwb-training-client", version: "0.2.0" },
     { instructions },
@@ -81,7 +82,7 @@ export function createClientWorkoutMcpServer(repository: WorkoutRepository, work
       },
     },
     async ({ request_id, occurred_on, workout_title, exercises, gym_name }) => {
-      if (request_id && workouts) return reportWorkout(async () => {
+      if (request_id) return reportWorkout(async () => {
         const setCount = exercises.reduce((count, exercise) => count + exercise.sets.length, 0);
         if (setCount > 200) throw new WorkoutRequestError("A workout can contain at most 200 sets.");
         const catalog = await workouts.catalog();
@@ -142,9 +143,7 @@ export function createClientWorkoutMcpServer(repository: WorkoutRepository, work
     },
   );
 
-  if (workouts && repository.getActiveProgram) {
-    registerGruntrTools(server, workouts, { getActiveProgram: repository.getActiveProgram.bind(repository) });
-  }
+  registerGruntrTools(server, workouts, repository, dashboardUrl);
 
   return server;
 }
