@@ -15093,10 +15093,15 @@ function clientWorkoutListMarkup(workouts) {
       : "Personal Training access is not verified.";
     const panel = (id, content) => `<section id="workout-hub-${id}" class="workout-choice-list client-workout-hub-section"
       role="tabpanel" aria-labelledby="workout-hub-tab-${id}" ${id === active ? "" : "hidden"}>${content}</section>`;
-    const card = (action, icon, title, description, id) => `<button type="button" class="workout-choice-card" ${action}
-      aria-labelledby="${id}-title" aria-describedby="${id}-description">${clientWorkoutChoiceContent({
+    const card = (action, icon, title, description, id, cover) => {
+      const content = clientWorkoutChoiceContent({
         icon, title, description, titleId: `${id}-title`, descriptionId: `${id}-description`
-      })}</button>`;
+      });
+      return `<button type="button" class="workout-choice-card workout-hub-choice${cover ? " has-shortcut-cover" : ""}" ${action}
+        aria-labelledby="${id}-title" aria-describedby="${id}-description">${cover ? `
+          <img class="workout-choice-cover" src="/images/gruntr/workout-shortcuts/${cover}.jpg" alt="" loading="lazy" decoding="async" />
+          <span class="workout-choice-card-content">${content}</span>` : content}</button>`;
+    };
     return `<div class="workout-program-picker client-workout-hub">
       <div class="client-workout-hub-tabs" role="tablist" aria-label="Workout sections">${sections.map(([id, label]) => `
         <button id="workout-hub-tab-${id}" type="button" role="tab" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}"
@@ -15109,8 +15114,8 @@ function clientWorkoutListMarkup(workouts) {
         <button type="button" class="client-workout-hub-start client-workout-hub-resume" data-resume-active-workout>
           <span aria-hidden="true">▶</span> Resume Workout
         </button>
-        ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore")}
-        ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous")}
+        ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore", "explore")}
+        ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous", "previous")}
       `)}
       ${panel("personal", access.state === "available" ? `
         ${programs.map(program => {
@@ -15123,8 +15128,8 @@ function clientWorkoutListMarkup(workouts) {
         ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan upcoming workouts.", "workout-calendar")}
       ` : "")}
       ${panel("trainer", `
-        ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer")}
-        ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved")}
+        ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer", "trainer")}
+        ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved", "saved")}
         ${card('data-generate-workout data-generator-preset="today"', "plus", "Build one session", "Generate a workout for today.", "workout-fwb-today")}
       `)}
     </div>${clientWorkoutChoiceDialogMarkup()}`;
@@ -16120,24 +16125,6 @@ function warmupDisplay(log) {
   }
 
   return parts.join(" · ") || "Warm-up saved";
-}
-
-function exerciseNoteSummary(sets = []) {
-  const notes = sets
-    .map((set) => ({
-      setNumber: set.set_number,
-      note: String(set.notes || "").trim()
-    }))
-    .filter((set) => set.note);
-  const uniqueNotes = Array.from(new Set(notes.map((set) => set.note)));
-
-  if (uniqueNotes.length <= 1) {
-    return uniqueNotes[0] || "";
-  }
-
-  return notes
-    .map((set) => `${set.setNumber ? `Set ${set.setNumber}: ` : ""}${set.note}`)
-    .join("  |  ");
 }
 
 function formatLogDate(value) {
@@ -17381,6 +17368,8 @@ function renderClientWorkoutCalendar(logs = trainingLogs) {
   }
   const clearButton = document.getElementById("clear-client-training-log-date-filter");
   if (clearButton) clearButton.hidden = !clientTrainingLogDateFilter;
+  const filterControls = clearButton?.closest?.(".client-logs-filter-controls");
+  if (filterControls) filterControls.hidden = !clientTrainingLogDateFilter;
 }
 
 function clientAchievementSnapshot() {
@@ -17555,6 +17544,54 @@ function renderClientLogsExerciseList() {
   </article>`).join("") : '<p class="empty-state">No exercises match your search.</p>';
 }
 
+function savedWorkoutExerciseSetsMarkup(exercise, workout) {
+  const cardio = exercise.exercise_code === cardioExerciseCode;
+  const warmupActivity = exercise.exercise_code === warmupExerciseCode;
+  const isWarmUp = (set) => normalizedSetType(set.set_type, set.set_number) === warmUpSetType;
+  const orderedSets = [...exercise.sets].sort((left, right) =>
+    Number(isWarmUp(right)) - Number(isWarmUp(left)) || Number(left.set_number || 0) - Number(right.set_number || 0)
+  );
+  const setRows = orderedSets.map((set) => {
+    const cardioDetails = cardio ? parseCardioNotes(set.notes) : null;
+    const warmupSet = isWarmUp(set);
+    const timedSet = set.set_type === "timed" || Number(set.duration_seconds) > 0;
+    const label = warmupActivity || warmupSet ? `Warm-up ${warmUpOrdinal(set.set_number)}`
+      : `Set ${setNumberLabel(set.set_number, set.set_type)}`;
+    const type = cardio || warmupActivity || warmupSet ? "" : timedSet ? "Timed"
+      : set.set_type === "failure" ? "Failure" : set.set_type === "drop" ? "Drop" : "";
+    const load = Number(set.weight_used) > 0 ? `${set.weight_used} lb` : "";
+    const seconds = Number(set.duration_seconds) > 0 ? set.duration_seconds : set.reps;
+    const result = cardio ? cardioDisplay(set) : warmupActivity ? warmupDisplay({ ...set, notes: "" })
+      : timedSet ? [Number(seconds) > 0 ? `${seconds} sec` : "", load].filter(Boolean).join(" · ")
+        : [load, Number(set.reps) > 0 ? `${set.reps} reps` : ""].filter(Boolean).join(" × ");
+    const note = String(cardioDetails?.notes ?? set.notes ?? "").trim();
+    const cardioContext = cardioDetails ? [
+      cardioDetails.placement && (cardioDetails.placement === "before" ? "Before workout" : "After workout"),
+      cardioDetails.workSeconds && `${cardioDetails.workSeconds} sec work`,
+      cardioDetails.restSeconds && `${cardioDetails.restSeconds} sec rest`,
+      cardioDetails.stations && cardioDetails.stations.replaceAll(" | ", " → "),
+      cardioDetails.amrapCap && `${cardioDetails.amrapCap} min AMRAP cap`,
+      cardioDetails.amrapReps && `${cardioDetails.amrapReps} extra reps`,
+      cardioDetails.hybridSegments && cardioDetails.hybridSegments.replaceAll(" | ", " → "),
+      cardioDetails.hybridSplits && `Segment finishes: ${cardioDetails.hybridSplits}`
+    ].filter(Boolean).join(" · ") : "";
+    const editable = !cardio && !warmupActivity && !isCoachDashboardPreview && clientSavedSetCanEdit({
+      ...set, entry_date: workout.entry_date, workout_title: workout.workout_title
+    }, trainingLogs);
+    return `<li class="client-saved-set-row">
+      <div class="client-saved-set-values">
+        <span class="client-saved-set-name">${escapeHtml(label)}</span>
+        <strong>${escapeHtml(result || "—")}</strong>
+        ${type ? `<span class="client-saved-set-type">${escapeHtml(type)}</span>` : ""}
+      </div>
+      ${editable ? `<button type="button" data-client-edit-saved-set="${escapeHtml(String(set.id))}" aria-label="Correct ${escapeHtml(`${exercise.exercise_name}, ${label}`)}">Edit</button>` : ""}
+      ${cardioContext ? `<p class="client-saved-set-note">${escapeHtml(cardioContext)}</p>` : ""}
+      ${note ? `<p class="client-saved-set-note">${escapeHtml(note)}</p>` : ""}
+    </li>`;
+  }).join("");
+  return `<ul class="client-saved-set-list" role="list" aria-label="${escapeHtml(`Logged sets for ${exercise.exercise_name || "exercise"}`)}">${setRows}</ul>`;
+}
+
 function renderClientTrainingLogs() {
   cancelScheduledClientTrainingLogsRender();
   window.FWB_CLIENT_EXERCISE_HISTORY_LOGS = trainingLogs;
@@ -17662,6 +17699,7 @@ function renderClientTrainingLogs() {
       set_type: log.set_type,
       weight_used: log.weight_used,
       reps: log.reps,
+      duration_seconds: log.duration_seconds,
       effort_scale: log.effort_scale,
       effort_value: log.effort_value,
       notes: log.notes
@@ -17723,66 +17761,7 @@ function renderClientTrainingLogs() {
               )}</div>
               <div class="training-log-exercise-list">
                 ${exercises.map((entry) => {
-                  const noteSummary = exerciseNoteSummary(entry.sets);
-                  const setSummary = entry.exercise_code === warmupExerciseCode
-                    ? entry.sets
-                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                      .map((set) => warmupDisplay(set))
-                      .filter(Boolean)
-                      .join("  |  ")
-                    : entry.exercise_code === cardioExerciseCode
-                    ? entry.sets
-                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                      .map((set) => cardioDisplay(set))
-                      .filter(Boolean)
-                      .join("  |  ")
-                    : entry.sets
-                    .sort((a, b) => {
-                      const leftWarmUp = normalizedSetType(a.set_type, a.set_number) === warmUpSetType;
-                      const rightWarmUp = normalizedSetType(b.set_type, b.set_number) === warmUpSetType;
-                      if (leftWarmUp !== rightWarmUp) {
-                        return leftWarmUp ? -1 : 1;
-                      }
-                      return Number(a.set_number || 0) - Number(b.set_number || 0);
-                    })
-                    .map((set) => {
-                      const parts = [];
-
-                      if (set.set_number) {
-                        const isWarmUpSet = normalizedSetType(set.set_type, set.set_number) === warmUpSetType;
-                        parts.push(isWarmUpSet
-                          ? `Warm-up ${setNumberLabel(set.set_number, set.set_type)}`
-                          : `Set ${setNumberLabel(set.set_number, set.set_type)}`);
-                      }
-
-                      if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
-                        parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
-                      } else if (set.reps) {
-                        parts.push(`${set.reps} reps`);
-                      }
-
-                      return parts.join(": ");
-                    })
-                    .filter(Boolean)
-                    .join("  |  ");
-                  const editableSetRows = [warmupExerciseCode, cardioExerciseCode].includes(entry.exercise_code)
-                    ? ""
-                    : `<div class="client-saved-set-list">${entry.sets.map((set) => {
-                      const setName = normalizedSetType(set.set_type, set.set_number) === warmUpSetType
-                        ? `Warm-up ${setNumberLabel(set.set_number, set.set_type)}`
-                        : `Set ${setNumberLabel(set.set_number, set.set_type)}`;
-                      const weight = set.weight_used === null || set.weight_used === undefined ? "—" : `${set.weight_used} lb`;
-                      const reps = set.reps === null || set.reps === undefined ? "—" : `${set.reps} reps`;
-                      return `<div class="client-saved-set-row"><span>${escapeHtml(`${setName} · ${weight} · ${reps}`)}</span>${clientSavedSetCanEdit({ ...set, entry_date: workout.entry_date, workout_title: workout.workout_title }, trainingLogs) && !isCoachDashboardPreview
-                        ? `<button type="button" data-client-edit-saved-set="${escapeHtml(String(set.id))}" aria-label="Correct ${escapeHtml(`${entry.exercise_name}, ${setName}`)}">Edit</button>` : ""}</div>`;
-                    }).join("")}</div>`;
-
                   const exerciseMediaMarkup = exerciseMediaButtonMarkup({ name: entry.exercise_name }, { compact: true, hideInfo: true });
-                  const setSummaryMarkup = (setSummary || "Sets saved")
-                    .split("  |  ")
-                    .filter(Boolean)
-                    .map((label) => `<span>${escapeHtml(label)}</span>`)
-                    .join("");
 
                   return `
                     <article class="training-log-row training-log-row-compact training-log-row-nested">
@@ -17793,16 +17772,14 @@ function renderClientTrainingLogs() {
                             ${entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
                               ? ""
                               : `<small>${escapeHtml(entry.exercise_code)}</small>`}
-                            <strong>${escapeHtml(entry.exercise_name)}</strong>
+                            <strong role="heading" aria-level="4">${escapeHtml(entry.exercise_name || "Exercise")}</strong>
                           </span>
                         </div>
-                        <div class="training-log-set-summary">${setSummaryMarkup}</div>
+                        ${savedWorkoutExerciseSetsMarkup(entry, workout)}
                         ${![warmupExerciseCode, cardioExerciseCode].includes(entry.exercise_code)
                           ? `<button class="training-log-exercise-history-button" type="button" data-client-exercise-history-open="${escapeHtml(entry.exercise_name)}" aria-label="View all history for ${escapeHtml(entry.exercise_name)}">Exercise history</button>`
                           : ""}
-                        ${editableSetRows}
                         ${entry.gym_name ? `<small class="training-log-gym">At ${escapeHtml(entry.gym_name)}</small>` : ""}
-                        ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
                       </div>
                     </article>
                   `;

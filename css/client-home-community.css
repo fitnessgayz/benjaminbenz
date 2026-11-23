@@ -33,7 +33,7 @@
   left: 50%;
   transform: translateX(-50%);
 }
-:root body.client-dashboard-page :is(.client-home-settings-button, .client-home-bell) {
+:root body.client-dashboard-page .client-home-bell {
   display: grid !important;
   width: 54px !important;
   inline-size: 54px !important;
@@ -52,12 +52,25 @@
   background: #202326;
   color: var(--client-neon);
 }
-:root body.client-dashboard-page .client-home-settings-button img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+:root body.client-dashboard-page .client-home-profile-button {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
 }
-:root body.client-dashboard-page .client-home-settings-placeholder svg,
+:root body.client-dashboard-page .client-home-profile-button img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
 :root body.client-dashboard-page .client-home-bell svg { width: 27px; height: 27px; }
 :root body.client-dashboard-page .client-home-intro { margin: 0 0 17px; }
 :root body.client-dashboard-page .client-home-intro h3 { margin: 0 0 4px; color: #f4f5f3; font-size: 26px; line-height: 1.1; }

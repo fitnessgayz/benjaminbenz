@@ -42,7 +42,7 @@ body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidde
 
 :root body.client-dashboard-page #client-workouts-panel #workout-hub-routines {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -50,20 +50,46 @@ body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidde
   grid-column: 1 / -1;
 }
 
-:root body.client-dashboard-page #client-workouts-panel #workout-hub-routines > .workout-choice-card {
-  min-height: 70px;
-  grid-template-columns: 1fr auto;
-  align-content: center;
-  gap: 6px;
-  padding: 10px;
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-card.has-shortcut-cover {
+  width: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--line, #434649);
+  overflow: hidden;
 }
 
-#workout-hub-routines :is(.workout-choice-icon, .workout-choice-description) {
+.workout-choice-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  object-fit: cover;
+  background-color: var(--surface-soft, #24272d);
+}
+
+.has-shortcut-cover .workout-choice-card-content {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 17px;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 10px;
+  border-block-start: 1px solid var(--line, #434649);
+}
+
+:root body.client-dashboard-page #client-workouts-panel .has-shortcut-cover:focus-visible {
+  outline: 2px solid var(--focus, #ffd400);
+  outline-offset: 2px;
+}
+
+#workout-hub-routines .workout-choice-description {
   display: none;
 }
 
-#workout-hub-routines .workout-choice-title {
-  font-size: clamp(.82rem, 3.5vw, 1rem);
+body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[open] > summary {
+  padding-block-end: 6px;
+  border-block-end: 1px solid var(--line, #434649);
 }
 
 :root body.client-dashboard-page #client-workouts-panel .client-workout-hub-start {

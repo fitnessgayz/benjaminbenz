@@ -23,7 +23,8 @@ const functions = [
   'customWorkoutCarouselGroupMarkup', 'customWorkoutCarouselMarkup',
   'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels', 'openCustomWorkoutSetupDialog', 'workoutLoggerSetupMarkup',
   'floatingWorkoutFinishMarkup', 'syncFloatingWorkoutFinishButtons', 'syncWorkoutStartButtons',
-  'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup',
+  'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup', 'clientCoachingMembership',
+  'clientPersonalTrainingAccess', 'currentClientPersonalTrainingAccess', 'allowedClientWorkoutHubSection', 'selectClientWorkoutHubSection',
   'exerciseMediaButtonMarkup', 'restTimerMarkup'
 ].map(production).join('\n');
 const fixture = `
@@ -31,6 +32,8 @@ var activeCustomWorkoutFormat = 'single', workoutElapsedTimerState = null;
 var customWorkoutFormats = { single: {label: 'Straight sets'}, superset: {label: 'Superset'}, circuit: {label: 'Circuit'} };
 var customWorkoutTitle = 'Custom Workout', fixtureExercises = [];
 var clientPreviewProgramSelected = false, clientAvailablePrograms = [], currentProgram = { workouts: [] };
+var clientWorkoutHubSection = 'routines', activeDashboardUser = { email: 'athlete@example.test' };
+function normalizeClientEmail(value) { return String(value || '').trim().toLowerCase(); }
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
 function todayDate() { return '2026-11-06'; }
 function formatLogDate() { return 'Nov 6, 2026'; }
@@ -91,7 +94,11 @@ function renderAssignedCase(active) {
   try {
     for (const width of [320, 360, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 844 } });
-      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><nav class="client-dashboard-tabs" aria-label="FWB Training sections"><button>Home</button><button>Workouts</button></nav><button class="client-dashboard-mobile-nav-toggle">Navigation</button><section id="client-workouts-panel" class="is-compact-workout-log"><button data-compact-workout-later hidden>Finish later</button><div id="client-workout-panels"></div></section></body></html>`);
+      await page.route(/^https:\/\/workouts\.fixture\.test\/images\/gruntr\/workout-shortcuts\/(explore|previous|trainer|saved)\.jpg$/, route => {
+        const file = path.basename(new URL(route.request().url()).pathname);
+        return route.fulfill({ path: path.join(root, 'images/gruntr/workout-shortcuts', file), contentType: 'image/jpeg' });
+      });
+      await page.setContent(`<!doctype html><html><head><base href="https://workouts.fixture.test/"/><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><nav class="client-dashboard-tabs" aria-label="FWB Training sections"><button>Home</button><button>Workouts</button></nav><button class="client-dashboard-mobile-nav-toggle">Navigation</button><section id="client-workouts-panel" class="is-compact-workout-log"><button data-compact-workout-later hidden>Finish later</button><div id="client-workout-panels"></div></section></body></html>`);
       await page.addScriptTag({ content: fixture });
       await page.addScriptTag({ path: path.join(root, "js/client-workout-routines.js") });
       await page.addScriptTag({ path: path.join(root, "js/client-workout-plans.js") });
@@ -114,9 +121,41 @@ function renderAssignedCase(active) {
       const explore = routines.getByRole('button', { name: 'Explore Routines' });
       const start = routines.getByRole('button', { name: 'Start Workout' });
       const [startRect, previousRect, exploreRect] = await Promise.all([start.boundingBox(), previous.boundingBox(), explore.boundingBox()]);
-      assert.ok(Math.abs(previousRect.y - exploreRect.y) <= 1, 'Previous and Explore occupy one row');
-      assert.ok(exploreRect.x < previousRect.x, 'Explore comes first');
-      assert.ok(startRect.width >= previousRect.width + exploreRect.width, 'Start is full-width');
+      assert.ok(previousRect.y >= exploreRect.y + exploreRect.height, 'Explore artwork comes before Previous Workout');
+      assert.ok([exploreRect, previousRect].every(rect => rect.x === startRect.x && rect.width === startRect.width), 'Artwork fits the full shortcut width');
+      const assertCover = async (shortcut, filename) => {
+        const cover = shortcut.locator('img.workout-choice-cover');
+        await cover.scrollIntoViewIfNeeded();
+        assert.equal(await cover.getAttribute('src'), `/images/gruntr/workout-shortcuts/${filename}.jpg`);
+        assert.equal(await cover.getAttribute('alt'), '');
+        assert.ok(await cover.evaluate(async image => { await image.decode(); return image.naturalWidth > 0; }), 'Approved cover image decodes');
+        assert.ok(await shortcut.locator('.workout-choice-title').isVisible(), 'Shortcut retains a visible title');
+        const coverRect = await cover.boundingBox();
+        const titleRect = await shortcut.locator('.workout-choice-title').boundingBox();
+        assert.ok(Math.abs(coverRect.width / coverRect.height - 3) < .03 && titleRect.y >= coverRect.y + coverRect.height,
+          'The cover is 3:1 and the readable title sits below it');
+        for (const theme of ['dark', 'light']) {
+          assert.ok(await shortcut.evaluate((button, value) => {
+            document.documentElement.dataset.clientTheme = value;
+            const style = getComputedStyle(button);
+            return style.borderTopWidth === '1px' && style.borderTopStyle === 'solid' && style.borderTopColor !== 'rgba(0, 0, 0, 0)';
+          }, theme), `The shortcut border stays visible in ${theme} mode`);
+        }
+        await page.evaluate(() => { delete document.documentElement.dataset.clientTheme; });
+      };
+      await assertCover(explore, 'explore');
+      await assertCover(previous, 'previous');
+      await start.focus();
+      const nextControl = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
+      await page.keyboard.press(nextControl);
+      assert.ok(await explore.evaluate(button => document.activeElement === button && getComputedStyle(button).outlineWidth === '2px'));
+      await page.keyboard.press(nextControl);
+      assert.ok(await previous.evaluate(button => document.activeElement === button));
+      await page.evaluate(() => selectClientWorkoutHubSection('trainer'));
+      const trainer = page.locator('#workout-hub-trainer');
+      await assertCover(trainer.getByRole('button', { name: 'Start with GRUNTR Trainer' }), 'trainer');
+      await assertCover(trainer.getByRole('button', { name: 'Saved workouts' }), 'saved');
+      await page.evaluate(() => selectClientWorkoutHubSection('routines'));
       assert.equal(await start.evaluate(button => getComputedStyle(button).color), 'rgb(21, 21, 19)', 'Start uses dark text on yellow');
       assert.equal(await page.getByText('Benjamin’s Routine', { exact: true }).count(), 1);
       await page.evaluate(() => {
@@ -209,13 +248,7 @@ function renderAssignedCase(active) {
         `${format} save action moves to the bottom of the viewport`);
         assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), true,
           `${format} Discard is a direct button`);
-        assert.equal(await page.locator('[data-floating-workout-reset-action]').evaluate(button => {
-          const range = document.createRange();
-          range.selectNodeContents(button);
-          const [line] = range.getClientRects();
-          const box = button.getBoundingClientRect();
-          return range.getClientRects().length === 1 && line.left >= box.left && line.right <= box.right;
-        }), true, `${format} the complete Discard Workout label fits inside its button`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').getAttribute('aria-label'), 'Discard workout');
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
           `${format} has no duplicate More action`);
       }
@@ -283,7 +316,7 @@ function renderAssignedCase(active) {
           'trainer logger keeps navigation hidden before and after Start');
         assert.equal(await page.locator('[data-floating-workout-more]').count(), 0,
           'trainer has no duplicate reset menu');
-        assert.equal(await page.locator('[data-floating-workout-reset-action]').innerText(), 'Discard Workout');
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').getAttribute('aria-label'), 'Discard workout');
         assert.equal(await page.locator('[data-workout-date]').isVisible(), false, 'trainer date is stored without a visible field');
         if (active) {
           assert.equal(await page.locator('[data-reset-assigned-workout]').isVisible(), true,

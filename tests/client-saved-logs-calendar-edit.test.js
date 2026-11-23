@@ -81,6 +81,39 @@ test("unfinished live workouts stay in the active logger; completed and imported
   assert.equal(canEdit({ ...row, source: "client_log_correction" }, [row]), true);
 });
 
+test("saved workout details list each set once under its exercise with its own note", () => {
+  const methods = ["normalizedSetType", "warmUpOrdinal", "setNumberLabel", "parseCardioNotes", "cardioPaceText",
+    "cardioDisplay", "warmupDisplay", "escapeHtml", "savedWorkoutExerciseSetsMarkup"];
+  const makeRenderer = (preview) => Function("cardioExerciseCode", "warmupExerciseCode", "warmUpSetType", "workingSetType",
+    "warmUpSetNumberBase", "isCoachDashboardPreview", "trainingLogs", "clientSavedSetCanEdit",
+    `${methods.map(sourceForFunction).join("\n")}\nreturn savedWorkoutExerciseSetsMarkup;`)(
+    "CARDIO", "WARMUP", "warm_up", "working", 1000, preview, [], row => Boolean(row.id)
+  );
+  const workout = { entry_date: "2026-11-22", workout_title: "Full Body" };
+  const exercise = { exercise_code: "A1", exercise_name: "Bench Press", sets: [
+    { id: "second", set_number: 2, set_type: "timed", duration_seconds: 40, notes: "Pause at the bottom" },
+    { id: "first", set_number: 1, set_type: "failure", weight_used: 180, reps: 8, notes: "Control < the descent" },
+    { set_number: 1001, set_type: "warm_up", weight_used: 45, reps: 10, notes: "Easy pace" }
+  ] };
+  const markup = makeRenderer(false)(exercise, workout);
+  assert.match(markup, /aria-label="Logged sets for Bench Press"/);
+  const rows = markup.split('<li class="client-saved-set-row">').slice(1);
+  assert.equal(rows.length, 3);
+  assert.match(rows[0], /Warm-up 1[\s\S]*45 lb × 10 reps[\s\S]*Easy pace/);
+  assert.match(rows[1], /Set 1[\s\S]*180 lb × 8 reps[\s\S]*Failure[\s\S]*data-client-edit-saved-set="first"[\s\S]*Control &lt; the descent/);
+  assert.match(rows[2], /Set 2[\s\S]*40 sec[\s\S]*Timed[\s\S]*data-client-edit-saved-set="second"[\s\S]*Pause at the bottom/);
+  assert.doesNotMatch(makeRenderer(true)(exercise, workout), /data-client-edit-saved-set/);
+
+  const cardio = makeRenderer(false)({ exercise_code: "CARDIO", exercise_name: "Run", sets: [
+    { id: "run", set_number: 1, weight_used: 20, reps: 2,
+      notes: "Calories: 120\nCardio format: intervals\nRounds: 5\nWork: 30 seconds\nRest: 15 seconds\nStations: Run | Walk\nEasy finish" }
+  ] }, workout);
+  assert.match(cardio, /20 min · 2 mi · 120 cal · 10:00 \/ mi · 5 rounds/);
+  assert.match(cardio, /30 sec work · 15 sec rest · Run → Walk/);
+  assert.match(cardio, /client-saved-set-note">Easy finish<\/p>/);
+  assert.doesNotMatch(cardio, /data-client-edit-saved-set/);
+});
+
 test("correction timestamps advance past a future saved version", () => {
   const timestamp = Function(`${sourceForFunction("clientSavedSetCorrectionTimestamp")}; return clientSavedSetCorrectionTimestamp;`)();
   assert.equal(timestamp({ updated_at: "2026-10-07T17:00:00.000Z" }, Date.parse("2026-10-07T16:00:00.000Z")),

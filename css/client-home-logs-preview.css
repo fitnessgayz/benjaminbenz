@@ -120,25 +120,34 @@
   top: -21%; left: -9%; width: 225%;
 }
 :root body.client-dashboard-page .training-log-exercise-image-empty { color: #79b8e9; font-size: 26px; }
-:root body.client-dashboard-page .training-log-set-summary {
-  display: flex; flex-wrap: wrap; gap: 6px; min-width: 0;
+:root body.client-dashboard-page .client-saved-set-list {
+  --saved-set-fill: #1b2025;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--saved-set-fill);
+  list-style: none;
 }
-:root body.client-dashboard-page .training-log-set-summary > span {
-  padding: 6px 9px; border-radius: 8px; background: #303740;
-  color: #dce3e8; font-size: .82rem; font-weight: 650; line-height: 1.35;
-}
-:root body.client-dashboard-page .client-saved-set-list { gap: 8px; margin-top: 0; }
 :root body.client-dashboard-page .client-saved-set-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto;
-  min-width: 0; gap: 12px; align-items: center;
-  padding-top: 7px; border-top: 1px solid #424b53;
+  min-width: 0; gap: 2px 10px; align-items: center; padding: 7px 0;
 }
-:root body.client-dashboard-page .client-saved-set-row > span {
-  min-width: 0; color: #e2e7eb; font-size: .88rem; line-height: 1.4;
+:root body.client-dashboard-page .client-saved-set-row + .client-saved-set-row { border-top: 1px solid var(--saved-log-line); }
+:root body.client-dashboard-page .client-saved-set-values {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px;
+  min-width: 0; color: var(--saved-log-text); font-size: .88rem; line-height: 1.4;
+}
+:root body.client-dashboard-page .client-saved-set-name { color: var(--saved-log-muted); }
+:root body.client-dashboard-page .client-saved-set-type { color: var(--saved-log-blue); font-size: .75rem; font-weight: 700; }
+:root body.client-dashboard-page .client-saved-set-note {
+  grid-column: 1 / -1; margin: 1px 0 3px; color: var(--saved-log-muted);
+  font-size: .85rem; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap;
 }
 :root body.client-dashboard-page .client-saved-set-row button {
-  width: 64px; min-width: 64px; min-height: 38px; padding: 6px 9px;
-  border-color: #56616c; border-radius: 9px; color: #71b9ef;
+  width: 52px; min-width: 52px; min-height: 44px; padding: 6px 8px;
+  border-color: var(--saved-log-line); border-radius: 9px; color: var(--saved-log-blue);
 }
 :root body.client-dashboard-page .training-log-gym { color: #ffd400; }
 :root body.client-dashboard-page .training-log-notes { color: #d0d7dd; }
@@ -169,9 +178,7 @@
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-row-main .training-log-notes strong { color: #192632; }
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-workout-heading span { color: #41515b; }
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-exercise-label small { color: #206da1; }
-:root[data-client-theme="light"] body.client-dashboard-page .training-log-set-summary > span { background: #edf2f5; color: #344756; }
-:root[data-client-theme="light"] body.client-dashboard-page .client-saved-set-row { border-color: #d8e0e6; }
-:root[data-client-theme="light"] body.client-dashboard-page .client-saved-set-row > span,
+:root[data-client-theme="light"] body.client-dashboard-page .client-saved-set-list { --saved-set-fill: #eef2f6; }
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-notes { color: #344756; }
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-exercise-history-button { background: #f4f7f9; color: #192632; }
 
