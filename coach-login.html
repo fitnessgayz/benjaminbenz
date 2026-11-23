@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FWB Coach Login | Fitness with Benjamin</title>
-  <meta name="description" content="Sign in to FWB Coach to manage clients, training, and messages." />
+  <title>GRUNTR Coach Login | Fitness with Benjamin</title>
+  <meta name="description" content="Sign in to GRUNTR Coach to manage clients, training, and messages." />
   <meta name="robots" content="noindex, nofollow, noarchive" />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
   <script>
@@ -13,20 +13,13 @@
     gtag('js', new Date());
     gtag('config', 'G-P3FPJMJ4PK');
   </script>
-  <link rel="shortcut icon" href="/favicon.ico" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-  <link rel="apple-touch-icon" href="/fwb-brand-icon-gold-180-v5.png" />
-  <link rel="apple-touch-icon-precomposed" href="/fwb-brand-icon-gold-180-v5.png" />
-  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
-  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
-  <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-brand-icon-gold-180-v5.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/gruntr/client-22e30eae/icon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/gruntr/client-22e30eae/icon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/gruntr/client-22e30eae/icon-180.png" />
   <link rel="manifest" href="/coach.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="FWB Coach" />
-  <meta name="application-name" content="FWB Coach" />
+  <meta name="apple-mobile-web-app-title" content="GRUNTR Coach" />
+  <meta name="application-name" content="GRUNTR Coach" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -35,12 +28,13 @@
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2&amp;electric-gold=2" />
   <meta name="theme-color" content="#030D1C" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
+  <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
 </head>
 <body class="login-page coach-login-page">
   <header class="site-header">
-    <a class="brand" href="coach-login.html" aria-label="FWB Coach login">
-      <span>FWB</span>
-      <strong>Coach</strong>
+    <a class="brand coach-brand-lockup" href="coach-login.html" aria-label="GRUNTR Coach login">
+      <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="42" height="42" />
+      <strong>GRUNTR Coach</strong>
     </a>
     <div class="header-actions">
       <a class="login-link" href="client-login.html">Client app</a>
@@ -49,7 +43,7 @@
 
   <main class="client-access">
     <section class="access-intro" aria-labelledby="coach-access-title">
-      <p class="kicker">FWB Coach</p>
+      <p class="kicker">GRUNTR Coach</p>
       <h1 id="coach-access-title">Welcome back</h1>
       <p>Your coaching workspace, connected to every client’s training and progress.</p>
     </section>
@@ -77,16 +71,16 @@
             </label>
             <p id="coach-remember-help">Use this on your personal device.</p>
           </div>
-          <button class="button button-dark" type="submit">Sign in to FWB Coach</button>
-          <p class="login-status" id="coach-login-status" role="status">Use your authorized FWB Coach account.</p>
+          <button class="button button-dark" type="submit">Sign in to GRUNTR Coach</button>
+          <p class="login-status" id="coach-login-status" role="status">Use your authorized GRUNTR Coach account.</p>
         </form>
         <div class="access-demo">
-          <strong>Connected to FWB Training</strong>
+          <strong>Connected to GRUNTR</strong>
           <span>Client workouts, progress, messages, and programs stay in sync through the shared secure backend.</span>
         </div>
       </div>
     </section>
-    <nav class="access-footer-links" aria-label="FWB Coach help">
+    <nav class="access-footer-links" aria-label="GRUNTR Coach help">
       <a href="fwb-coach-support.html">Help &amp; support</a>
       <a href="fwb-coach-privacy.html">Privacy</a>
     </nav>
@@ -94,6 +88,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/auth-session.js?v=remember-login-2"></script>
-  <script src="js/client-portal.js?v=coach-app-1&amp;timer-alert-recovery=2"></script>
+  <script src="js/client-portal.js?v=coach-app-1&amp;timer-alert-recovery=2&amp;coach-brand=1"></script>
 </body>
 </html>

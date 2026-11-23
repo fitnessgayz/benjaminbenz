@@ -1,7 +1,7 @@
 (function attachFwbWebNotifications(global) {
   "use strict";
 
-  const defaultServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-2";
+  const defaultServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-3";
   const modernFunctionName = "send-web-push";
   const deployedFunctionName = "fwb-web-push";
   const maximumInboxItems = 12;
@@ -126,6 +126,7 @@
     const supabaseClient = options.supabaseClient;
     const user = options.user;
     const role = options.role === "coach" ? "coach" : "client";
+    const appName = role === "coach" ? "GRUNTR Coach" : "GRUNTR";
     const root = options.root || global.document?.querySelector("[data-web-notifications]");
     const openWeeklyCheckIn = role === "client" ? options.openWeeklyCheckIn : null;
     const externalUnreadBadges = Array.from(options.unreadBadges || (options.unreadBadge ? [options.unreadBadge] : []));
@@ -173,11 +174,11 @@
       const support = pushSupport();
       if (!support.supported) {
         return support.reason === "ios-home-screen"
-          ? "On iPhone, add FWB to your Home Screen and open that icon to receive alerts."
+          ? `On iPhone, add ${appName} to your Home Screen and open that icon to receive alerts.`
           : "This browser does not support background alerts. Your notification inbox still works here.";
       }
       if (global.Notification.permission === "denied") {
-        return "Notifications are blocked. Allow FWB in your browser or device settings, then reload this page.";
+        return `Notifications are blocked. Allow ${appName} in your browser or device settings, then reload this page.`;
       }
       return "Choose which private updates you want. You can change these anytime.";
     }

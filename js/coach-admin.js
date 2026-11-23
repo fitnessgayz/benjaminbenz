@@ -265,7 +265,7 @@ async function restoreCoachAdminUser() {
   try {
     const { data, error } = await withRequestTimeout(
       coachSupabase.auth.getSession(),
-      "FWB Coach access check timed out."
+      "GRUNTR Coach access check timed out."
     );
     if (error) throw error;
 
@@ -4685,7 +4685,7 @@ async function loadPrograms() {
   const { data, error } = programResult;
 
   if (error) {
-    adminStatus("Could not load clients. Check the FWB Coach Supabase policy.");
+    adminStatus("Could not load clients. Check the GRUNTR Coach Supabase policy.");
     return;
   }
 
@@ -7162,7 +7162,7 @@ async function deleteClientProgram(program, button) {
   }
 
   const label = program.client_name || program.client_email || "this client";
-  const confirmed = window.confirm(`Delete ${label} from FWB Coach? This removes their saved programs from this workspace.`);
+  const confirmed = window.confirm(`Delete ${label} from GRUNTR Coach? This removes their saved programs from this workspace.`);
 
   if (!confirmed) {
     return;
@@ -7193,8 +7193,8 @@ async function deleteClientProgram(program, button) {
   selectedProgramId = nextProgram.id || "";
   fillForm(nextProgram);
   renderClientList();
-  adminStatus("Client deleted from FWB Coach.");
-  profileManagementStatus("Client deleted from FWB Coach.");
+  adminStatus("Client deleted from GRUNTR Coach.");
+  profileManagementStatus("Client deleted from GRUNTR Coach.");
   if (button) {
     button.disabled = false;
   }
@@ -7481,8 +7481,8 @@ async function copyProgramToClient(program, button, targetEmail, options = {}) {
   }
 
   if (!coachSupabase) {
-    copyClientStatus("FWB Coach is not connected yet.");
-    status("FWB Coach is not connected yet.");
+    copyClientStatus("GRUNTR Coach is not connected yet.");
+    status("GRUNTR Coach is not connected yet.");
     return;
   }
 
@@ -7866,7 +7866,7 @@ async function handleSendInvite() {
     }
 
     if (!coachSupabase) {
-      inviteStatus("FWB Coach is not connected yet.");
+      inviteStatus("GRUNTR Coach is not connected yet.");
       return;
     }
 

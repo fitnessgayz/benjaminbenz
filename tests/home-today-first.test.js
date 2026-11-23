@@ -25,7 +25,7 @@ test("Home keeps the primary actions and removes the More disclosure", () => {
 });
 
 test("Home shows the GRUNTR logo as its profile button beside notifications", () => {
-  assert.match(home, /class="client-home-topbar"[\s\S]*?class="client-home-profile-button"[^>]*data-client-settings-destination="profile"[\s\S]*?client-5e7e5c45\/icon-192\.png[\s\S]*?id="client-home-title"[\s\S]*?data-client-home-notifications/);
+  assert.match(home, /class="client-home-topbar"[\s\S]*?class="client-home-profile-button"[^>]*data-client-settings-destination="profile"[\s\S]*?client-22e30eae\/icon-192\.png[\s\S]*?id="client-home-title"[\s\S]*?data-client-home-notifications/);
   assert.match(styles, /\.client-home-topbar/);
 });
 

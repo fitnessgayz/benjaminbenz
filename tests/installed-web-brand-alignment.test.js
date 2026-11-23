@@ -11,7 +11,7 @@ test("installed apps keep distinct product identities and useful launch shortcut
   const coach = JSON.parse(read("coach.webmanifest"));
 
   assert.equal(client.name, "GRUNTR");
-  assert.equal(coach.name, "FWB Coach");
+  assert.equal(coach.name, "GRUNTR Coach");
   assert.notEqual(client.id, coach.id);
   assert.notEqual(client.start_url, coach.start_url);
   assert.equal(client.background_color, "#050806");
@@ -41,9 +41,8 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
 
   for (const file of clientPages) {
     const html = read(file);
-    assert.match(html, file.startsWith("client-")
-      ? /rel="manifest" href="\/client\.webmanifest\?v=5e7e5c45"/
-      : /rel="manifest" href="\/client\.webmanifest"/);
+    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=22e30eae"/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-22e30eae\/icon-180\.png"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
     assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
@@ -52,8 +51,8 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
   for (const file of coachPages) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/coach\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Coach"/);
-    assert.match(html, /application-name" content="FWB Coach"/);
+    assert.match(html, /apple-mobile-web-app-title" content="GRUNTR Coach"/);
+    assert.match(html, /application-name" content="GRUNTR Coach"/);
     assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   }
 });
@@ -118,7 +117,7 @@ test("user-facing application copy uses product names instead of admin labels", 
     assert.doesNotMatch(scripts, new RegExp(retiredCopy, "i"));
   }
   assert.match(read("client-dashboard.html"), /Help &amp; support[\s\S]*Contact GRUNTR support/);
-  assert.match(read("coach-admin.html"), /FWB Coach help and policies/);
+  assert.match(read("coach-admin.html"), /GRUNTR Coach help and policies/);
 });
 
 test("health-support copy accurately describes read and write synchronization", () => {
