@@ -22,6 +22,10 @@ verify_jwt = false
 [functions.update-client-profile]
 verify_jwt = false
 
+[functions.delete-account]
+# This endpoint requires a fresh authorization check with Supabase Auth before deleting data.
+verify_jwt = false
+
 [functions.manage-client-program]
 verify_jwt = false
 
