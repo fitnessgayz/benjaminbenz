@@ -7,6 +7,7 @@ const path = require("node:path");
 let PGlite;
 try { ({ PGlite } = require(process.env.WORKOUT_DELETE_PGLITE_PATH || "@electric-sql/pglite")); } catch {}
 const migration = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20260926003151_delete_client_workout_sessions.sql"), "utf8");
+const repair = fs.readFileSync(path.join(__dirname, "../supabase/migrations/20261123164824_repair_reused_workout_history_ids.sql"), "utf8");
 const alice = "11111111-1111-4111-8111-111111111111";
 const bob = "22222222-2222-4222-8222-222222222222";
 const first = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -27,11 +28,11 @@ test("real Postgres workout deletion is atomic, owner-scoped, retry-safe, and re
     await db.exec(`
       create role anon; create role authenticated;
       create schema auth;
-      create table auth.users (id uuid primary key);
+      create table auth.users (id uuid primary key, email text);
       create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb$$;
       create function auth.uid() returns uuid language sql stable as $$select (auth.jwt()->>'sub')::uuid$$;
       grant usage on schema auth to authenticated, anon;
-      create table public.client_workout_logs (id uuid primary key default gen_random_uuid(), client_email text not null, entry_date date not null, workout_title text not null, session_id uuid not null, notes text);
+      create table public.client_workout_logs (id uuid primary key default gen_random_uuid(), client_email text not null, entry_date date not null, workout_title text not null, session_id uuid not null, notes text, workout_template_id uuid, source text, completed_at timestamptz, workout_session_id uuid);
       create table public.client_workout_drafts (session_id uuid primary key, client_email text not null, entry_date date not null, workout_title text not null);
       create table public.workout_session_feedback (session_id uuid primary key, client_email text not null, entry_date date not null, workout_title text not null);
       grant select,insert,update on public.client_workout_logs, public.client_workout_drafts, public.workout_session_feedback to authenticated;
@@ -39,7 +40,7 @@ test("real Postgres workout deletion is atomic, owner-scoped, retry-safe, and re
       create policy own_logs on public.client_workout_logs for all to authenticated using (lower(btrim(client_email))=lower(btrim(auth.jwt()->>'email')));
       create function public.fwb_fill_workout_log_sync_ids() returns trigger language plpgsql as $$begin if new.session_id is null then new.session_id := md5(lower(trim(new.client_email)) || '|' || new.entry_date::text || '|' || lower(trim(new.workout_title)))::uuid; end if; return new; end;$$;
       create trigger fwb_fill_client_workout_log_sync_ids before insert or update on public.client_workout_logs for each row execute function public.fwb_fill_workout_log_sync_ids();
-      insert into auth.users values ('${alice}'), ('${bob}');
+      insert into auth.users values ('${alice}','alice@example.com'), ('${bob}','bob@example.com');
       insert into public.client_workout_logs (id,client_email,entry_date,workout_title,session_id) values
         ('${rowA}','alice@example.com','2026-09-25','Strength','${first}'),
         ('${rowB}',' ALICE@example.com ','2026-09-25','Strength','${first}'),
@@ -95,5 +96,36 @@ test("real Postgres workout deletion is atomic, owner-scoped, retry-safe, and re
     assert.equal((await asUser(alice, "alice@example.com", "update public.client_workout_logs set notes='Still editable' where session_id=$1 returning id", [legacy])).rows.length, 1);
     await asUser(alice, "alice@example.com", rpc, [legacy, null]);
     await assert.rejects(asUser(alice, "alice@example.com", "insert into public.client_workout_logs (client_email,entry_date,workout_title) values ('alice@example.com','2026-09-24','Strength')"), /workout_session_deleted/);
+
+    const reused = "724b8ace-5fc0-46c6-8777-d7623bfe4d08";
+    const template = "19c2dde3-0398-4bdd-8d1f-26ab08ae1f11";
+    await db.exec(`
+      create table public.workout_comment_threads (client_email text, workout_session_id uuid);
+      create table public.client_apple_workouts (client_email text, history_key text);
+      insert into public.client_workout_logs (client_email,entry_date,workout_title,session_id,workout_template_id,source,completed_at)
+      values ('alice@example.com','2026-09-27','Arms Workout','${reused}','${template}','ios_app','2026-09-27T16:00:00Z'),
+             ('alice@example.com','2026-09-27','Shoulders Workout','${reused}','${template}','ios_app',null),
+             ('bob@example.com','2026-09-27','Arms Workout','${reused}','${template}','ios_app','2026-09-27T16:00:00Z');
+    `);
+    await assert.rejects(asUser(alice, "alice@example.com", rpc, [reused, null]), /Refresh your workout/);
+    const readGroups = () => db.query("select id,client_email,workout_title,session_id,completed_at from public.client_workout_logs where entry_date='2026-09-27' order by client_email,workout_title");
+    const before = (await readGroups()).rows;
+    await db.exec(repair);
+    const after = (await readGroups()).rows;
+    assert.deepEqual(after.map(({ session_id, ...row }) => row), before.map(({ session_id, ...row }) => row));
+    assert.notEqual(after[0].session_id, reused);
+    assert.notEqual(after[0].session_id, after[1].session_id);
+    assert.equal(after[2].session_id, reused);
+    await assert.rejects(asUser(alice, "alice@example.com", rpc, [reused, null]), /could not be found/);
+    await assert.rejects(asUser(alice, "alice@example.com", "select * from fwb_workout_private.repaired_workout_history_ids"), /permission denied/);
+
+    const staleWrite = "insert into public.client_workout_logs (client_email,entry_date,workout_title,session_id) values ('alice@example.com','2026-09-27',$1,$2) returning session_id";
+    const routed = await asUser(alice, "alice@example.com", staleWrite, ["Shoulders Workout", reused]);
+    assert.equal(routed.rows[0].session_id, after[1].session_id);
+    await assert.rejects(asUser(alice, "alice@example.com", staleWrite, ["Unmatched Workout", reused]), /Refresh your workout/);
+    const chosen = await asUser(alice, "alice@example.com", rpc, [after[0].session_id, null]);
+    assert.equal(chosen.rows[0].result.deleted_count, 1);
+    assert.equal((await readGroups()).rows.length, 3, "sibling workout and other owner's logs remain");
+    await assert.rejects(asUser(alice, "alice@example.com", staleWrite, ["Arms Workout", reused]), /workout_session_deleted/);
   } finally { await db.close(); }
 });
