@@ -47,13 +47,14 @@ async function renderConsent(clientName) {
   return { document, elements };
 }
 
-test("client OAuth app shows only workout logging permissions", async () => {
+test("GRUNTR OAuth consent describes ChatGPT history, logging, and routine previews", async () => {
   const { document, elements } = await renderConsent("FWB Training Client");
-  assert.equal(document.title, "Connect FWB Training Client");
-  assert.equal(elements["consent-title"].textContent, "Connect FWB Training Client?");
+  assert.equal(document.title, "Connect GRUNTR to ChatGPT");
+  assert.equal(elements["consent-title"].textContent, "Connect GRUNTR to ChatGPT?");
   assert.deepEqual(elements["requested-actions"].children.map((item) => item.textContent), [
-    "Confirm which FWB Training Client account is connected.",
-    "Save a completed workout to your Logs only when you ask.",
+    "Confirm your connected GRUNTR account and read your workout history, training program, and recent training check-ins.",
+    "Save sets and completed workouts to your Logs when you ask.",
+    "Prepare routine previews for your approval in GRUNTR.",
   ]);
 });
 
