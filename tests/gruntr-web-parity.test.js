@@ -166,3 +166,61 @@ test('page surfaces separate opt-in, truthful iPhone-only source and existing le
   assert.match(html, /Joining can list your nickname, avatar, and weekly counts/);
   assert.match(html, /data-gruntr-profile-activity hidden/);
 });
+
+
+test('own Profile Workout cards exclude warm-ups from counts and retain mixed/cardio-only grouping', () => {
+  const base = {entry_date:'2026-11-20', completed_at:'2026-11-20T12:00:00Z',gym_name:'Sample gym'};
+  const logs = [
+    {...base,session_id:'mix',workout_title:'Sample strength',exercise_name:'Row',exercise_order:2,weight_used:35,reps:10},
+    {...base,session_id:'mix',workout_title:'Sample strength',exercise_name:'Squat',exercise_order:1,weight_used:100,reps:8},
+    {...base,session_id:'mix',workout_title:'Sample strength',exercise_name:'Squat',exercise_order:1,weight_used:25,reps:8,kind:'warmup'},
+    {...base,session_id:'mix',workout_title:'Sample strength',exercise_name:'Bike',weight_used:15,kind:'cardio'},
+    {...base,session_id:'cardio',workout_title:'Sample cardio',exercise_name:'Bike',weight_used:28,kind:'cardio'}
+  ];
+  const {entries} = collect({logs,today:'2026-11-20',sessionKey:row=>row.session_id,setKind:row=>row.kind||'strength'});
+  const mix=entries.find(entry=>entry.key==='mix'), cardio=entries.find(entry=>entry.key==='cardio');
+  assert.deepEqual(mix.exerciseRows.map(({name,sets})=>[name,sets]),[['Squat',1],['Row',1],['Bike',1]]);
+  assert.deepEqual([mix.sets,mix.volume,mix.durationMinutes,mix.hasStrength],[3,1150,0,true]);
+  assert.deepEqual([cardio.sets,cardio.volume,cardio.durationMinutes,cardio.hasStrength],[1,0,28,false]);
+});
+
+test('Profile workout opens only the exact completed own log; mismatched/preview/draft requests do nothing', () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync(path.join(__dirname,'../js/client-portal.js'),'utf8');
+  const start = source.indexOf('function openClientProfileActivityWorkout(');
+  const end = source.indexOf('\nfunction ', start + 1);
+  assert.ok(start >= 0 && end > start);
+  const clicks = [];
+  let filtersCleared = false;
+  const search = {value:'Other'};
+  const card = key => ({dataset:{clientWorkoutHistoryKey:key},
+    querySelector:()=>({click:()=>clicks.push(['workout',key])})});
+  const context = {
+    isCoachDashboardPreview:false, activeDashboardUser:{id:'self',email:'self@example.invalid'},
+    activeClientEmail:'self@example.invalid',
+    trainingLogs:[{key:'allowed',completed_at:'completed',entry_date:'2026-11-20'},{key:'draft'}],
+    normalizeClientEmail:value=>value?.trim().toLowerCase(),
+    clientWorkoutHistorySessionKey:row=>row.key,
+    clientTrainingLogDateFilter:'2026-11-19',clientTrainingLogSearchFilter:'Other',
+    setClientDashboardTab:tab=>clicks.push(['tab',tab]),
+    renderClientTrainingLogs:()=>{filtersCleared=true;},
+    document:{
+      querySelector:()=>({click:()=>clicks.push(['view','workouts'])}),
+      querySelectorAll:()=>filtersCleared?[card('other'),card('allowed')]:[card('other')],
+      getElementById:()=>search
+    }
+  };
+  vm.runInNewContext(source.slice(start,end),context);
+  for (const key of ['other','draft']) context.openClientProfileActivityWorkout(key);
+  context.isCoachDashboardPreview=true;
+  context.openClientProfileActivityWorkout('allowed');
+  context.isCoachDashboardPreview=false;
+  context.activeClientEmail='wrong@example.invalid';
+  context.openClientProfileActivityWorkout('allowed');
+  assert.deepEqual(clicks,[]);
+  context.activeClientEmail='self@example.invalid';
+  context.openClientProfileActivityWorkout('allowed');
+  assert.deepEqual(clicks,[['tab','logs'],['view','workouts'],['workout','allowed']]);
+  assert.equal(search.value,'');
+  assert.equal(context.clientTrainingLogDateFilter,'2026-11-20');
+});

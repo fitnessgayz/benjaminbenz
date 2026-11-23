@@ -37,7 +37,8 @@ function program() {
 
 function fixture(options = {}) {
   const state = { day: "2026-09-25", storage: new Map(), calls: [], dialog: null, saveResult: { error: null }, ...options.state };
-  const context = evaluate([...promptFunctions, "clientDailyWorkoutRecommendation", "saveClientMoodNote", "openClientDailyCheckin", "maybeShowClientHomeCheckinPrompt"], {
+  const ownPlan = { ...program(), client_email: email, active: true, membership_type: "personal_training" };
+  const context = evaluate([...promptFunctions, "clientCoachingMembership", "clientPersonalTrainingAccess", "currentClientPersonalTrainingAccess", "clientDailyWorkoutRecommendation", "saveClientMoodNote", "openClientDailyCheckin", "maybeShowClientHomeCheckinPrompt"], {
     console, Date, Map, Set,
     clientHomeCheckinPromptStoragePrefix: "fwb_daily_checkin_prompt_v2",
     dailyCheckinPromptStorageKey: "fwb_daily_checkin_prompt_enabled_v1", dailyCheckinPromptFallback: true,
@@ -45,7 +46,8 @@ function fixture(options = {}) {
     activeDashboardUser: { id: "client-id", email }, activeClientEmail: email,
     activeClientDashboardTab: "home", isCoachDashboardPreview: false,
     clientPreviewProgramSelected: false, clientWorkoutLayoutSaving: false, workoutElapsedTimerState: null,
-    currentProgram: program(), progressEntries: [], trainingLogs: [],
+    currentProgram: ownPlan, clientAvailablePrograms: [ownPlan], progressEntries: [], trainingLogs: [],
+    selectClientWorkoutHubSection: section => state.calls.push(["section", section]),
     todayDate: () => state.day,
     normalizeClientEmail: value => String(value || "").trim().toLowerCase(),
     normalizeWorkoutGymName: value => String(value || "").trim().replace(/\s+/g, " ").slice(0, 80),
@@ -289,9 +291,10 @@ test("keep original opens the full assigned program overview without choosing or
   state.calls.length = 0;
   assert.equal(state.dialog.onKeepOriginal(), true);
   assert.equal(context.clientPreviewProgramSelected, true);
-  assert.equal(state.calls[0][0], "render-program");
-  assert.equal(state.calls[0][1], context.currentProgram.workouts);
-  assert.deepEqual(state.calls.slice(1), [["tab", "workouts"], ["picker", { scroll: true }]]);
+  assert.deepEqual(state.calls[0], ["section", "personal"]);
+  assert.equal(state.calls[1][0], "render-program");
+  assert.equal(state.calls[1][1], context.currentProgram.workouts);
+  assert.deepEqual(state.calls.slice(2), [["tab", "workouts"], ["picker", { scroll: true }]]);
 });
 
 test("assigned recommendation opens its workout preview without starting a timer", () => {

@@ -314,3 +314,7 @@ body.client-dashboard-page[data-client-theme="light"] .client-community-panel {
 .gruntr-profile-activity li span { grid-column: 1 / -1; overflow-wrap: anywhere; font-size: .86rem; }
 .gruntr-profile-activity li strong { overflow-wrap: anywhere; }
 .gruntr-profile-activity button { min-height: 44px; }
+
+.client-social-author { flex-wrap: wrap; }
+.client-social-inline-add { min-height: 44px; margin-inline-start: auto; padding: .3rem .55rem; font-size: .8rem; }
+.client-social-inline-add:disabled { opacity: .72; }

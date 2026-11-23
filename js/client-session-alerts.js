@@ -73,7 +73,7 @@
       pending = Promise.resolve().then(async () => {
         try {
           const { data, error } = await options.supabaseClient.from("client_programs")
-            .select("id,client_email,active,client_archived,updated_at,created_at,session_count_used,session_count_total,session_dates,session_package_history,sheet_url")
+            .select("id,client_email,active,client_archived,membership_type,account_type,updated_at,created_at,session_count_used,session_count_total,session_dates,session_package_history,sheet_url")
             .eq("active", true)
             .ilike("client_email", email.replace(/[\\%_]/g, "\\$&"))
             .or("client_archived.is.null,client_archived.eq.false")

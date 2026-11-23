@@ -36,9 +36,9 @@ test("Progress starts with an inline measurement preview and a direct stats cont
 test("the owner profile puts measurement values, trends and actions directly below the profile identity", () => {
   const profile = html.match(/data-client-dashboard-panel="profile"[\s\S]*?data-client-dashboard-panel="notifications"/)?.[0] || "";
   assert.match(profile, /data-lifthardr-profile-name[\s\S]*?id="client-profile-measurements"[\s\S]*?id="client-profile-measurement-values"/);
-  assert.match(profile, /<select id="client-profile-measurement-metric">[\s\S]*?id="client-profile-measurement-chart"/);
-  assert.match(profile, /data-client-profile-measurement-edit aria-controls="client-stats-panel">Update measurements/);
-  assert.match(profile, /data-client-progress-stats-open aria-controls="client-stats-panel">View all stats/);
+  assert.match(profile, /<select id="client-profile-measurement-metric" hidden>[\s\S]*?id="client-profile-measurement-chart"/);
+  assert.match(profile, /data-client-profile-measurement-edit aria-controls="client-stats-panel">Update Measurements/);
+  assert.match(profile, /data-client-progress-stats-open aria-controls="client-stats-panel">View Full Stats/);
   assert.ok(profile.indexOf('id="client-profile-measurements"') < profile.indexOf('id="lifthardr-profile-snapshot"'));
   assert.match(functionSource("renderProgress"), /profileMeasurements\.hidden = isCoachDashboardPreview/);
 });

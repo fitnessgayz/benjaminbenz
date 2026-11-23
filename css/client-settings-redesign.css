@@ -83,3 +83,6 @@ body.client-dashboard-page .client-app-guide .client-app-guide-more {
   color: var(--ink);
   background: var(--surface-soft);
 }
+
+body.client-dashboard-page [data-client-weekly-checkin][hidden] { display: none !important; }
+.client-settings-weekly-icon { display: grid; place-items: center; }

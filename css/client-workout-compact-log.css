@@ -315,12 +315,26 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
     gap: 6px;
     min-width: 0;
     margin: 0;
+    border-radius: 6px;
     color: #f7f8fa !important;
     font-size: .98rem !important;
     font-weight: 800 !important;
     line-height: 1.2;
     overflow-wrap: anywhere;
     text-transform: uppercase;
+  }
+
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-title:focus-visible {
+    outline: 2px solid #66b7ff;
+    outline-offset: 2px;
+  }
+
+  :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-title:focus-visible {
+    outline-color: #0751c7;
+  }
+
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-title:focus:not(:focus-visible) {
+    outline: none;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-heading-copy {
@@ -348,9 +362,8 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-name {
     display: block;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-meta {
@@ -693,9 +706,10 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     padding: 16px max(20px, env(safe-area-inset-right)) 8px max(20px, env(safe-area-inset-left));
     background: linear-gradient(transparent, rgba(12, 13, 16, .96) 38%, #0c0d10);
     pointer-events: none;
-    display: flex;
-    align-items: stretch;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) minmax(88px, 9rem) minmax(44px, 1fr);
+    align-items: center;
+    column-gap: 8px;
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-finish [hidden] {
@@ -707,9 +721,16 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     align-items: center;
     justify-content: center;
     gap: 10px;
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 56px;
+    grid-column: 2;
+    width: 100% !important;
+    inline-size: 100% !important;
+    min-width: 0 !important;
+    min-inline-size: 0 !important;
+    min-height: 44px;
+    padding: 6px 8px;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
     border: 0;
     border-radius: 14px;
     background: #ffd400;
@@ -737,12 +758,21 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: max-content;
-    padding-inline: 12px;
-    color: #ff8d95;
-    white-space: nowrap;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    width: 44px !important;
+    inline-size: 44px !important;
+    min-width: 44px !important;
+    min-inline-size: 44px !important;
+    min-height: 44px;
+    padding: 0;
+    color: #42b3ff;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-secondary svg {
+    width: 20px;
+    height: 20px;
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-more {
@@ -802,7 +832,7 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
   }
 
   :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary {
-    color: var(--danger, #a34434);
+    color: #07528a;
   }
 
   :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-more button { color: #1b291f; }

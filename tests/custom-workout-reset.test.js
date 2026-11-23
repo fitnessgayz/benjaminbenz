@@ -99,14 +99,14 @@ test("wires the reset action and cache-busts its assets", () => {
   assert.match(dashboard, /js\/client-portal\.js\?v=[^"\s]*workout-preview-1/);
 });
 
-test("custom and prescribed workouts both show Discard and Finish", () => {
+test("custom and prescribed workouts both expose an accessible Discard button and Finish", () => {
   const barMarkup = Function(`${sourceForFunction("floatingWorkoutFinishMarkup")}; return floatingWorkoutFinishMarkup;`)();
   const customBar = barMarkup();
   const assignedBar = barMarkup({ assigned: true });
 
-  assert.match(customBar, /data-reset-custom-workout>Discard Workout<\/button>/);
+  assert.match(customBar, /data-reset-custom-workout aria-label="Discard workout"[^>]*>\s*<svg[^>]*aria-hidden="true"/);
   assert.match(customBar, /data-floating-workout-finish-action[^>]*>Finish<\/button>/);
-  assert.match(assignedBar, /data-reset-assigned-workout>Discard Workout<\/button>/);
+  assert.match(assignedBar, /data-reset-assigned-workout aria-label="Discard workout"[^>]*>\s*<svg[^>]*aria-hidden="true"/);
   assert.doesNotMatch(assignedBar, /data-floating-workout-more/);
   assert.match(assignedBar, /data-floating-workout-finish-action[^>]*>Finish<\/button>/);
   assert.doesNotMatch(customBar + assignedBar, /data-floating-workout-start-action/);

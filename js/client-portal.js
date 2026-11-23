@@ -74,6 +74,7 @@ let clientWorkoutLayoutSaving = false;
 let clientWebNotificationController = null;
 let clientMessagesController = null;
 let clientSessionBalanceController = null;
+let clientWeeklyInboxController = null;
 let clientGoogleHealthController = null;
 let clientProfilePhotoController = null;
 let clientAppleHealthController = null;
@@ -543,6 +544,7 @@ function configureClientSessionBalance() {
     supabaseClient, clientEmail: email, programs: clientAvailablePrograms,
     onUpdate(program) {
       if (normalizeClientEmail(activeClientEmail) !== email) return;
+      window.FWB_LIFTHARDR_PROFILE?.refreshPack?.(program);
       const fields = Object.fromEntries([
         "session_count_used", "session_count_total", "session_dates", "session_package_history", "sheet_url"
       ].map((field) => [field, program?.[field] ?? null]));
@@ -3286,9 +3288,32 @@ function renderProgressGraph(entries, { chart = document.getElementById("progres
 function renderProfileMeasurementChart(entries = progressEntries) {
   const metric = document.getElementById("client-profile-measurement-metric");
   const chart = document.getElementById("client-profile-measurement-chart");
-  if (!metric || !chart) return;
+  const optionsHost = document.getElementById("client-profile-measurement-values");
+  const summary = document.querySelector("[data-client-profile-measurement-summary]");
+  if (!metric || !chart || !optionsHost) return;
 
-  renderProgressGraph(entries, { chart, metricKey: metric.value, maxPoints: 5 });
+  const options = [...metric.options].flatMap(({ value }) => {
+    const number = latestClientProgressValue(entries, row => progressMetricNumber(row, value));
+    if (number === null) return [];
+    const { label, suffix } = progressMetricDetails(value);
+    return [{ key: value, label, text: formatProgressValue(number, suffix) }];
+  });
+  const selected = options.find(option => option.key === metric.value) || options[0];
+  const activeKey = optionsHost.contains(document.activeElement) ? document.activeElement.dataset.profileMeasure : null;
+  if (summary) summary.textContent = selected?.text || "";
+  if (selected) {
+    metric.value = selected.key;
+    optionsHost.innerHTML = options.map(option =>
+      `<button type="button" data-profile-measure="${escapeHtml(option.key)}" aria-pressed="${option.key === selected.key}"><span>${escapeHtml(option.label)}</span><strong>${escapeHtml(option.text)}</strong></button>`).join("");
+    if (activeKey) {
+      [...optionsHost.querySelectorAll("[data-profile-measure]")].find(button => button.dataset.profileMeasure === activeKey)?.focus();
+    }
+  } else {
+    optionsHost.innerHTML = '<p class="client-progress-preview-empty">Add a measurement to start tracking your progress.</p>';
+    chart.replaceChildren();
+    return;
+  }
+  renderProgressGraph(entries, { chart, metricKey: selected.key, maxPoints: 5 });
 }
 
 function renderClientProgressHistory(entries) {
@@ -4336,7 +4361,6 @@ function renderProgress(entries) {
   if (profileMeasurements) {
     profileMeasurements.hidden = isCoachDashboardPreview;
     if (!isCoachDashboardPreview) {
-      renderClientProgressPreview(safeEntries, document.getElementById("client-profile-measurement-values"));
       renderProfileMeasurementChart(safeEntries);
     }
   }
@@ -5073,7 +5097,13 @@ function handleClientDexaReview() {
 
 function handleClientProgressMetricTabs() {
   const tabs = document.getElementById("progress-metric-tabs");
-  document.getElementById("client-profile-measurement-metric")?.addEventListener("change", () => renderProfileMeasurementChart());
+  document.getElementById("client-profile-measurement-values")?.addEventListener("click", (event) => {
+    const choice = event.target.closest("[data-profile-measure]");
+    const metric = document.getElementById("client-profile-measurement-metric");
+    if (!choice || !metric || isCoachDashboardPreview) return;
+    metric.value = choice.dataset.profileMeasure;
+    renderProfileMeasurementChart();
+  });
 
   tabs?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-progress-metric]");
@@ -8247,6 +8277,7 @@ async function initializeClientWebNotifications(user) {
     return false;
   }
 
+  clientWeeklyInboxController?.destroy();
   clientWebNotificationController?.destroy?.();
   clientWebNotificationController = window.FWBWebNotifications?.createController?.({
     supabaseClient,
@@ -8258,9 +8289,14 @@ async function initializeClientWebNotifications(user) {
     serviceWorkerUrl: restTimerNotificationServiceWorkerUrl
   }) || null;
 
-  return clientWebNotificationController
-    ? clientWebNotificationController.init()
-    : false;
+  const notifications = clientWebNotificationController;
+  clientWeeklyInboxController = notifications && window.FWB_WEEKLY_INBOX?.create({
+    client: supabaseClient, user, preview: isCoachPortalEmail(user.email),
+    publish: row => notifications.setWeeklyReminder?.(row),
+    open: focus => window.FWB_CLIENT_HOME_PARITY?.openWeeklyCheckIn?.(focus)
+  });
+  clientWeeklyInboxController?.attach();
+  return notifications ? notifications.init() : false;
 }
 
 function restTimerMarkup() {
@@ -10224,7 +10260,9 @@ function workoutActionsMarkup(workout, options = {}) {
 function floatingWorkoutFinishMarkup(options = {}) {
   const resetAction = options.assigned ? "data-reset-assigned-workout" : "data-reset-custom-workout";
   return `<div class="workout-floating-finish" data-floating-workout-finish hidden>
-    <button type="button" class="workout-floating-secondary" data-floating-workout-reset-action ${resetAction}>Discard Workout</button>
+    <button type="button" class="workout-floating-secondary" data-floating-workout-reset-action ${resetAction} aria-label="Discard workout" title="Discard workout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></svg>
+    </button>
     <button type="button" class="workout-floating-primary" data-floating-workout-finish-action aria-label="Save and finish workout">Finish</button>
   </div>`;
 }
@@ -10709,6 +10747,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
         min="0"
         step="${step}"
         inputmode="decimal"
+        enterkeyhint="done"
         value="${escapeHtml(value)}"
         placeholder="${escapeHtml(placeholder)}"
         data-custom-grouped-field="${field}"
@@ -11183,7 +11222,8 @@ function openCustomWorkoutGroupedHistory(button) {
       customWorkoutGroupedCopyValue(record.weight_used) !== null &&
       customWorkoutGroupedCopyValue(record.reps, "reps") !== null
     ));
-    const best = personalBestWeightLog(history);
+    const gym = normalizeWorkoutGymName(workoutGymLocationForElement(logElement));
+    const best = gym ? personalBestWeightLog(logsForExerciseDisplay(logElement)) : null;
     const recent = [...history].sort((a, b) =>
       String(b.entry_date).localeCompare(String(a.entry_date)) ||
       Number(b.set_number || 1) - Number(a.set_number || 1));
@@ -11191,7 +11231,7 @@ function openCustomWorkoutGroupedHistory(button) {
     const rows = records.map((record) => {
       const choiceIndex = choices.push({ exerciseIndex, record }) - 1;
       return `<button type="button" data-custom-grouped-history-choice="${choiceIndex}">
-        ${record === best ? "<strong>PR · </strong>" : ""}${escapeHtml(record.weight_used)} lb × ${escapeHtml(record.reps)} reps
+        ${record === best ? "<strong>PR at this gym · </strong>" : ""}${escapeHtml(record.weight_used)} lb × ${escapeHtml(record.reps)} reps
         <small>${escapeHtml(normalizeWorkoutGymName(record.gym_name) || "Gym not recorded")} · ${escapeHtml(formatLogDate(record.entry_date))} · Set ${escapeHtml(record.set_number || 1)}</small>
       </button>`;
     }).join("");
@@ -15001,7 +15041,38 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     <svg class="workout-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h16m-7-7 7 7-7 7"/></svg>`;
 }
 
+function clientCoachingMembership(program) {
+  const kind = String(program?.account_type ?? "").trim().toLowerCase();
+  const membership = String(program?.membership_type ?? "").trim().toLowerCase();
+  if (kind === "beta_tester" || membership === "app_access_only") return "app-only";
+  return ["personal_training", "online_training"].includes(membership) ? "available" : "unverified";
+}
+
+function clientPersonalTrainingAccess(programs, email) {
+  const owner = normalizeClientEmail(email);
+  const own = owner ? (programs || []).filter(program =>
+    program?.active === true && program.client_archived !== true &&
+    normalizeClientEmail(program.client_email) === owner
+  ) : [];
+  const eligible = own.filter(program => clientCoachingMembership(program) === "available");
+  return {
+    programs: eligible,
+    state: eligible.length ? "available" : own.some(program => clientCoachingMembership(program) === "app-only")
+      ? "app-only" : "unverified"
+  };
+}
+
+function currentClientPersonalTrainingAccess() {
+  const email = isCoachDashboardPreview ? activeClientEmail : activeDashboardUser?.email;
+  return clientPersonalTrainingAccess(clientAvailablePrograms, email);
+}
+
+function allowedClientWorkoutHubSection(section, state) {
+  return section === "trainer" || (section === "personal" && state === "available") ? section : "routines";
+}
+
 function selectClientWorkoutHubSection(section) {
+  section = allowedClientWorkoutHubSection(section, currentClientPersonalTrainingAccess().state);
   clientWorkoutHubSection = section;
   document.querySelectorAll("[data-client-workout-hub-tab]").forEach(tab => {
     const active = tab.dataset.clientWorkoutHubTab === section;
@@ -15013,21 +15084,26 @@ function selectClientWorkoutHubSection(section) {
 }
 
 function clientWorkoutListMarkup(workouts) {
+  const access = currentClientPersonalTrainingAccess();
+  if (!access.programs.some(program => program.id === currentProgram?.id)) clientPreviewProgramSelected = false;
   if (!clientPreviewProgramSelected) {
-    const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
+    const programs = access.programs;
     const sections = [["routines", "Routines"], ["personal", "Personal Training"], ["trainer", "GRUNTR Trainer"]];
-    const active = typeof clientWorkoutHubSection === "undefined" ? "routines" : clientWorkoutHubSection;
+    const active = allowedClientWorkoutHubSection(clientWorkoutHubSection, access.state);
+    const lockHint = access.state === "app-only" ? "Personal Training isn’t included with app-only access."
+      : "Personal Training access is not verified.";
     const panel = (id, content) => `<section id="workout-hub-${id}" class="workout-choice-list client-workout-hub-section"
       role="tabpanel" aria-labelledby="workout-hub-tab-${id}" ${id === active ? "" : "hidden"}>${content}</section>`;
     const card = (action, icon, title, description, id) => `<button type="button" class="workout-choice-card" ${action}
       aria-labelledby="${id}-title" aria-describedby="${id}-description">${clientWorkoutChoiceContent({
         icon, title, description, titleId: `${id}-title`, descriptionId: `${id}-description`
       })}</button>`;
-    const workoutCount = (programs[0].workouts || []).length;
     return `<div class="workout-program-picker client-workout-hub">
       <div class="client-workout-hub-tabs" role="tablist" aria-label="Workout sections">${sections.map(([id, label]) => `
         <button id="workout-hub-tab-${id}" type="button" role="tab" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}"
-          aria-controls="workout-hub-${id}" data-client-workout-hub-tab="${id}">${label}</button>`).join("")}</div>
+          aria-controls="workout-hub-${id}" data-client-workout-hub-tab="${id}"
+          ${id === "personal" && access.state !== "available" ? 'disabled aria-describedby="client-personal-training-access-hint"' : ""}>${label}</button>`).join("")}</div>
+      ${access.state !== "available" ? `<p id="client-personal-training-access-hint" class="client-workout-hub-empty">${escapeHtml(lockHint)}</p>` : ""}
       ${panel("routines", `
         <button type="button" class="client-workout-hub-start" data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
           data-client-workout-selection-target="Log Workout"><span aria-hidden="true">＋</span> Start Workout</button>
@@ -15037,13 +15113,16 @@ function clientWorkoutListMarkup(workouts) {
         ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore")}
         ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous")}
       `)}
-      ${panel("personal", `
-        ${!workoutCount && !clientAvailablePrograms.length
-          ? '<p class="client-workout-hub-empty">Your coach’s program will appear here when it’s assigned.</p>'
-          : card('data-preview-program="0"', "calendar", programs[0].program_title || "Personal Trainer Program",
-            `${workoutCount} ${workoutCount === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`, "workout-personal")}
+      ${panel("personal", access.state === "available" ? `
+        ${programs.map(program => {
+          const count = (program.workouts || []).length;
+          const index = clientAvailablePrograms.indexOf(program);
+          return card(`data-preview-program="${index}"`, "calendar", program.program_title || "Personal Trainer Program",
+            count ? `${count} ${count === 1 ? "workout" : "workouts"}` : "Your coach’s assigned workouts will appear here.",
+            `workout-personal-${index}`);
+        }).join("")}
         ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan upcoming workouts.", "workout-calendar")}
-      `)}
+      ` : "")}
       ${panel("trainer", `
         ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer")}
         ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved")}
@@ -15208,6 +15287,7 @@ function handleClientWorkoutPreview() {
     const programButton = event.target.closest("[data-preview-program]");
     if (programButton) {
       const program = clientAvailablePrograms[Number(programButton.dataset.previewProgram)];
+      if (!program || !currentClientPersonalTrainingAccess().programs.includes(program)) return;
       if (workoutElapsedTimerState && program && program.id !== currentProgram.id) {
         window.alert("Finish or cancel your current workout before switching programs.");
         return;
@@ -15232,6 +15312,7 @@ function handleClientWorkoutPreview() {
     }
     const start = event.target.closest("[data-preview-start]");
     if (start) {
+      if (!currentClientPersonalTrainingAccess().programs.some(program => program.id === currentProgram?.id)) return;
       const index = Number(start.dataset.previewStart);
       const panel = document.getElementById(`client-workout-panel-${index}`);
       const title = panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle;
@@ -15504,7 +15585,8 @@ function renderClientWorkoutTabs(workouts = []) {
     return;
   }
 
-  const scheduledWorkouts = Array.isArray(workouts) ? workouts : [];
+  const access = currentClientPersonalTrainingAccess();
+  const scheduledWorkouts = access.programs.some(program => program.id === currentProgram?.id) && Array.isArray(workouts) ? workouts : [];
   const availableWorkouts = clientWorkoutPickerItems(scheduledWorkouts);
 
   if (count) {
@@ -17307,6 +17389,27 @@ function clientAchievementSnapshot() {
   return window.FWB_ACHIEVEMENTS.evaluate(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail });
 }
 
+function openClientProfileActivityWorkout(key) {
+  if (isCoachDashboardPreview || !activeDashboardUser?.id ||
+      normalizeClientEmail(activeDashboardUser.email) !== normalizeClientEmail(activeClientEmail)) return;
+  const record = trainingLogs.find(row => clientWorkoutHistorySessionKey(row) === key && row.completed_at);
+  if (!record) return;
+  setClientDashboardTab("logs");
+  document.querySelector('[data-client-logs-tab="workouts"]')?.click();
+  const find = () => [...document.querySelectorAll("[data-client-workout-history-key]")]
+    .find(card => card.dataset.clientWorkoutHistoryKey === key);
+  let card = find();
+  if (!card) {
+    clientTrainingLogDateFilter = record.entry_date;
+    clientTrainingLogSearchFilter = "";
+    const search = document.getElementById("client-training-log-search-filter");
+    if (search) search.value = "";
+    renderClientTrainingLogs();
+    card = find();
+  }
+  card?.querySelector("[data-client-workout-history-open]")?.click();
+}
+
 function renderClientAchievements() {
   if (!window.FWB_ACHIEVEMENTS_UI) return;
   clientAchievementController ||= window.FWB_ACHIEVEMENTS_UI.createController(document, retryClientAchievements);
@@ -17330,7 +17433,16 @@ function renderClientAchievements() {
   window.FWB_GRUNTR_PROFILE_ACTIVITY?.render({
     client: supabaseClient, owner: activeDashboardUser?.id, email: activeClientEmail,
     preview: isCoachDashboardPreview, today: todayDate(), status: clientAchievementHistoryStatus,
-    logs: trainingLogs, achievements: snapshot, sessionKey: clientWorkoutHistorySessionKey
+    logs: trainingLogs, achievements: snapshot, sessionKey: clientWorkoutHistorySessionKey,
+    workoutTitle: workoutDisplayTitle, openWorkout: openClientProfileActivityWorkout, retry: retryClientAchievements,
+    setKind(row) {
+      const code = String(row.exercise_code || "").trim().toUpperCase();
+      const type = normalizedSetType(row.set_type, row.set_number);
+      if (code === warmupExerciseCode || type === warmUpSetType) return "warmup";
+      if (code === cardioExerciseCode) return "cardio";
+      if (type === "timed" || Number(row.duration_seconds) > 0) return "timed";
+      return "strength";
+    }
   });
   window.FWB_COMMUNITY_CONNECTIONS?.syncAchievements(snapshot);
   clientQuarterGoalController?.render();
@@ -19566,7 +19678,8 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
     },
     onKeepOriginal() {
       assertCurrent();
-      clientPreviewProgramSelected = true;
+      clientPreviewProgramSelected = currentClientPersonalTrainingAccess().programs.some(item => item.id === program?.id);
+      selectClientWorkoutHubSection(clientPreviewProgramSelected ? "personal" : "routines");
       renderClientWorkoutTabs(program.workouts);
       setClientDashboardTab("workouts");
       showClientWorkoutPicker({ scroll: true });
@@ -20879,6 +20992,18 @@ function handleIosLogExerciseAction(button) {
   }
 }
 
+function handleGroupedWorkoutLogEnter(event) {
+  if (event.key !== "Enter" || event.defaultPrevented || event.repeat || event.isComposing ||
+    event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+  const input = event.target.closest?.("input[data-custom-grouped-field]");
+  const row = input?.closest(".custom-workout-grouped-row:not(.is-complete)");
+  const button = row?.querySelector('[data-custom-grouped-set-toggle][aria-pressed="false"]:not(:disabled)');
+  if (!button) return false;
+  event.preventDefault();
+  button.click();
+  return true;
+}
+
 function handleWorkoutInteractions() {
   document.addEventListener("error", (event) => {
     const image = event.target?.closest?.("img[data-exercise-media-fallback], .ios-log-exercise-image .exercise-media-button > img");
@@ -20998,18 +21123,20 @@ function handleWorkoutInteractions() {
       event.preventDefault();
       const calendar = window.FWB_CLIENT_WORKOUT_CALENDAR;
       if (!calendar) { window.alert("Workout calendar could not load. Refresh and try again."); return; }
+      const profilePanel = calendarButton.closest('[data-client-dashboard-panel="profile"]');
       void calendar.open({
+        panel: profilePanel,
         client: supabaseClient, userId: isCoachDashboardPreview ? null : activeDashboardUser?.id,
         email: normalizeClientEmail(activeClientEmail), returnFocus: calendarButton,
         getAssignedWorkouts() {
-          return clientAvailablePrograms.flatMap(program => (program.workouts || []).map((workout, index) => ({
+          return currentClientPersonalTrainingAccess().programs.flatMap(program => (program.workouts || []).map((workout, index) => ({
             workout, index, programId: program.id, programTitle: program.program_title
           })));
         },
         onOpenWorkout(row, workout) {
           if (workoutElapsedTimerState) throw new Error("Finish or cancel your current workout before opening another.");
           if (row.source_type === "assigned") {
-            for (const program of clientAvailablePrograms) {
+            for (const program of currentClientPersonalTrainingAccess().programs) {
               const index = (program.workouts || []).findIndex(item =>
                 (workout.sourceID && item.id && workout.sourceID === item.id) ||
                 (item.title === workout.title && JSON.stringify((item.exercises || []).map(exercise => exercise.name)) ===
@@ -21020,9 +21147,11 @@ function handleWorkoutInteractions() {
               else renderClientWorkoutTabs(currentProgram.workouts);
               const panel = document.getElementById(`client-workout-panel-${index + 1}`);
               syncWorkoutPanelDate(panel, row.planned_date);
+              if (profilePanel) setClientDashboardTab("workouts");
               activateClientWorkoutPanel(index + 1);
               return true;
             }
+            throw new Error("This coach-assigned workout is no longer available.");
           }
           const accepted = useGeneratedClientWorkout(workout, null, "", { start: false });
           if (accepted) {
@@ -22215,6 +22344,9 @@ function handleWorkoutInteractions() {
   document.addEventListener("keydown", (event) => {
     const nextExerciseOverlay = document.querySelector("[data-next-exercise-overlay]");
 
+    if (nextExerciseOverlay?.hidden !== false && customGroupedFinishPanel?.hidden !== false &&
+      handleGroupedWorkoutLogEnter(event)) return;
+
     if (event.key === "Tab" && customGroupedFinishPanel?.hidden === false) {
       const buttons = Array.from(customGroupedFinishPanel.querySelectorAll("button:not([disabled])"));
       const firstButton = buttons[0];
@@ -22833,6 +22965,9 @@ async function loadDashboard() {
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     // Alert recovery must not wait for workout data to load successfully.
     void initializeClientWebNotifications(user);
+    if (!isCoachPortalEmail(signedInEmail)) document.addEventListener("fwb:weekly-checkin-complete", event => {
+      clientWeeklyInboxController?.complete(event.detail?.week);
+    });
     configureClientProfilePhoto();
     configureClientAccountSettings();
 
@@ -22851,8 +22986,11 @@ async function loadDashboard() {
         .from("client_programs")
         .select("*")
         .eq("active", true)
-        .ilike("client_email", targetClientEmail)
-        .order("updated_at", { ascending: false }),
+        .ilike("client_email", targetClientEmail.replace(/[\\%_]/g, "\\$&"))
+        .or("client_archived.is.null,client_archived.eq.false")
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: false }),
       "Program request timed out."
     );
     const assignedProgram = Array.isArray(programRows) ? programRows[0] : null;
@@ -22879,6 +23017,12 @@ async function loadDashboard() {
     window.FWB_COMMUNITY_CONNECTIONS?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     configureClientAppleWorkouts();
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
+    // Use the original owner-scoped rows before the existing Sessions controller
+    // copies display balance fields across programs for other dashboard views.
+    window.FWB_LIFTHARDR_PROFILE?.configurePack?.({
+      user, clientEmail: activeClientEmail, preview: isCoachDashboardPreview,
+      isCoach: isCoachPortalEmail(signedInEmail), programs: clientAvailablePrograms, auth: supabaseClient.auth
+    });
     renderProgram(data);
     void loadClientFitnessPlan(user.id);
     configureClientSessionBalance();
@@ -23823,8 +23967,12 @@ async function handleSignOut() {
   buttons.forEach((button) => {
     button.addEventListener("click", async () => {
       clearClientQuestionnaire();
+      clientWeeklyInboxController?.destroy();
+      clientWeeklyInboxController = null;
+      window.FWB_CLIENT_HOME_PARITY?.closeWeeklyCheckIn?.();
       clientMessagesController?.destroy();
       clientMessagesController = null;
+      window.FWB_LIFTHARDR_PROFILE?.clearPack?.();
       clientSessionBalanceController?.destroy();
       clientSessionBalanceController = null;
       clientGoogleHealthController?.destroy();

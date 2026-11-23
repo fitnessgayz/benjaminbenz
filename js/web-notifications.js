@@ -141,6 +141,7 @@
     let busy = false;
     let refreshPromise = null;
     let inboxRows = [];
+    let localWeeklyReminder = null;
     let likedNotificationIds = new Set();
 
     function element(selector) {
@@ -511,7 +512,8 @@
       const title = global.document.createElement("strong");
       const body = global.document.createElement("span");
       const date = global.document.createElement("time");
-      const actionUrl = safeActionUrl(row.action_url, role);
+      const isLocal = row === localWeeklyReminder;
+      const actionUrl = isLocal ? "#client-weekly-dialog" : safeActionUrl(row.action_url, role);
       const notificationKind = String(row.kind || "general").toLowerCase();
       const activityType = String(row?.metadata?.activity_type || "").toLowerCase();
       const activityDescriptor = `${notificationKind} ${activityType} ${String(row.title || "")} ${String(row.body || "")}`.toLowerCase();
@@ -535,7 +537,10 @@
       item.className = "web-notification-item";
       item.classList.toggle("is-unread", !row.read_at);
       link.href = actionUrl;
-      link.dataset.webNotificationOpen = row.id;
+      if (isLocal) {
+        link.dataset.webLocalWeekly = "";
+        link.setAttribute("aria-haspopup", "dialog");
+      } else link.dataset.webNotificationOpen = row.id;
       title.textContent = String(row.title || "FWB update");
       body.textContent = String(row.body || "Open FWB for the latest update.");
       date.dateTime = String(row.created_at || "");
@@ -572,7 +577,10 @@
       return item;
     }
 
-    function renderInbox(rows) {
+    function renderInbox(serverRows) {
+      const rows = localWeeklyReminder
+        ? [localWeeklyReminder, ...serverRows].sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+        : serverRows;
       const list = element("[data-web-notification-list]");
       const empty = element("[data-web-notification-empty]");
       const unreadBadges = Array.from(new Set([
@@ -830,6 +838,11 @@
     }
 
     async function markAllRead() {
+      if (localWeeklyReminder && !localWeeklyReminder.read_at) localWeeklyReminder.onRead();
+      if (localWeeklyReminder && !inboxRows.some(row => !row.read_at)) {
+        setStatus("Notifications marked as read.", "success");
+        return;
+      }
       let query = supabaseClient
         .from("client_notifications")
         .update({ read_at: new Date().toISOString() })
@@ -853,7 +866,12 @@
       const notificationLink = event.target.closest("[data-web-notification-open]");
       const likeButton = event.target.closest("[data-web-notification-like]");
 
-      if (likeButton) {
+      if (event.target.closest("[data-web-local-weekly]")) {
+        event.preventDefault();
+        const reminder = localWeeklyReminder;
+        reminder?.onRead();
+        reminder?.onOpen(() => root.querySelector("[data-web-local-weekly]"));
+      } else if (likeButton) {
         event.preventDefault();
         await toggleActivityLike(likeButton);
       } else if (enableButton) {
@@ -995,6 +1013,11 @@
     return {
       init,
       refresh,
+      setWeeklyReminder(row) {
+        if (destroyed || role !== "client") return;
+        localWeeklyReminder = row;
+        renderInbox(inboxRows);
+      },
       prepareForSignOut,
       destroy
     };

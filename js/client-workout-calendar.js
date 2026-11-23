@@ -284,23 +284,26 @@
     }
   }
 
-  function ensureHost() {
-    panel = root.document?.getElementById("client-workouts-panel");
-    if (!panel) return false;
-    if (host?.isConnected) return true;
-    host = root.document.createElement("div");
-    host.className = "client-workout-calendar";
-    host.hidden = true;
-    host.addEventListener("click", onClick);
-    host.addEventListener("cancel", event => {
-      if (event.target.matches("[data-calendar-picker]")) { event.preventDefault(); choosing = false; render(); }
-    }, true);
-    panel.append(host);
+  function ensureHost(nextPanel) {
+    const target = nextPanel || root.document?.getElementById("client-workouts-panel");
+    if (!target) return false;
+    if (panel && panel !== target) close(false);
+    panel = target;
+    if (!host) {
+      host = root.document.createElement("div");
+      host.className = "client-workout-calendar";
+      host.hidden = true;
+      host.addEventListener("click", onClick);
+      host.addEventListener("cancel", event => {
+        if (event.target.matches("[data-calendar-picker]")) { event.preventDefault(); choosing = false; render(); }
+      }, true);
+    }
+    if (host.parentElement !== panel) panel.append(host);
     return true;
   }
 
   async function open(nextContext) {
-    if (!ensureHost()) return;
+    if (!ensureHost(nextContext.panel)) return;
     context = nextContext;
     returnFocus = nextContext.returnFocus;
     selectedDate = localDateKey(new Date());

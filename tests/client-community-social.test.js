@@ -102,7 +102,8 @@ test('Feed renders three exercises, author workouts and live reactions and comme
   assert.deepEqual(post.children[2].children.map(metric => metric.children[0].textContent), ['Duration', 'Sets', 'Volume']);
   assert.deepEqual(post.children[3].children.map(exercise => exercise.children[0].textContent), ['Squat', 'Curl', 'Press']);
   const member = panel.children[1];
-  assert.equal(post.children[0].children.length, 1);
+  assert.equal(post.children[0].children.length, 2);
+  assert.equal(post.children[0].children[1].textContent, 'Add to Squad');
   post.children[0].children[0].handlers.click();
   assert.equal(member.open, true);
   const [profile, heading, workout] = member.children[1].children;
@@ -154,4 +155,24 @@ test('leaderboard defaults to the saved server preference and opts out for all m
   assert.ok(actions.some(([name, args]) => name === 'community_set_leaderboard_sharing' && args.p_enabled === false));
   assert.equal(fields['board-sharing'].checked, false);
   assert.equal(fields.ranks.children.length, 0);
+});
+
+test('compact Feed invite is joined/eligible only and an old account action cannot send', async () => {
+  const { controller, client, fields, actions } = fixture();
+  controller.configure(client, alice, false);
+  const author = () => fields['wall-list'].children[0].children[0];
+  await controller.refreshFeed();
+  assert.equal(author().children.length, 1);
+  controller.setMembers({ display_name: 'Alex' }, [], false);
+  assert.equal(author().children.length, 1);
+  controller.setMembers({ display_name: 'Alex' }, [], true);
+  const click = author().children[1];
+  assert.equal(click['aria-label'], 'Add Jordan to Squad');
+  click.handlers.click(); click.handlers.click();
+  await tick();
+  assert.equal(actions.filter(x => x === bob).length, 1);
+  assert.equal(click.textContent, 'Squad request pending');
+  controller.configure(client, session, false);
+  click.handlers.click();
+  assert.equal(actions.filter(x => x === bob).length, 1);
 });

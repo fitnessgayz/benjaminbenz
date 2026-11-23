@@ -24,8 +24,6 @@
     const nameInput = panel.querySelector('#client-community-display-name');
     const avatarButtons = Array.from(panel.querySelectorAll('[data-community-avatar]'));
     const ownProps = panel.querySelector('[data-community-own-props]');
-    const codeOutput = panel.querySelector('#client-community-own-code');
-    const codeInput = panel.querySelector('#client-community-invite-code');
     const list = panel.querySelector('[data-community-connection-list]');
     const status = panel.querySelector('[data-community-connection-status]');
     const feedList = document.querySelector('[data-community-feed-list]');
@@ -42,13 +40,18 @@
     let client = null, userId = '', preview = false, generation = 0;
     let profile = null, preferences = null, snapshot = null, published = '', busy = false, wallBusy = false;
     let selectedAvatar = 'strength';
+    let canCancel = false, squadEpoch = 0, squadReady = false;
     let acceptedCount = 0, connected = [], photoPath = null, photoMode = 'keep', photoSupported = false;
 
     const socialAPI = root.FWB_COMMUNITY_SOCIAL;
     const socialPanel = document.querySelector('[data-client-dashboard-panel="community"]');
     const social = socialAPI && socialPanel && socialAPI.mount(document, socialPanel, {
       openCircles: () => root.FWB_CLIENT_COMMUNITY?.showView('connections', true),
-      requestCircle: owner => perform(() => client.rpc('community_request_circle', { p_member_id: owner }), 'Squad request sent.')
+      requestCircle: owner => {
+        if (!squadReady || profile?.user_id !== userId || owner === userId ||
+            connected.some(row => [row.user_a,row.user_b].includes(owner))) return Promise.resolve(false);
+        return perform(() => client.rpc('community_request_circle', { p_member_id: owner }), 'Squad request sent.');
+      }
     });
     const avatarSymbol = id => socialAPI?.avatarSymbol(id) || avatars[id] || avatars.strength;
 
@@ -276,10 +279,11 @@
     function renderConnections(connections, profiles, achievements, props) {
       list.replaceChildren();
       if (!connections.length) {
-        list.append(field('p', 'No one in your Squad yet. Add someone from the Feed or use an invite code.'));
+        list.append(field('p', 'No one in your Squad yet. Choose Add to Squad next to someone’s name on the Feed.'));
         return;
       }
       const photos = [];
+      const actionEpoch = squadEpoch;
       const incoming = connection => connection.status === 'pending' && connection.requested_by !== userId;
       const sorted = [...connections].sort((a, b) => Number(incoming(b)) - Number(incoming(a)));
       for (const connection of sorted) {
@@ -346,13 +350,19 @@
         if (incoming) {
           const accept = field('button', 'Accept');
           accept.type = 'button';
-          accept.addEventListener('click', () => void changeConnection('community_accept_connection', connection.id));
+          accept.addEventListener('click', () => void changeConnection('accept', connection.id, actionEpoch, name));
           actions.append(accept);
         }
-        const remove = field('button', incoming ? 'Decline' : connection.status === 'pending' ? 'Cancel request' : 'Remove from Squad');
-        remove.type = 'button';
-        remove.addEventListener('click', () => void changeConnection('community_remove_connection', connection.id));
-        actions.append(remove);
+        if (!incoming && connection.status === 'pending' && connection.requested_by === userId && canCancel) {
+          const cancel = field('button', 'Cancel Request'); cancel.type = 'button';
+          cancel.addEventListener('click', () => void changeConnection('cancel', connection.id, actionEpoch, name));
+          actions.append(cancel);
+        }
+        if (connection.status === 'accepted') {
+          const remove = field('button', 'Remove from Squad'); remove.type = 'button';
+          remove.addEventListener('click', () => void changeConnection('remove', connection.id, actionEpoch, name));
+          actions.append(remove);
+        }
         card.append(actions);
         list.append(card);
       }
@@ -376,7 +386,7 @@
       void refreshWall(id, version);
       try {
         const [profileResult, preferenceResult] = await Promise.all([
-          client.from('client_community_profiles').select('user_id,display_name,avatar_id,invite_code').eq('user_id', id).maybeSingle(),
+          client.from('client_community_profiles').select('user_id,display_name,avatar_id').eq('user_id', id).maybeSingle(),
           client.from('client_community_preferences')
             .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in')
             .eq('user_id', id).maybeSingle()
@@ -388,19 +398,18 @@
         profile = profileResult.data;
         preferences = preferenceResult.data;
         void loadPhoto(client, id, version);
-        social?.setMembers(profile, connected);
+        social?.setMembers(profile, connected, squadReady);
         profileEditor.hidden = false;
         join.hidden = Boolean(profile);
         member.hidden = !profile;
         if (!profile) {
-          connected = [];
+          connected = []; squadReady = false; canCancel = false;
           updateAcceptedCount(connected);
           social?.setMembers(null, connected);
           list.replaceChildren(); chooseAvatar('strength');
           renderChallenges([]);
           message('Choose a nickname and avatar for your Social profile.'); return;
         }
-        codeOutput.textContent = profile.invite_code;
         nameInput.value = profile.display_name;
         chooseAvatar(profile.avatar_id);
         const { data: rows, error: connectionError } = await client.from('client_community_connections')
@@ -408,20 +417,22 @@
         if (connectionError) throw connectionError;
         const connections = rows || [];
         if (!current(id, version)) return;
-        connected = connections;
+        connected = connections; squadReady = true;
         updateAcceptedCount(connected);
-        social?.setMembers(profile, connected);
+        social?.setMembers(profile, connected, squadReady);
         const peerIds = connections.map(row => row.user_a === id ? row.user_b : row.user_a);
         const acceptedIds = connections.filter(row => row.status === 'accepted')
           .map(row => row.user_a === id ? row.user_b : row.user_a);
-        const [profilePeers, shared, propsResult, challengeResult] = await Promise.all([
+        const [profilePeers, shared, propsResult, challengeResult, cancelCapability] = await Promise.all([
           readPeerProfiles(peerIds),
           acceptedIds.length ? client.rpc('community_shared_progress') : { data: [], error: null },
           client.rpc('community_props_summary'),
-          client.rpc('community_challenge_summary')
+          client.rpc('community_challenge_summary'),
+          connections.some(row => row.status === 'pending' && row.requested_by === id) ? readCancelCapability(client) : false
         ]);
         if (profilePeers.error || shared.error || propsResult.error) throw profilePeers.error || shared.error || propsResult.error;
         if (!current(id, version)) return;
+        canCancel = cancelCapability;
         const props = new Map((propsResult.data || []).map(row => [row.user_id, row]));
         ownProps.textContent = String(props.get(id)?.received_count || 0);
         renderConnections(connections, new Map((profilePeers.data || []).map(row => [row.user_id, row])),
@@ -431,35 +442,61 @@
         message('Squad members can see the milestones you choose to share with them.');
         void publish();
       } catch (_) {
-        if (current(id, version)) message('Your Squad could not load. Try opening this section again.');
+        if (current(id, version)) {
+          squadReady = false; canCancel = false;
+          social?.setMembers(profile, connected, false);
+          message('Your Squad could not load. Try opening this section again.');
+        }
       }
     }
 
-    async function perform(action, success) {
+    async function readCancelCapability(api) {
+      try {
+        const { data, error } = await api.rpc('community_cancel_squad_request_capability');
+        return !error && data === true;
+      } catch (_) { return false; }
+    }
+
+    async function perform(action, success, requireTrue = false) {
       if (busy || !client || !userId || preview) return false;
       busy = true;
       message('Saving…');
-      const id = userId;
+      const id = userId, api = client, epoch = squadEpoch;
+      const active = () => id === userId && api === client && epoch === squadEpoch && !preview;
       try {
-        const result = await action();
+        const result = await action(api);
+        if (!active()) return false;
         if (result.error) throw result.error;
-        if (id !== userId) return false;
         await refresh();
-        if (id !== userId) return false;
+        if (!active()) return false;
+        if (requireTrue && result.data !== true) {
+          message('This request may have changed. Your Squad list has been refreshed.');
+          return false;
+        }
         message(success);
         return true;
       } catch (error) {
-        if (id === userId) {
+        if (active() && requireTrue) await refresh();
+        if (active()) {
           const detail = String(error?.message || '');
-          message(/^(Invite code not found|A connection or invitation already exists|Join Community before sending an invitation|An active challenge already exists for this goal|Add a photo to your account)/.test(detail)
+          message(/^(A connection or invitation already exists|Join Community before sending an invitation|An active challenge already exists for this goal|Add a photo to your account)/.test(detail)
             ? detail : 'Could not save. Please try again.');
         }
         return false;
-      } finally { busy = false; }
+      } finally { if (active()) busy = false; }
     }
 
-    function changeConnection(rpc, connectionId) {
-      void perform(() => client.rpc(rpc, { p_connection_id: connectionId }), 'Squad updated.');
+    function changeConnection(action, id, epoch, name) {
+      if (!squadReady || busy || epoch !== squadEpoch || preview) return false;
+      const row = connected.find(x => x.id === id && [x.user_a,x.user_b].includes(userId));
+      if (!row) return false;
+      if (action === 'cancel' && row.status === 'pending' && row.requested_by === userId && canCancel)
+        return perform(api => api.rpc('community_cancel_outgoing_squad_request', { p_connection_id: id }), 'Squad request canceled.', true);
+      if (action === 'accept' && row.status === 'pending' && row.requested_by !== userId)
+        return perform(api => api.rpc('community_accept_connection', { p_connection_id: id }), 'Squad request accepted.', true);
+      if (action === 'remove' && row.status === 'accepted' && root.confirm?.('Remove ' + name + ' from your Squad?'))
+        return perform(api => api.rpc('community_remove_connection', { p_connection_id: id }), 'Removed from Squad.', true);
+      return false;
     }
     async function giveProps(peer) {
       if (busy || !client || !userId || preview) return;
@@ -493,19 +530,6 @@
     }
     panel.querySelector('[data-community-join-button]').addEventListener('click', () => saveProfile(true));
     panel.querySelector('[data-community-profile-save]').addEventListener('click', () => saveProfile(false));
-    panel.querySelector('[data-community-invite]').addEventListener('click', () => {
-      const code = codeInput.value.trim().toUpperCase();
-      if (!/^[A-F0-9]{16}$/.test(code)) { message('Enter the 16-character invite code.'); return; }
-      void perform(() => client.rpc('community_request_connection', { p_invite_code: code }), 'Squad request sent.');
-      codeInput.value = '';
-    });
-    panel.querySelector('[data-community-copy]').addEventListener('click', async () => {
-      try { await root.navigator.clipboard.writeText(profile?.invite_code || ''); message('Invite code copied.'); }
-      catch (_) { message('Copy the code shown above to share it.'); }
-    });
-    panel.querySelector('[data-community-rotate]').addEventListener('click', () => {
-      void perform(() => client.rpc('community_rotate_invite_code'), 'New invite code ready.');
-    });
     panel.querySelector('[data-community-leave]').addEventListener('click', async () => {
       if (!root.confirm('Leave Social and remove all Squad members?')) return;
       await perform(async () => {
@@ -529,7 +553,7 @@
 
     return {
       configure(nextClient, nextUserId, isPreview) {
-        generation++;
+        generation++; squadEpoch++; busy = false; squadReady = false; canCancel = false;
         client = nextClient; userId = String(nextUserId || ''); preview = Boolean(isPreview);
         profile = null; preferences = null; snapshot = null; published = ''; wallBusy = false;
         connected = []; photoPath = null; photoMode = 'keep'; photoSupported = false;
