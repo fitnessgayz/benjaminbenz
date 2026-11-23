@@ -40,6 +40,10 @@ function contrast(a, b) {
           document.getElementById("dashboard-content").hidden = false;
           const planner = document.querySelector(".client-home-planner");
           const label = planner.querySelector("[data-client-home-week-label]");
+          let surface = planner;
+          while (surface.parentElement && getComputedStyle(surface).backgroundColor === "rgba(0, 0, 0, 0)") {
+            surface = surface.parentElement;
+          }
           const nav = document.querySelector(".client-dashboard-tabs");
           const box = nav.getBoundingClientRect();
           const buttons = [...nav.querySelectorAll("[data-client-dashboard-tab]")].map(tab => {
@@ -58,7 +62,7 @@ function contrast(a, b) {
           const carouselPlaceholders = [...loggerFixture.querySelectorAll("input, textarea")].map(placeholder);
           loggerFixture.remove();
           return { theme: selected, pageWidth: document.documentElement.scrollWidth,
-            weekBackground: getComputedStyle(planner).backgroundColor,
+            weekBackground: getComputedStyle(surface).backgroundColor,
             weekLabel: getComputedStyle(label).color,
             nav: { left: box.left, right: box.right, height: box.height, bottom: box.bottom, position: getComputedStyle(nav).position, background: getComputedStyle(nav).backgroundColor },
             buttons, clearance, searchPlaceholder, carouselPlaceholders, viewportHeight: innerHeight };

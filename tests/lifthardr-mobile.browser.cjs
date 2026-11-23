@@ -25,8 +25,7 @@ function production(name) {
 }
 
 const router = [
-  "syncClientDashboardMobileNavigationIcon", "syncClientDashboardMobileNavigationMount",
-  "setClientDashboardMobileNavigationExpanded", "clientDashboardMobileTabPressAction",
+  "syncClientDashboardMobileNavigationMount", "setClientDashboardMobileNavigationExpanded",
   "clientDashboardNavigationTab", "setClientDashboardTab", "handleClientDashboardTabs"
 ].map(production).join("\n");
 
@@ -191,7 +190,6 @@ async function check(engine, label, width) {
       let activeClientDashboardTab = "home", clientWorkoutPickerIsOpen = true, savedWorkoutScrollY = null;
       let clientWebNotificationController = null, clientProfilePhotoController = null;
       let clientAppleHealthController = null, clientGoogleHealthController = null;
-      let lastClientDashboardMobileTabPress = "";
       function flushScheduledClientTrainingLogsRender() {}
       function applyWorkoutElapsedTimerPosition() {}
       function maybeShowClientHomeCheckinPrompt() {}

@@ -97,7 +97,7 @@ test("uses dynamic viewport sizing and a single bottom-clearance contract", () =
   assert.ok((mobileStyles.match(/100dvh/g) || []).length >= 2);
   assert.match(mobileStyles, /--client-bottom-dock-clearance:\s*calc\(var\(--client-mobile-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
   assert.doesNotMatch(mobileStyles, /100vh|100svh/);
-  assert.doesNotMatch(handlerSource, /visualViewport/);
+  assert.match(handlerSource, /visualViewport/);
   assert.doesNotMatch(styleSource, /--client-visual-viewport-bottom/);
 });
 
@@ -107,27 +107,21 @@ test("removes horizontal scrolling from the floating dock", () => {
 
   assert.doesNotMatch(dashboardHtml, /data-client-nav-scroll-(?:fade|cue)/);
   assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
-  assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
+  assert.match(mobileHandler, /scroller\.scrollTop/);
   assert.match(dockSource, /overflow:\s*visible/);
   assert.match(dockSource, /border-radius:\s*999px !important/);
 });
 
-test("keeps mobile navigation permanently expanded while preserving selected-tab routing", () => {
-  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
+test("exposes the compact profile button and connects it to the mobile tab list", () => {
   const setMobileSource = sourceForFunction("setClientDashboardMobileNavigationExpanded");
   const handlerSource = sourceForFunction("handleClientDashboardMobileNavigation");
-  const tabHandlerSource = sourceForFunction("handleClientDashboardTabs");
 
-  assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Open navigation, Home selected"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
+  assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Expand navigation"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
   assert.match(dashboardHtml, /<nav class="client-dashboard-tabs" id="client-dashboard-navigation"/);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*display:\s*none !important/s);
-  assert.match(setMobileSource, /const isExpanded = mobileNavigation/);
-  assert.match(setMobileSource, /toggle\.hidden = true/);
-  assert.match(setMobileSource, /navigation\.inert = false/);
-  assert.match(setMobileSource, /navigation\.removeAttribute\("aria-hidden"\)/);
-  assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true\);/);
-  assert.match(tabHandlerSource, /clientDashboardMobileTabPressAction\(/);
-  assert.doesNotMatch(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false/);
+  assert.match(setMobileSource, /toggle\.hidden = !collapsed/);
+  assert.match(setMobileSource, /navigation\.inert = collapsed/);
+  assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true, \{ focusNavigation: true \}\)/);
+  assert.match(handlerSource, /addEventListener\("scroll", handleScroll, \{ capture: true/);
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
@@ -203,9 +197,9 @@ test("timer avoids the mobile dock and cannot overlap the desktop sidebar", () =
   const applySource = sourceForFunction("applyWorkoutElapsedTimerPosition");
   const dragSource = sourceForFunction("bindWorkoutElapsedTimerDragging");
 
-  assert.match(boundsSource, /const navigationIsBottomDock = Boolean\([\s\S]*?matchMedia\?\.\("\(max-width: 900px\)"\)\?\.matches[\s\S]*?\)/);
-  assert.match(boundsSource, /const navigationMaxTop = navigationIsBottomDock\s*\? navigationRect\.top - rect\.height - gap\s*:\s*viewportMaxTop/);
-  assert.match(boundsSource, /const sidebarMinLeft = navigationRect\?\.width > 0 && !navigationIsBottomDock\s*\? navigationRect\.right \+ gap\s*:\s*gap/);
+  assert.match(boundsSource, /data-client-mobile-nav-toggle/);
+  assert.match(boundsSource, /workout-floating-finish/);
+  assert.match(boundsSource, /const sidebarMinLeft = !mobile && navigationRect\?\.width > 0/);
   assert.match(boundsSource, /const minLeft = Math\.min\(maxLeft, Math\.max\(gap, sidebarMinLeft\)\)/);
   assert.match(boundsSource, /return \{[\s\S]*?minLeft,[\s\S]*?maxLeft,[\s\S]*?maxTop:/);
   assert.match(applySource, /position\.edge === "left" \? `\$\{bounds\.minLeft\}px` : "auto"/);

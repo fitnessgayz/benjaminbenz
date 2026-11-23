@@ -34,9 +34,8 @@ test("workout timer starts at the top left and can be hidden without clearing el
   assert.match(portalSource, /workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3"/);
   assert.match(portalSource, /workoutElapsedTimerPosition = \{ edge: "left", topRatio: 0 \}/);
   assert.match(styleSource, /\.workout-elapsed-timer\s*\{[^}]*top:\s*max\(8px, env\(safe-area-inset-top\)\)[^}]*right:\s*auto[^}]*bottom:\s*auto[^}]*left:\s*8px/s);
-  assert.match(portalSource, /navigationIsBottomDock/);
   assert.match(portalSource, /window\.matchMedia\?\.\("\(max-width: 900px\)"\)\?\.matches/);
-  assert.match(portalSource, /navigationRect\.top - rect\.height - gap/);
+  assert.match(portalSource, /bottom - rect\.height - gap/);
   assert.match(portalSource, /navigationRect\.right \+ gap/);
   assert.match(portalSource, /data-workout-elapsed-close/);
   assert.match(portalSource, /workoutElapsedTimerState\.dismissed = true/);
