@@ -86,3 +86,10 @@ body.client-dashboard-page .client-app-guide .client-app-guide-more {
 
 body.client-dashboard-page [data-client-weekly-checkin][hidden] { display: none !important; }
 .client-settings-weekly-icon { display: grid; place-items: center; }
+
+:root body.client-dashboard-page .web-notification-item .web-notification-weekly-action {
+  margin-block-start: 6px;
+  color: var(--client-neon);
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}

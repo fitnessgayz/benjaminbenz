@@ -94,7 +94,7 @@ function renderAssignedCase(active) {
   try {
     for (const width of [320, 360, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 844 } });
-      await page.route(/^https:\/\/workouts\.fixture\.test\/images\/gruntr\/workout-shortcuts\/(explore|previous|trainer|saved)\.jpg$/, route => {
+      await page.route(/^https:\/\/workouts\.fixture\.test\/images\/gruntr\/workout-shortcuts\/(explore|previous|trainer|saved|calendar|personal-training)\.jpg$/, route => {
         const file = path.basename(new URL(route.request().url()).pathname);
         return route.fulfill({ path: path.join(root, 'images/gruntr/workout-shortcuts', file), contentType: 'image/jpeg' });
       });
@@ -145,6 +145,7 @@ function renderAssignedCase(active) {
       };
       await assertCover(explore, 'explore');
       await assertCover(previous, 'previous');
+      await assertCover(routines.getByRole('button', { name: 'Workout calendar' }), 'calendar');
       await start.focus();
       const nextControl = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
       await page.keyboard.press(nextControl);
@@ -155,6 +156,15 @@ function renderAssignedCase(active) {
       const trainer = page.locator('#workout-hub-trainer');
       await assertCover(trainer.getByRole('button', { name: 'Start with GRUNTR Trainer' }), 'trainer');
       await assertCover(trainer.getByRole('button', { name: 'Saved workouts' }), 'saved');
+      await page.evaluate(() => {
+        clientAvailablePrograms = [{ id: 'plan', active: true, client_email: activeDashboardUser.email,
+          membership_type: 'personal_training', program_title: 'Strength', workouts: [{}] }];
+        document.querySelector('.client-workout-hub').remove();
+        document.querySelector('[data-client-workout-choice-dialog]').remove();
+        document.getElementById('client-workouts-panel').insertAdjacentHTML('afterbegin', clientWorkoutListMarkup([]));
+        selectClientWorkoutHubSection('personal');
+      });
+      await assertCover(page.getByRole('button', { name: 'Trainer Program' }), 'personal-training');
       await page.evaluate(() => selectClientWorkoutHubSection('routines'));
       assert.equal(await start.evaluate(button => getComputedStyle(button).color), 'rgb(21, 21, 19)', 'Start uses dark text on yellow');
       assert.equal(await page.getByText('Benjamin’s Routine', { exact: true }).count(), 1);

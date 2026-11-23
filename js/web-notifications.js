@@ -127,6 +127,7 @@
     const user = options.user;
     const role = options.role === "coach" ? "coach" : "client";
     const root = options.root || global.document?.querySelector("[data-web-notifications]");
+    const openWeeklyCheckIn = role === "client" ? options.openWeeklyCheckIn : null;
     const externalUnreadBadges = Array.from(options.unreadBadges || (options.unreadBadge ? [options.unreadBadge] : []));
     const externalUnreadStatus = options.unreadStatus || null;
     const serviceWorkerUrl = options.serviceWorkerUrl || defaultServiceWorkerUrl;
@@ -513,8 +514,9 @@
       const body = global.document.createElement("span");
       const date = global.document.createElement("time");
       const isLocal = row === localWeeklyReminder;
-      const actionUrl = isLocal ? "#client-weekly-dialog" : safeActionUrl(row.action_url, role);
       const notificationKind = String(row.kind || "general").toLowerCase();
+      const opensWeekly = notificationKind === "weekly_check_in" && typeof openWeeklyCheckIn === "function";
+      const actionUrl = isLocal || opensWeekly ? "#client-weekly-dialog" : safeActionUrl(row.action_url, role);
       const activityType = String(row?.metadata?.activity_type || "").toLowerCase();
       const activityDescriptor = `${notificationKind} ${activityType} ${String(row.title || "")} ${String(row.body || "")}`.toLowerCase();
       const iconKind = activityDescriptor.includes("challenge")
@@ -537,10 +539,10 @@
       item.className = "web-notification-item";
       item.classList.toggle("is-unread", !row.read_at);
       link.href = actionUrl;
-      if (isLocal) {
-        link.dataset.webLocalWeekly = "";
-        link.setAttribute("aria-haspopup", "dialog");
-      } else link.dataset.webNotificationOpen = row.id;
+      if (isLocal) link.dataset.webLocalWeekly = "";
+      else link.dataset.webNotificationOpen = row.id;
+      if (isLocal || opensWeekly) link.setAttribute("aria-haspopup", "dialog");
+      if (!isLocal && opensWeekly) link.dataset.webWeeklyCheckIn = "";
       title.textContent = String(row.title || "FWB update");
       body.textContent = String(row.body || "Open FWB for the latest update.");
       date.dateTime = String(row.created_at || "");
@@ -554,6 +556,12 @@
         link.append(typeIcon, title, body, date);
       } else {
         link.append(title, body, date);
+        if (isLocal || opensWeekly) {
+          const action = global.document.createElement("strong");
+          action.className = "web-notification-weekly-action";
+          action.textContent = "Open weekly check-in";
+          link.append(action);
+        }
       }
       item.append(link);
       if (likeableCoachActivity(row)) {
@@ -826,15 +834,21 @@
       }
     }
 
-    async function markRead(notificationId) {
-      if (!notificationId) {
-        return;
-      }
-      await supabaseClient
+    async function markRead(notificationId, { updateInbox = false } = {}) {
+      if (!notificationId) return;
+      const readAt = new Date().toISOString();
+      const { error } = await supabaseClient
         .from("client_notifications")
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: readAt })
         .eq("user_id", user.id)
         .eq("id", notificationId);
+      if (updateInbox && !error && !destroyed) {
+        const row = inboxRows.find(row => row.id === notificationId);
+        if (row && !row.read_at) {
+          row.read_at = readAt;
+          renderInbox(inboxRows);
+        }
+      }
     }
 
     async function markAllRead() {
@@ -871,6 +885,12 @@
         const reminder = localWeeklyReminder;
         reminder?.onRead();
         reminder?.onOpen(() => root.querySelector("[data-web-local-weekly]"));
+      } else if (notificationLink?.dataset.webWeeklyCheckIn === "") {
+        event.preventDefault();
+        const id = notificationLink.dataset.webNotificationOpen;
+        if (!destroyed) openWeeklyCheckIn(() => Array.from(root.querySelectorAll("[data-web-weekly-check-in]"))
+          .find(link => link.dataset.webNotificationOpen === id));
+        await markRead(id, { updateInbox: true });
       } else if (likeButton) {
         event.preventDefault();
         await toggleActivityLike(likeButton);

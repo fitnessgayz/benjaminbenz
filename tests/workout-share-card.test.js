@@ -181,7 +181,7 @@ test("image exports a 1080×1350 PNG File with a saved-state filename and exact 
   const h = imageHarness();
   assert.deepEqual(Object.keys(h.api), ["image", "text", "metrics"]);
   const file = await h.api.image(example({ isComplete: false }));
-  assert.equal(file.name, "fwb-workout-saved.png");
+  assert.equal(file.name, "gruntr-workout-saved.png");
   assert.equal(file.type, "image/png");
   assert.equal(h.canvas.width, 1080);
   assert.equal(h.canvas.height, 1350);

@@ -179,3 +179,55 @@
   :root body .achievement-home-next { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { :root body .achievement-celebration-confetti { display: none; } }
+
+:root body.client-dashboard-page .client-home-wins {
+  order: 4;
+  padding-block: 16px;
+  border-block-end: 1px solid var(--line);
+}
+
+:root body.client-dashboard-page .client-home-wins .achievement-section-heading {
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+:root body.client-dashboard-page .client-home-wins .achievement-link {
+  width: auto !important;
+  min-width: 0 !important;
+  background: transparent;
+  color: var(--client-neon);
+  border-color: var(--line);
+}
+
+.client-home-wins .achievement-home-win {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding-block: 12px;
+  overflow-wrap: anywhere;
+}
+
+.client-home-wins .achievement-home-win + .achievement-home-win {
+  border-block-start: 1px solid var(--line);
+}
+
+.client-home-wins .achievement-home-win :is(small, strong, div > span) {
+  display: block;
+}
+
+.client-home-wins .achievement-home-win div > :is(small, span),
+.client-home-wins .achievement-state {
+  color: var(--muted);
+}
+
+.client-home-wins .achievement-home-win-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--client-neon);
+}
+
+.client-home-wins .achievement-home-win-icon svg { width: 26px; height: 26px; }
+.client-home-wins .achievement-home-win-icon img { width: 40px; height: 40px; object-fit: contain; }
