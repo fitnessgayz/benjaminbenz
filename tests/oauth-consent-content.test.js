@@ -5,7 +5,7 @@ import { runInNewContext } from "node:vm";
 
 const consentScript = readFileSync(new URL("../js/oauth-consent.js", import.meta.url), "utf8");
 
-async function renderConsent(clientName) {
+async function renderConsent(clientName, { isGruntr = false, resourceError = null } = {}) {
   const elements = Object.fromEntries([
     "status", "approve", "deny", "client-name", "consent-title",
     "requested-actions", "consent-disclaimer", "requested-scopes",
@@ -24,6 +24,11 @@ async function renderConsent(clientName) {
   ].map((textContent) => ({ textContent }));
 
   const client = {
+    rpc: async (name, args) => {
+      assert.equal(name, "is_gruntr_oauth_authorization");
+      assert.equal(args.p_authorization_id, "test");
+      return { data: isGruntr, error: resourceError };
+    },
     auth: {
       getUser: async () => ({ data: { user: { id: "test-client" } } }),
       oauth: {
@@ -48,7 +53,7 @@ async function renderConsent(clientName) {
 }
 
 test("GRUNTR OAuth consent describes ChatGPT history, logging, and routine previews", async () => {
-  const { document, elements } = await renderConsent("FWB Training Client");
+  const { document, elements } = await renderConsent("ChatGPT", { isGruntr: true });
   assert.equal(document.title, "Connect GRUNTR to ChatGPT");
   assert.equal(elements["consent-title"].textContent, "Connect GRUNTR to ChatGPT?");
   assert.deepEqual(elements["requested-actions"].children.map((item) => item.textContent), [
@@ -62,4 +67,12 @@ test("other OAuth apps retain the existing coaching permission list", async () =
   const { document, elements } = await renderConsent("ChatGPT");
   assert.equal(document.title, "Connect FWB Training Assistant");
   assert.equal(elements["requested-actions"].children.length, 3);
+});
+
+
+test("consent fails closed when the requested resource cannot be checked", async () => {
+  const { elements } = await renderConsent("ChatGPT", { resourceError: { message: "unavailable" } });
+  assert.equal(elements.status.textContent, "Could not verify which connection is requesting access. Try reconnecting.");
+  assert.equal(elements.approve.disabled, true);
+  assert.equal(elements.deny.disabled, true);
 });

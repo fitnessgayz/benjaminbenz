@@ -49,24 +49,32 @@ async function initialize() {
     return;
   }
 
-  if (data.client?.name) {
-    clientNameElement.textContent = `${data.client.name} is requesting access to your coaching account.`;
-    if (data.client.name.toLowerCase() === "fwb training client") {
-      document.title = "Connect GRUNTR to ChatGPT";
-      consentTitleElement.textContent = "Connect GRUNTR to ChatGPT?";
-      clientNameElement.textContent = "ChatGPT is requesting access to your GRUNTR workout account.";
-      requestedActionsElement.replaceChildren();
-      for (const action of [
-        "Confirm your connected GRUNTR account and read your workout history, training program, and recent training check-ins.",
-        "Save sets and completed workouts to your Logs when you ask.",
-        "Prepare routine previews for your approval in GRUNTR.",
-      ]) {
-        const item = document.createElement("li");
-        item.textContent = action;
-        requestedActionsElement.append(item);
-      }
-      consentDisclaimerElement.textContent = "ChatGPT provides exercise guidance. Contact your coach for coaching or emergency services for urgent help.";
+  const { data: isGruntr, error: resourceError } = await supabaseClient.rpc("is_gruntr_oauth_authorization", {
+    p_authorization_id: data.authorization_id,
+  });
+  if (resourceError) {
+    showStatus("Could not verify which connection is requesting access. Try reconnecting.");
+    disableActions();
+    return;
+  }
+
+  if (isGruntr) {
+    document.title = "Connect GRUNTR to ChatGPT";
+    consentTitleElement.textContent = "Connect GRUNTR to ChatGPT?";
+    clientNameElement.textContent = `${data.client?.name || "The app"} is requesting access to your GRUNTR workout account.`;
+    requestedActionsElement.replaceChildren();
+    for (const action of [
+      "Confirm your connected GRUNTR account and read your workout history, training program, and recent training check-ins.",
+      "Save sets and completed workouts to your Logs when you ask.",
+      "Prepare routine previews for your approval in GRUNTR.",
+    ]) {
+      const item = document.createElement("li");
+      item.textContent = action;
+      requestedActionsElement.append(item);
     }
+    consentDisclaimerElement.textContent = "ChatGPT provides exercise guidance. Contact your coach for coaching or emergency services for urgent help.";
+  } else if (data.client?.name) {
+    clientNameElement.textContent = `${data.client.name} is requesting access to your coaching account.`;
   }
   if (data.scope?.trim()) {
     scopesElement.hidden = false;
