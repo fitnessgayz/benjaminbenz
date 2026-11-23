@@ -15005,7 +15005,38 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     <svg class="workout-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h16m-7-7 7 7-7 7"/></svg>`;
 }
 
+function clientCoachingMembership(program) {
+  const kind = String(program?.account_type ?? "").trim().toLowerCase();
+  const membership = String(program?.membership_type ?? "").trim().toLowerCase();
+  if (kind === "beta_tester" || membership === "app_access_only") return "app-only";
+  return ["personal_training", "online_training"].includes(membership) ? "available" : "unverified";
+}
+
+function clientPersonalTrainingAccess(programs, email) {
+  const owner = normalizeClientEmail(email);
+  const own = owner ? (programs || []).filter(program =>
+    program?.active === true && program.client_archived !== true &&
+    normalizeClientEmail(program.client_email) === owner
+  ) : [];
+  const eligible = own.filter(program => clientCoachingMembership(program) === "available");
+  return {
+    programs: eligible,
+    state: eligible.length ? "available" : own.some(program => clientCoachingMembership(program) === "app-only")
+      ? "app-only" : "unverified"
+  };
+}
+
+function currentClientPersonalTrainingAccess() {
+  const email = isCoachDashboardPreview ? activeClientEmail : activeDashboardUser?.email;
+  return clientPersonalTrainingAccess(clientAvailablePrograms, email);
+}
+
+function allowedClientWorkoutHubSection(section, state) {
+  return section === "trainer" || (section === "personal" && state === "available") ? section : "routines";
+}
+
 function selectClientWorkoutHubSection(section) {
+  section = allowedClientWorkoutHubSection(section, currentClientPersonalTrainingAccess().state);
   clientWorkoutHubSection = section;
   document.querySelectorAll("[data-client-workout-hub-tab]").forEach(tab => {
     const active = tab.dataset.clientWorkoutHubTab === section;
@@ -15017,21 +15048,26 @@ function selectClientWorkoutHubSection(section) {
 }
 
 function clientWorkoutListMarkup(workouts) {
+  const access = currentClientPersonalTrainingAccess();
+  if (!access.programs.some(program => program.id === currentProgram?.id)) clientPreviewProgramSelected = false;
   if (!clientPreviewProgramSelected) {
-    const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
+    const programs = access.programs;
     const sections = [["routines", "Routines"], ["personal", "Personal Training"], ["trainer", "GRUNTR Trainer"]];
-    const active = typeof clientWorkoutHubSection === "undefined" ? "routines" : clientWorkoutHubSection;
+    const active = allowedClientWorkoutHubSection(clientWorkoutHubSection, access.state);
+    const lockHint = access.state === "app-only" ? "Personal Training isn’t included with app-only access."
+      : "Personal Training access is not verified.";
     const panel = (id, content) => `<section id="workout-hub-${id}" class="workout-choice-list client-workout-hub-section"
       role="tabpanel" aria-labelledby="workout-hub-tab-${id}" ${id === active ? "" : "hidden"}>${content}</section>`;
     const card = (action, icon, title, description, id) => `<button type="button" class="workout-choice-card" ${action}
       aria-labelledby="${id}-title" aria-describedby="${id}-description">${clientWorkoutChoiceContent({
         icon, title, description, titleId: `${id}-title`, descriptionId: `${id}-description`
       })}</button>`;
-    const workoutCount = (programs[0].workouts || []).length;
     return `<div class="workout-program-picker client-workout-hub">
       <div class="client-workout-hub-tabs" role="tablist" aria-label="Workout sections">${sections.map(([id, label]) => `
         <button id="workout-hub-tab-${id}" type="button" role="tab" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}"
-          aria-controls="workout-hub-${id}" data-client-workout-hub-tab="${id}">${label}</button>`).join("")}</div>
+          aria-controls="workout-hub-${id}" data-client-workout-hub-tab="${id}"
+          ${id === "personal" && access.state !== "available" ? 'disabled aria-describedby="client-personal-training-access-hint"' : ""}>${label}</button>`).join("")}</div>
+      ${access.state !== "available" ? `<p id="client-personal-training-access-hint" class="client-workout-hub-empty">${escapeHtml(lockHint)}</p>` : ""}
       ${panel("routines", `
         <button type="button" class="client-workout-hub-start" data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
           data-client-workout-selection-target="Log Workout"><span aria-hidden="true">＋</span> Start Workout</button>
@@ -15041,13 +15077,16 @@ function clientWorkoutListMarkup(workouts) {
         ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore")}
         ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous")}
       `)}
-      ${panel("personal", `
-        ${!workoutCount && !clientAvailablePrograms.length
-          ? '<p class="client-workout-hub-empty">Your coach’s program will appear here when it’s assigned.</p>'
-          : card('data-preview-program="0"', "calendar", programs[0].program_title || "Personal Trainer Program",
-            `${workoutCount} ${workoutCount === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`, "workout-personal")}
+      ${panel("personal", access.state === "available" ? `
+        ${programs.map(program => {
+          const count = (program.workouts || []).length;
+          const index = clientAvailablePrograms.indexOf(program);
+          return card(`data-preview-program="${index}"`, "calendar", program.program_title || "Personal Trainer Program",
+            count ? `${count} ${count === 1 ? "workout" : "workouts"}` : "Your coach’s assigned workouts will appear here.",
+            `workout-personal-${index}`);
+        }).join("")}
         ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan upcoming workouts.", "workout-calendar")}
-      `)}
+      ` : "")}
       ${panel("trainer", `
         ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer")}
         ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved")}
@@ -15212,6 +15251,7 @@ function handleClientWorkoutPreview() {
     const programButton = event.target.closest("[data-preview-program]");
     if (programButton) {
       const program = clientAvailablePrograms[Number(programButton.dataset.previewProgram)];
+      if (!program || !currentClientPersonalTrainingAccess().programs.includes(program)) return;
       if (workoutElapsedTimerState && program && program.id !== currentProgram.id) {
         window.alert("Finish or cancel your current workout before switching programs.");
         return;
@@ -15236,6 +15276,7 @@ function handleClientWorkoutPreview() {
     }
     const start = event.target.closest("[data-preview-start]");
     if (start) {
+      if (!currentClientPersonalTrainingAccess().programs.some(program => program.id === currentProgram?.id)) return;
       const index = Number(start.dataset.previewStart);
       const panel = document.getElementById(`client-workout-panel-${index}`);
       const title = panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle;
@@ -15508,7 +15549,8 @@ function renderClientWorkoutTabs(workouts = []) {
     return;
   }
 
-  const scheduledWorkouts = Array.isArray(workouts) ? workouts : [];
+  const access = currentClientPersonalTrainingAccess();
+  const scheduledWorkouts = access.programs.some(program => program.id === currentProgram?.id) && Array.isArray(workouts) ? workouts : [];
   const availableWorkouts = clientWorkoutPickerItems(scheduledWorkouts);
 
   if (count) {
@@ -19570,7 +19612,8 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
     },
     onKeepOriginal() {
       assertCurrent();
-      clientPreviewProgramSelected = true;
+      clientPreviewProgramSelected = currentClientPersonalTrainingAccess().programs.some(item => item.id === program?.id);
+      selectClientWorkoutHubSection(clientPreviewProgramSelected ? "personal" : "routines");
       renderClientWorkoutTabs(program.workouts);
       setClientDashboardTab("workouts");
       showClientWorkoutPicker({ scroll: true });
@@ -21018,14 +21061,14 @@ function handleWorkoutInteractions() {
         client: supabaseClient, userId: isCoachDashboardPreview ? null : activeDashboardUser?.id,
         email: normalizeClientEmail(activeClientEmail), returnFocus: calendarButton,
         getAssignedWorkouts() {
-          return clientAvailablePrograms.flatMap(program => (program.workouts || []).map((workout, index) => ({
+          return currentClientPersonalTrainingAccess().programs.flatMap(program => (program.workouts || []).map((workout, index) => ({
             workout, index, programId: program.id, programTitle: program.program_title
           })));
         },
         onOpenWorkout(row, workout) {
           if (workoutElapsedTimerState) throw new Error("Finish or cancel your current workout before opening another.");
           if (row.source_type === "assigned") {
-            for (const program of clientAvailablePrograms) {
+            for (const program of currentClientPersonalTrainingAccess().programs) {
               const index = (program.workouts || []).findIndex(item =>
                 (workout.sourceID && item.id && workout.sourceID === item.id) ||
                 (item.title === workout.title && JSON.stringify((item.exercises || []).map(exercise => exercise.name)) ===
@@ -21039,6 +21082,7 @@ function handleWorkoutInteractions() {
               activateClientWorkoutPanel(index + 1);
               return true;
             }
+            throw new Error("This coach-assigned workout is no longer available.");
           }
           const accepted = useGeneratedClientWorkout(workout, null, "", { start: false });
           if (accepted) {
@@ -22870,8 +22914,11 @@ async function loadDashboard() {
         .from("client_programs")
         .select("*")
         .eq("active", true)
-        .ilike("client_email", targetClientEmail)
-        .order("updated_at", { ascending: false }),
+        .ilike("client_email", targetClientEmail.replace(/[\\%_]/g, "\\$&"))
+        .or("client_archived.is.null,client_archived.eq.false")
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: false }),
       "Program request timed out."
     );
     const assignedProgram = Array.isArray(programRows) ? programRows[0] : null;
