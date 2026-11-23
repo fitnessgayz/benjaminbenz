@@ -3,6 +3,18 @@ create schema account_deletion_private;
 revoke all on schema account_deletion_private from public, anon, authenticated;
 grant usage on schema account_deletion_private to service_role;
 
+-- An external intake copy can exist even if the write to Supabase failed.
+-- Retain only what an operator needs to find and clear that copy.
+create table account_deletion_private.questionnaire_erasure_queue (
+  request_id uuid primary key default gen_random_uuid(),
+  normalized_email text not null check (normalized_email <> '' and normalized_email = lower(btrim(normalized_email))),
+  queued_at timestamptz not null default clock_timestamp()
+);
+create index questionnaire_erasure_queue_order_idx
+  on account_deletion_private.questionnaire_erasure_queue (queued_at, request_id);
+alter table account_deletion_private.questionnaire_erasure_queue enable row level security;
+revoke all on account_deletion_private.questionnaire_erasure_queue from public, anon, authenticated, service_role;
+
 -- The client may never supply a file path. Use the authenticated user's object
 -- ownership and the private, verified UUID folders if an old service upload
 -- has no owner. Exercise library media is not selected by folder or metadata.
@@ -147,11 +159,20 @@ begin
     execute format('delete from public.%I where lower(btrim(client_email)) = $1', legacy_table) using deleting_email;
   end loop;
 
-  -- Delete the Auth identity in the same transaction as the legacy data.
+  -- Queue the verified address unconditionally. The public form dual-writes,
+  -- so missing Supabase questionnaire records cannot rule out an intake copy.
+  insert into account_deletion_private.questionnaire_erasure_queue (normalized_email)
+    values (deleting_email);
+
+  -- Delete the Auth identity in the same transaction as the legacy data and
+  -- the processor queue entry.
   -- Existing FK cascades also revoke refresh sessions and erase UUID-owned
   -- profile, device, workout, achievements, integration, and health records.
   delete from auth.users where id = p_account_id;
-  return found;
+  if not found then
+    raise exception 'Auth account deletion was not confirmed';
+  end if;
+  return true;
 end;
 $$;
 revoke all on function account_deletion_private.finish(uuid) from public, anon, authenticated;
@@ -177,6 +198,58 @@ as $$
 $$;
 revoke all on function public.finish_client_account_deletion(uuid) from public, anon, authenticated;
 grant execute on function public.finish_client_account_deletion(uuid) to service_role;
+
+-- Operator-only functions return a bounded batch and remove exactly the
+-- completed request. queued_at is also the intake-submission cutoff.
+create function account_deletion_private.list_questionnaire_erasures(p_limit integer)
+returns table (request_id uuid, normalized_email text, queued_at timestamptz)
+language sql stable security definer
+set search_path = ''
+as $$
+  select item.request_id, item.normalized_email, item.queued_at
+    from account_deletion_private.questionnaire_erasure_queue item
+    order by item.queued_at, item.request_id
+    limit greatest(1, least(coalesce(p_limit, 25), 100));
+$$;
+revoke all on function account_deletion_private.list_questionnaire_erasures(integer) from public, anon, authenticated;
+grant execute on function account_deletion_private.list_questionnaire_erasures(integer) to service_role;
+
+create function account_deletion_private.complete_questionnaire_erasure(p_request_id uuid)
+returns boolean
+language sql security definer
+set search_path = ''
+as $$
+  with removed as (
+    delete from account_deletion_private.questionnaire_erasure_queue request
+      where request.request_id = p_request_id
+      returning 1
+  )
+  select exists (select 1 from removed);
+$$;
+revoke all on function account_deletion_private.complete_questionnaire_erasure(uuid) from public, anon, authenticated;
+grant execute on function account_deletion_private.complete_questionnaire_erasure(uuid) to service_role;
+
+create function public.list_account_deletion_questionnaire_erasures(p_limit integer default 25)
+returns table (request_id uuid, normalized_email text, queued_at timestamptz)
+language sql stable security invoker
+set search_path = ''
+as $$
+  select * from account_deletion_private.list_questionnaire_erasures(p_limit);
+$$;
+revoke all on function public.list_account_deletion_questionnaire_erasures(integer) from public, anon, authenticated;
+grant execute on function public.list_account_deletion_questionnaire_erasures(integer) to service_role;
+
+-- Call only after the operator has verified the Sheet copies were cleared and
+-- recorded completion through the authorized support process.
+create function public.complete_account_deletion_questionnaire_erasure(p_request_id uuid)
+returns boolean
+language sql security invoker
+set search_path = ''
+as $$
+  select account_deletion_private.complete_questionnaire_erasure(p_request_id);
+$$;
+revoke all on function public.complete_account_deletion_questionnaire_erasure(uuid) from public, anon, authenticated;
+grant execute on function public.complete_account_deletion_questionnaire_erasure(uuid) to service_role;
 
 -- Supabase access tokens remain cryptographically valid until expiry after
 -- account deletion. Require a current Auth row alongside existing policies
