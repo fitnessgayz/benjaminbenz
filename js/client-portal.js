@@ -210,7 +210,7 @@ const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
-const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
+const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-2";
 let exerciseLibraryEntries = [];
 const exerciseNameRefreshTimers = new WeakMap();
 const exerciseNameRefreshDelay = 120;
@@ -8199,8 +8199,8 @@ async function showRestTimerCompleteNotification() {
 
   const options = {
     body: "Your next set is ready.",
-    icon: "/images/gruntr/icon-192.png",
-    badge: "/favicon-32.png",
+    icon: "/images/gruntr/client-5e7e5c45/icon-192.png",
+    badge: "/images/gruntr/client-5e7e5c45/icon-32.png",
     tag: "fwb-rest-timer-complete",
     renotify: true,
     silent: false,

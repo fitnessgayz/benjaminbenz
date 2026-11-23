@@ -507,8 +507,8 @@ async function dispatchNotifications(
           title: safeCopy.title,
           body: safeCopy.body,
           tag: row.dedupe_key || row.id,
-          icon: "/fwb-home-icon-192.png",
-          badge: "/favicon-32.png",
+          icon: row.recipient_role === "coach" ? "/fwb-home-icon-192.png" : "/images/gruntr/client-5e7e5c45/icon-192.png",
+          badge: row.recipient_role === "coach" ? "/favicon-32.png" : "/images/gruntr/client-5e7e5c45/icon-32.png",
           data: {
             url: row.action_url,
             notificationId: row.id

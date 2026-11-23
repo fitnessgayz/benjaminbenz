@@ -1,7 +1,7 @@
 (function attachFwbWebNotifications(global) {
   "use strict";
 
-  const defaultServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
+  const defaultServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-2";
   const modernFunctionName = "send-web-push";
   const deployedFunctionName = "fwb-web-push";
   const maximumInboxItems = 12;

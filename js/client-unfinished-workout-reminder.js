@@ -98,8 +98,8 @@
       save();
       const details = {
         body: "Done with your workout? Open GRUNTR, then hit Finish and save.",
-        icon: "/images/gruntr/icon-192.png",
-        badge: "/favicon-32.png",
+        icon: "/images/gruntr/client-5e7e5c45/icon-192.png",
+        badge: "/images/gruntr/client-5e7e5c45/icon-32.png",
         tag: "fwb-unfinished-workout",
         data: { url: "/client-dashboard.html?tab=workouts" }
       };
