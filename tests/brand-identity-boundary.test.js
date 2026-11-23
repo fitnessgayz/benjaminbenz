@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const { createHash } = require("node:crypto");
 const path = require("node:path");
 const test = require("node:test");
 
@@ -43,8 +44,13 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(coach.name, "FWB Coach");
   assert.equal(coach.background_color, "#030D1C");
   assert.equal(coach.theme_color, "#030D1C");
-  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/")));
-  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any"));
+  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-b45a7399/")));
+  // The public site and Coach retain their own art and URLs.
+  assert.ok(website.icons.every((icon) => /^\/images\/gruntr\/icon-/.test(icon.src)));
+  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any")
+    .map((icon) => ({ ...icon, src: icon.src.replace("/client-b45a7399", "") })));
+  const exact = fs.readFileSync(path.join(root, "images/gruntr/client-b45a7399/icon-1024.png"));
+  assert.equal(createHash("sha256").update(exact).digest("hex"), "b45a7399ebb74f1bc433bdb6d9b3eb2400fbad9be83b8ad2c8e3e4777435ff47");
   assert.ok(coach.icons.every((icon) => icon.src.startsWith("/fwb-brand-icon-gold-")));
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
@@ -53,11 +59,11 @@ test("client and coach manifests use approved installed identities", () => {
 test("client auth and onboarding stay inside the GRUNTR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
-    assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
+    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=b45a7399"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
-    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/icon-180\.png"/);
-    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-b45a7399\/icon-180\.png"/);
+    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/client-b45a7399\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
   }
 
   const login = read("client-login.html");
@@ -73,7 +79,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
   assert.match(clientDashboard, /apple-mobile-web-app-title" content="GRUNTR"/);
   assert.match(clientDashboard, /application-name" content="GRUNTR"/);
   assert.match(clientDashboard, /<title>GRUNTR<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/client-b45a7399\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {

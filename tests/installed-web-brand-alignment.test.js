@@ -41,7 +41,9 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
 
   for (const file of clientPages) {
     const html = read(file);
-    assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
+    assert.match(html, file.startsWith("client-")
+      ? /rel="manifest" href="\/client\.webmanifest\?v=b45a7399"/
+      : /rel="manifest" href="\/client\.webmanifest"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
     assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
