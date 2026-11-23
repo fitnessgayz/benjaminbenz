@@ -62,9 +62,13 @@ function cardioFixture(overrides = {}) {
 }
 
 test('the assigned program offers a cardio shortcut without adding a program exercise editor', () => {
-  const context = evaluate(['clientWorkoutPickerItems', 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'], {
+  const ownPlan = { id: 'assigned', client_email: 'coach-client@example.test', active: true,
+    membership_type: 'personal_training', program_title: 'Strength plan', workouts: [] };
+  const context = evaluate(['clientCoachingMembership', 'clientPersonalTrainingAccess', 'currentClientPersonalTrainingAccess', 'allowedClientWorkoutHubSection', 'clientWorkoutPickerItems', 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'], {
     clientPreviewProgramSelected: false,
-    clientAvailablePrograms: [], currentProgram: { program_title: 'Strength plan', workouts: [] },
+    clientAvailablePrograms: [ownPlan], currentProgram: ownPlan, clientWorkoutHubSection: 'routines',
+    activeDashboardUser: { email: ownPlan.client_email }, isCoachDashboardPreview: false,
+    normalizeClientEmail: value => String(value || '').trim().toLowerCase(),
     clientWorkoutLayoutSaving: false, workoutElapsedTimerState: null,
     WorkoutLayout: { label: (value) => value }
   });

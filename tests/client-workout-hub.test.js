@@ -16,16 +16,28 @@ function declaration(name) {
   return source.slice(match.index, end < 0 ? undefined : match.index + match[0].length + end);
 }
 
+const email = "training-client@example.test";
+const eligible = fields => ({ active: true, client_email: email, membership_type: "personal_training", ...fields });
+const accessGlobals = {
+  activeDashboardUser: {email}, isCoachDashboardPreview: false,
+  normalizeClientEmail: value => String(value || "").trim().toLowerCase(),
+  clientWorkoutHubSection: "routines"
+};
+const accessDeclarations = [
+  "clientCoachingMembership", "clientPersonalTrainingAccess", "currentClientPersonalTrainingAccess", "allowedClientWorkoutHubSection"
+];
+
 test('workout chooser separates routines, personal training and GRUNTR Trainer', () => {
   const context = vm.createContext({
+    ...accessGlobals,
     clientPreviewProgramSelected: false,
-    clientAvailablePrograms: [{ program_title: 'Strength + Mobility', workouts: Array(7).fill({}) }],
-    currentProgram: { program_title: 'Strength + Mobility', workouts: Array(7).fill({}) },
+    clientAvailablePrograms: [eligible({ id: 'a', program_title: 'Strength + Mobility', workouts: Array(7).fill({}) })],
+    currentProgram: { id: 'a', program_title: 'Strength + Mobility', workouts: Array(7).fill({}) },
     window: { FWB_CLIENT_WORKOUT_ROUTINES: require('../js/client-workout-routines.js') },
     escapeHtml: (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
   });
   vm.runInContext([
-    'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
+    ...accessDeclarations, 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
   for (const title of ['Routines', 'Personal Training', 'GRUNTR Trainer', 'Start Workout', 'Previous Workout',
@@ -55,32 +67,38 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
   assert.match(html, /client-workout-hub-parity\.css/);
 });
 
-test('multiple trainer programs stay under one choice', () => {
+test('multiple eligible trainer programs stay in the Personal Training section', () => {
   const context = vm.createContext({
+    ...accessGlobals,
     clientPreviewProgramSelected: false,
     clientAvailablePrograms: [
-      { id: 'a', program_title: 'Strength', workouts: [{}, {}] },
-      { id: 'b', program_title: 'Mobility', workouts: [{}] }
+      eligible({ id: 'a', program_title: 'Strength', workouts: [{}, {}] }),
+      eligible({ id: 'b', program_title: 'Mobility', workouts: [{}] }),
+      eligible({ id: 'c', account_type: 'beta_tester', program_title: 'Hidden beta plan', workouts: [{}] })
     ],
     currentProgram: { id: 'a', program_title: 'Strength', workouts: [{}, {}] },
     escapeHtml: (value) => String(value ?? '')
   });
-  vm.runInContext(['clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
+  vm.runInContext([...accessDeclarations, 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 4 }]);
-  assert.equal((markup.match(/data-preview-program="/g) || []).length, 1);
-  assert.match(markup, /2 plans/);
+  const personal = markup.match(/id="workout-hub-personal"[\s\S]*?<\/section>/)[0];
+  assert.equal((personal.match(/data-preview-program="/g) || []).length, 2);
+  assert.match(personal, /Strength/);
+  assert.match(personal, /Mobility/);
+  assert.doesNotMatch(markup, /Hidden beta plan/);
 });
 
 test('assigned workout preview keeps Generate Workout and Cardio in its footer', () => {
   const context = vm.createContext({
+    ...accessGlobals,
     clientPreviewProgramSelected: true,
-    clientAvailablePrograms: [],
-    currentProgram: { program_title: 'Strength', workouts: [] },
+    clientAvailablePrograms: [eligible({ id: 'a' })],
+    currentProgram: { id: 'a', program_title: 'Strength', workouts: [] },
     clientWorkoutLayoutSaving: false,
     workoutElapsedTimerState: null,
     escapeHtml: (value) => String(value ?? '')
   });
-  vm.runInContext(['clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
+  vm.runInContext([...accessDeclarations, 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 2 }]);
   assert.match(markup, /data-client-workout-choice-menu="generate"/);
   assert.match(markup, /data-log-cardio/);
