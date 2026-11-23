@@ -31,7 +31,7 @@ The tests use two synthetic accounts and apply the relevant tracked migrations t
 ## Rollout and rollback
 
 1. Verify the existing continuity, workout feedback, gym, and saved-plan migrations in the synthetic Supabase environment. Apply the additive GRUNTR migration there and run the synthetic checks.
-2. Set `CLIENT_DASHBOARD_URL` to the staging client dashboard and use the staging Supabase project's publishable key in both the MCP server and the website. Verify the approval page and updated consent there. Test the HTTPS MCP endpoint with the existing public PKCE OAuth registration and synthetic accounts. Refresh the ChatGPT connection to discover the updated tools.
+2. Set `CLIENT_DASHBOARD_URL` to the staging client dashboard and use the staging Supabase project's publishable key in both the MCP server and the website. Configure and verify the branch Auth site URL so its OAuth consent redirect points to staging. Verify the approval page and updated consent there. Test the HTTPS MCP endpoint with the existing public PKCE OAuth registration and synthetic accounts. Refresh the ChatGPT connection to discover the updated tools.
 3. After separate release authorization, apply the schema before switching the website and client MCP. Preserve the existing `/client/mcp` URL and its OAuth registration. Publishing the connection and any iOS release are independent approval steps.
 4. To roll back, restore the previous MCP and website builds. Keep the additive columns, receipts, and approved or completed records in place. The old endpoint continues to write existing history rows. Preserve active drafts if the feature will be restored.
 

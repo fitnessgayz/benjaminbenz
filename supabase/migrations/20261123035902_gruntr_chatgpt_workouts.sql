@@ -5,6 +5,9 @@ alter table public.client_workout_logs
   add column gruntr_load_unit text check (gruntr_load_unit in ('lb', 'kg')),
   add column gruntr_bodyweight boolean;
 
+create index client_workout_logs_gruntr_exercise_idx
+  on public.client_workout_logs (gruntr_exercise_id);
+
 create unique index gruntr_one_chatgpt_workout_per_client
   on public.client_workout_drafts (lower(client_email)) where source = 'gruntr_chatgpt';
 
