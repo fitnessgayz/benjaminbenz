@@ -272,6 +272,7 @@
     syncFeed();
   }
   const dialog = document.createElement('dialog');
+  dialog.id = 'client-weekly-dialog';
   dialog.className = 'client-weekly-dialog';
   dialog.setAttribute('aria-labelledby', 'client-weekly-dialog-title');
   dialog.innerHTML = `<form data-weekly-form>
@@ -288,6 +289,15 @@
   const form = dialog.querySelector('form');
   const status = dialog.querySelector('[data-weekly-status]');
   const weekStart = () => dateKey(monday(new Date()));
+  let editReady = false, openedWeek = '', focusSource = null, formRevision = 0;
+  const notifyWeeklyCompletion = week => document.dispatchEvent(new root.CustomEvent('fwb:weekly-checkin-complete', { detail:{ week } }));
+  async function verifyWeeklyOwner(expectedId, expectedEmail) {
+    if (!client?.auth || !expectedId || !expectedEmail || preview) return false;
+    const { data, error } = await client.auth.getSession();
+    const user = data?.session?.user;
+    return !error && !preview && user?.id === expectedId && ownerUserId === expectedId
+      && String(user.email || '').trim().toLowerCase() === expectedEmail && email === expectedEmail;
+  }
   const setFields = record => {
     for (const name of ['win', 'challenge', 'recovery_summary', 'pain_limitations', 'coach_question']) {
       form.elements[name].value = record?.[name] || '';
@@ -296,42 +306,90 @@
     form.querySelector('[data-weekly-submit]').hidden = Boolean(record?.weekly_submitted_at);
     status.textContent = record?.weekly_submitted_at ? 'Your check-in was sent to your coach.' : '';
   };
-  async function loadWeekly() {
-    if (!client || !email || preview) return;
-    const { data, error } = await client.from('client_check_ins').select('id,occurred_on,win,challenge,recovery_summary,pain_limitations,coach_question,weekly_submitted_at').eq('client_email', email).eq('occurred_on', weekStart()).limit(10);
-    if (error) throw error;
-    weeklyRecord = data?.find(row => row.weekly_submitted_at) || data?.[0] || null;
-    const weeklyLabel = weekLink.querySelector('[data-client-weekly-checkin-label]') || weekLink;
-    weeklyLabel.textContent = weeklyRecord?.weekly_submitted_at ? 'View weekly coach check-in' : 'Weekly coach check-in';
-    setFields(weeklyRecord);
-  }
-  weekLink?.addEventListener('click', async () => {
-    if (preview) return;
-    dialog.querySelector('[data-weekly-range]').textContent = `${formatDay(monday(new Date()))} – ${formatDay(addDays(monday(new Date()), 6))}`;
+  async function openWeeklyCheckIn(focus = () => weekLink) {
+    if (preview || !ownerUserId || !email || dialog.open) return;
+    const version = ++formRevision, owner = ownerUserId, expected = email, week = weekStart();
+    focusSource = typeof focus === 'function' ? focus : null;
+    openedWeek = week;
+    weeklyRecord = null;
+    editReady = false;
+    setFields(null);
+    form.querySelectorAll('textarea').forEach(input => { input.readOnly = true; });
+    form.querySelector('[data-weekly-submit]').disabled = true;
+    const day = monday(new Date());
+    dialog.querySelector('[data-weekly-range]').textContent = `${formatDay(day)} – ${formatDay(addDays(day, 6))}`;
     status.textContent = 'Loading your check-in…';
     dialog.showModal();
-    try { await loadWeekly(); } catch (_) { status.textContent = 'Could not load your check-in. Close and try again.'; }
+    try {
+      if (!await verifyWeeklyOwner(owner,expected)) throw Error('Wrong account');
+      const { data, error } = await client.from('client_check_ins')
+        .select('id,occurred_on,win,challenge,recovery_summary,pain_limitations,coach_question,weekly_submitted_at')
+        .eq('client_email',expected).eq('occurred_on',week).limit(10);
+      if (error || !Array.isArray(data)) throw error || Error('Unavailable');
+      if (version !== formRevision || !dialog.open || week !== weekStart() || owner !== ownerUserId || expected !== email) return;
+      weeklyRecord = data.find(row => row.weekly_submitted_at) || data[0] || null;
+      if (weeklyRecord?.weekly_submitted_at) notifyWeeklyCompletion(week);
+      editReady = !weeklyRecord?.weekly_submitted_at;
+      setFields(weeklyRecord);
+      form.querySelector('[data-weekly-submit]').disabled = !editReady;
+    } catch (_) {
+      if (dialog.open && version === formRevision) status.textContent = 'Could not load your check-in. Close and try again.';
+    }
+  }
+  weekLink?.addEventListener('click', () => void openWeeklyCheckIn());
+  dialog.addEventListener('close', () => {
+    formRevision++;
+    editReady = false;
+    const trigger = focusSource?.();
+    if (trigger) trigger.focus({ preventScroll:true });
+    else document.querySelector('[data-client-settings-view="recent-updates"] [data-client-settings-back]')?.focus();
+    focusSource = null;
   });
   dialog.querySelector('[data-weekly-close]').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (!client || !email || preview || weeklyRecord?.weekly_submitted_at) return;
     const button = form.querySelector('[data-weekly-submit]');
+    if (!client || !email || preview || !editReady || button.disabled || weeklyRecord?.weekly_submitted_at) return;
+    const version = formRevision, owner = ownerUserId, expected = email, week = openedWeek;
+    if (week !== weekStart()) {
+      status.textContent = 'A new week started. Close and reopen your check-in.';
+      return;
+    }
     button.disabled = true;
     status.textContent = 'Sending your check-in…';
     const now = new Date().toISOString();
-    const payload = { client_email: email, occurred_on: weekStart(), source: 'client_portal', updated_at: now, weekly_submitted_at: now };
+    const payload = { client_email: expected, occurred_on: week, source: 'client_portal', updated_at: now, weekly_submitted_at: now };
     for (const name of ['win', 'challenge', 'recovery_summary', 'pain_limitations', 'coach_question']) payload[name] = form.elements[name].value.trim();
     try {
-      const request = weeklyRecord?.id ? client.from('client_check_ins').update(payload).eq('id', weeklyRecord.id) : client.from('client_check_ins').insert(payload);
-      const { error } = await request;
-      if (error) throw error;
-      await loadWeekly();
-    } catch (_) { status.textContent = 'Your check-in could not be sent. Your answers are still here. Try again.'; }
-    button.disabled = false;
+      if (!await verifyWeeklyOwner(owner,expected) || version !== formRevision || week !== weekStart()) throw Error('Wrong account or week');
+      const table = client.from('client_check_ins');
+      const result = await (weeklyRecord?.id
+        ? table.update(payload).eq('id',weeklyRecord.id).eq('client_email',expected) : table.insert(payload));
+      if (result.error) throw result.error;
+      if (owner !== ownerUserId || expected !== email) return;
+      notifyWeeklyCompletion(week);
+      if (version === formRevision && dialog.open) {
+        editReady = false;
+        weeklyRecord = { ...weeklyRecord, ...payload };
+        setFields(weeklyRecord);
+      }
+    } catch (_) {
+      if (version === formRevision && dialog.open) {
+        status.textContent = 'Your check-in could not be sent. Your answers are still here. Try again.';
+        button.disabled = false;
+      }
+    }
   });
   root.FWB_CLIENT_HOME_PARITY = {
+    openWeeklyCheckIn,
+    closeWeeklyCheckIn() {
+      formRevision++;
+      editReady = false;
+      weeklyRecord = null;
+      if (dialog.open) dialog.close();
+      setFields(null);
+    },
     render(nextLogs, nextProgram) {
       logs = Array.isArray(nextLogs) ? nextLogs : [];
       program = nextProgram || null;
@@ -344,7 +402,7 @@
       const normalizedEmail = String(nextEmail || '').trim().toLowerCase();
       const nextOwner = String(nextOwnerUserId || '');
       if (client !== nextClient || email !== normalizedEmail || preview !== Boolean(isPreview) || ownerUserId !== nextOwner) {
-        weeklyRecord = null;
+        root.FWB_CLIENT_HOME_PARITY.closeWeeklyCheckIn();
         scheduleCache = new Map();
         upcoming = [];
         scheduled = [];
@@ -355,7 +413,7 @@
       client = nextClient;
       email = normalizedEmail;
       preview = Boolean(isPreview);
-      if (weekLink) weekLink.hidden = preview;
+      if (weekLink) weekLink.hidden = preview || !ownerUserId || !email;
     }
   };
 })(window);

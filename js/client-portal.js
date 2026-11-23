@@ -74,6 +74,7 @@ let clientWorkoutLayoutSaving = false;
 let clientWebNotificationController = null;
 let clientMessagesController = null;
 let clientSessionBalanceController = null;
+let clientWeeklyInboxController = null;
 let clientGoogleHealthController = null;
 let clientProfilePhotoController = null;
 let clientAppleHealthController = null;
@@ -8276,6 +8277,7 @@ async function initializeClientWebNotifications(user) {
     return false;
   }
 
+  clientWeeklyInboxController?.destroy();
   clientWebNotificationController?.destroy?.();
   clientWebNotificationController = window.FWBWebNotifications?.createController?.({
     supabaseClient,
@@ -8287,9 +8289,14 @@ async function initializeClientWebNotifications(user) {
     serviceWorkerUrl: restTimerNotificationServiceWorkerUrl
   }) || null;
 
-  return clientWebNotificationController
-    ? clientWebNotificationController.init()
-    : false;
+  const notifications = clientWebNotificationController;
+  clientWeeklyInboxController = notifications && window.FWB_WEEKLY_INBOX?.create({
+    client: supabaseClient, user, preview: isCoachPortalEmail(user.email),
+    publish: row => notifications.setWeeklyReminder?.(row),
+    open: focus => window.FWB_CLIENT_HOME_PARITY?.openWeeklyCheckIn?.(focus)
+  });
+  clientWeeklyInboxController?.attach();
+  return notifications ? notifications.init() : false;
 }
 
 function restTimerMarkup() {
@@ -22958,6 +22965,9 @@ async function loadDashboard() {
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     // Alert recovery must not wait for workout data to load successfully.
     void initializeClientWebNotifications(user);
+    if (!isCoachPortalEmail(signedInEmail)) document.addEventListener("fwb:weekly-checkin-complete", event => {
+      clientWeeklyInboxController?.complete(event.detail?.week);
+    });
     configureClientProfilePhoto();
     configureClientAccountSettings();
 
@@ -23957,6 +23967,9 @@ async function handleSignOut() {
   buttons.forEach((button) => {
     button.addEventListener("click", async () => {
       clearClientQuestionnaire();
+      clientWeeklyInboxController?.destroy();
+      clientWeeklyInboxController = null;
+      window.FWB_CLIENT_HOME_PARITY?.closeWeeklyCheckIn?.();
       clientMessagesController?.destroy();
       clientMessagesController = null;
       window.FWB_LIFTHARDR_PROFILE?.clearPack?.();
