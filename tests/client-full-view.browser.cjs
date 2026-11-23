@@ -206,6 +206,18 @@ async function checkDock(page) {
 async function checkSections(page) {
   await flat(page, ".client-home-next");
   await flat(page, ".client-home-planner");
+  const homeLogo = page.getByRole("button", { name: "Open profile", exact: true });
+  assert.equal(await homeLogo.getAttribute("data-client-settings-destination"), "profile");
+  assert.equal(await homeLogo.locator("img").getAttribute("src"), "/images/gruntr/client-5e7e5c45/icon-192.png");
+  await homeLogo.locator("img").evaluate(img => img.decode());
+  const logoStyle = await homeLogo.evaluate(button => {
+    const css = getComputedStyle(button);
+    return [css.backgroundColor, css.borderLeftWidth, css.boxShadow];
+  });
+  assert.deepEqual(logoStyle, ["rgba(0, 0, 0, 0)", "0px", "none"]);
+  assert.ok((await homeLogo.boundingBox()).width >= 44);
+  assert.ok((await page.locator(".client-home-planner").boundingBox()).y <
+    (await page.locator(".client-home-next").boundingBox()).y);
   await panel(page, "community");
   await flat(page, ".client-community-wall");
   await page.locator("[data-community-wall-list]").evaluate(feed => {
@@ -290,7 +302,7 @@ async function checkSections(page) {
   await panel(page, "notifications");
   await flat(page, ".client-settings-redesign-list");
   const logo = page.getByRole("img", { name: "GRUNTR", exact: true }).last();
-  assert.equal(await logo.getAttribute("src"), "/images/gruntr/client-b45a7399/icon-192.png");
+  assert.equal(await logo.getAttribute("src"), "/images/gruntr/client-5e7e5c45/icon-192.png");
   await logo.evaluate(img => img.decode());
 
   const settingsViews = await page.locator(".client-settings-detail").evaluateAll(views => views.map(view => view.dataset.clientSettingsView));

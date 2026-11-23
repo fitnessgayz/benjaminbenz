@@ -18,13 +18,13 @@ test("Home keeps the primary actions and removes the More disclosure", () => {
   assert.doesNotMatch(home, /client-home-glance-title|client-home-note-title/);
   assert.match(home, /data-home-workout-action-label>Resume Workout/);
   assert.match(home, /data-client-home-start-next>Start workout/);
-  assert.match(home, /client-home-last-workout[\s\S]*client-home-planner/);
+  assert.match(home, /client-home-planner[\s\S]*data-client-home-start-next[\s\S]*client-home-last-workout/);
   assert.doesNotMatch(home, /More from your dashboard|client-home-more|client-home-snapshot-deck/);
   assert.doesNotMatch(home, /data-client-achievements-home|client-home-mood-form/);
 });
 
-test("Home keeps the avatar and notifications in its compact header", () => {
-  assert.match(home, /class="client-home-topbar"[\s\S]*?data-client-settings-avatar[\s\S]*?id="client-home-title"[\s\S]*?data-client-home-notifications/);
+test("Home shows the GRUNTR logo as its profile button beside notifications", () => {
+  assert.match(home, /class="client-home-topbar"[\s\S]*?class="client-home-profile-button"[^>]*data-client-settings-destination="profile"[\s\S]*?client-5e7e5c45\/icon-192\.png[\s\S]*?id="client-home-title"[\s\S]*?data-client-home-notifications/);
   assert.match(styles, /\.client-home-topbar/);
 });
 

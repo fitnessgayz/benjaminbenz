@@ -119,7 +119,7 @@
   ),
   :root:root body.client-dashboard-page #client-workouts-panel :is(
     .client-workout-panel,
-    .workout-choice-card,
+    .workout-choice-card:not(.workout-hub-choice),
     .client-workouts-resume-card,
     .client-workout-picker-card,
     .client-workout-picker-card-top,
@@ -172,7 +172,7 @@
     .client-settings-redesign-group
   ),
   :root:root body.client-dashboard-page #client-workouts-panel :is(
-    .workout-choice-card,
+    .workout-choice-card:not(.workout-hub-choice),
     .workout-exercise-card,
     .custom-workout-grouped-card,
     .ios-log-exercise-header
