@@ -17410,6 +17410,14 @@ function openClientProfileActivityWorkout(key) {
   card?.querySelector("[data-client-workout-history-open]")?.click();
 }
 
+function canShareClientProfileActivityWorkout(row) {
+  if (isCoachDashboardPreview || !activeDashboardUser?.id ||
+      normalizeClientEmail(activeDashboardUser.email) !== normalizeClientEmail(activeClientEmail)) return false;
+  const timer = workoutElapsedTimerState;
+  return !timer || normalizeClientEmail(timer.clientEmail) !== normalizeClientEmail(activeClientEmail) ||
+    timer.workoutDate !== row.day || String(timer.workoutTitle || "").trim().toLowerCase() !== row.title.trim().toLowerCase();
+}
+
 function renderClientAchievements() {
   if (!window.FWB_ACHIEVEMENTS_UI) return;
   clientAchievementController ||= window.FWB_ACHIEVEMENTS_UI.createController(document, retryClientAchievements);
@@ -17435,6 +17443,12 @@ function renderClientAchievements() {
     preview: isCoachDashboardPreview, today: todayDate(), status: clientAchievementHistoryStatus,
     logs: trainingLogs, achievements: snapshot, sessionKey: clientWorkoutHistorySessionKey,
     workoutTitle: workoutDisplayTitle, openWorkout: openClientProfileActivityWorkout, retry: retryClientAchievements,
+    openComments: window.FWB_COMMUNITY_CONNECTIONS?.openOwnActivityComments,
+    closeComments: window.FWB_COMMUNITY_CONNECTIONS?.closeOwnActivityComments,
+    canShareWorkout: canShareClientProfileActivityWorkout,
+    shareWorkout(row, button) {
+      if (row.hasSavedSession && canShareClientProfileActivityWorkout(row)) openWorkoutHistoryShare(row.key, button);
+    },
     setKind(row) {
       const code = String(row.exercise_code || "").trim().toUpperCase();
       const type = normalizedSetType(row.set_type, row.set_number);

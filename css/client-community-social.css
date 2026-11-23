@@ -1,4 +1,4 @@
-:root body.client-dashboard-page .client-community-panel {
+:root body.client-dashboard-page :is(.client-community-panel, .client-social-dialog) {
   --social-surface: var(--client-surface, #202329);
   --social-stroke: #414750;
   --social-text: #f4f6f9;
@@ -252,6 +252,7 @@
 }
 :root body.client-dashboard-page .client-social-comment > div { flex: 1; min-width: 0; }
 :root body.client-dashboard-page .client-social-comment p { margin: 2px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+:root body.client-dashboard-page .client-social-dialog [hidden] { display: none !important; }
 :root body.client-dashboard-page .client-social-comment-form { display: grid; gap: 6px; }
 :root body.client-dashboard-page .client-social-comment-form textarea {
   width: 100%;
@@ -276,8 +277,8 @@
   color: var(--social-secondary);
   font-size: .83rem;
 }
-[data-client-theme="light"] body.client-dashboard-page .client-community-panel,
-body.client-dashboard-page[data-client-theme="light"] .client-community-panel {
+[data-client-theme="light"] body.client-dashboard-page :is(.client-community-panel, .client-social-dialog),
+body.client-dashboard-page[data-client-theme="light"] :is(.client-community-panel, .client-social-dialog) {
   --social-surface: #fff;
   --social-stroke: #c7cfd8;
   --social-text: #182230;

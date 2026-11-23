@@ -229,6 +229,7 @@
         if (error || !data || data.user_id !== owner) throw error || new Error('No choices were saved.');
         if (request !== generation || owner !== userId) return;
         applyChoices(data);
+        document.dispatchEvent(new Event('fwb:community-visibility-changed'));
         status.textContent = values.wall_activity_opt_in && !values.public_progress_opt_in
           ? 'Saved. Turn on public progress and a workout or gym visit choice to post those activities.'
           : 'Saved. You can change these choices any time.';

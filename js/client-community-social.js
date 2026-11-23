@@ -71,7 +71,7 @@
     const wallStatus = panel.querySelector('[data-community-wall-status]');
     let client, user = '', disabled = true, epoch = 0, feedVersion = 0, boardVersion = 0, threadVersion = 0;
     let ownProfile, connections = [], feed = [], leaderboard, metric = metrics[0], reacting = false, setting = false;
-    let activeEvent, activeMember, threadBusy = false;
+    let activeEvent, activeMember, ownThread = false, threadBusy = false;
     const lifetime = new Set();
     const requesting = new Set(), recentlyRequested = new Set();
     let squadReady = false;
@@ -100,6 +100,8 @@
     const threadTitle = el('h3', '', 'Comments');
     threadTitle.id = 'client-social-thread-title';
     threadHead.append(threadTitle, button('Close', () => thread.close()));
+    const threadContext = el('p', 'client-social-status');
+    threadContext.hidden = true;
     const threadRows = el('div', 'client-social-thread');
     const threadStatus = el('p', 'client-social-status');
     threadStatus.setAttribute('role', 'status');
@@ -114,8 +116,14 @@
     const form = el('div', 'client-social-comment-form');
     form.append(commentLabel, send);
     const join = button('Set up your Social profile', () => { thread.close(); bridge.openCircles(); });
-    thread.append(threadHead, threadRows, threadStatus, join, form);
-    thread.addEventListener('close', () => { activeEvent = null; threadVersion++; threadRows.replaceChildren(); revokeUnusedPhotos(); });
+    const retryThread = button('Try Again', () => void loadThread());
+    retryThread.hidden = true;
+    thread.append(threadHead, threadContext, threadRows, threadStatus, retryThread, join, form);
+    thread.addEventListener('close', () => {
+      if (thread.open) return;
+      activeEvent = null; ownThread = false; threadVersion++;
+      threadRows.replaceChildren(); revokeUnusedPhotos();
+    });
 
     const memberDialog = el('dialog', 'client-social-dialog');
     memberDialog.setAttribute('aria-labelledby', 'client-social-member-name');
@@ -365,23 +373,43 @@
       } finally { if (generation === epoch) reacting = false; }
     }
 
-    function openThread(event) {
+    function openThread(event, own = false) {
       if (disabled || !client) return;
       activeEvent = event;
+      ownThread = own;
+      threadContext.hidden = !own;
+      threadContext.textContent = own ? [event.nickname, event.headline].filter(Boolean).join(' · ') : '';
       commentBox.value = '';
-      form.hidden = !ownProfile;
-      join.hidden = Boolean(ownProfile);
+      form.hidden = own || !ownProfile;
+      join.hidden = own || Boolean(ownProfile);
       threadRows.replaceChildren();
-      if (!thread.open) thread.showModal();
+      if (!thread.open) {
+        if (own) document.body.append(thread);
+        else if (thread.parentNode !== panel && document.body) panel.append(thread);
+        thread.showModal();
+      }
       void loadThread();
+    }
+
+    async function ownsThread(event, version, generation) {
+      if (!ownThread) return true;
+      const date = Date.parse(event.occurred_at), now = Date.now();
+      if (!(date <= now && now - date <= 72 * 60 * 60 * 1000)) return false;
+      const { data, error } = await client.auth.getSession();
+      return !error && data?.session?.user?.id?.toLowerCase() === String(user).toLowerCase() &&
+        generation === epoch && version === threadVersion && activeEvent === event && thread.open;
     }
 
     async function loadThread() {
       if (!activeEvent) return;
-      const version = ++threadVersion, generation = epoch;
+      const version = ++threadVersion, generation = epoch, event = activeEvent;
+      retryThread.hidden = true;
+      if (ownThread) form.hidden = true;
       threadStatus.textContent = 'Loading comments…';
       try {
-        const { data, error } = await client.rpc('community_wall_comments', { p_event_id: activeEvent.event_id });
+        if (!await ownsThread(event, version, generation)) throw new Error('Comments unavailable.');
+        if (generation !== epoch || version !== threadVersion || !thread.open) return;
+        const { data, error } = await client.rpc('community_wall_comments', { p_event_id: event.event_id });
         if (error) throw error;
         if (generation !== epoch || version !== threadVersion || !thread.open) return;
         threadRows.replaceChildren();
@@ -398,20 +426,26 @@
           threadRows.append(row);
         }
         threadStatus.textContent = threadRows.children.length ? '' : 'No comments yet.';
+        if (ownThread) form.hidden = false;
         revokeUnusedPhotos();
         void enhancePhotos(photos);
       } catch (_) {
-        if (generation === epoch && version === threadVersion) threadStatus.textContent = 'Comments could not load. Try again.';
+        if (generation === epoch && version === threadVersion) {
+          threadStatus.textContent = 'Comments could not load. Try again.';
+          retryThread.hidden = false;
+        }
       }
     }
 
     async function sendComment() {
       const message = commentBox.value.trim();
-      if (!message || Array.from(message).length > 500 || !ownProfile || !activeEvent || threadBusy || disabled) return;
-      const generation = epoch, event = activeEvent;
+      if (!message || Array.from(message).length > 500 || (!ownProfile && !ownThread) || form.hidden || !activeEvent || threadBusy || disabled) return;
+      const generation = epoch, event = activeEvent, version = threadVersion;
       threadBusy = true;
       send.disabled = true;
       try {
+        if (!await ownsThread(event, version, generation)) throw new Error('Comments unavailable.');
+        if (generation !== epoch || version !== threadVersion || !thread.open) return;
         const { error } = await client.rpc('community_add_wall_comment', { p_event_id: event.event_id, p_body: message });
         if (error) throw error;
         if (epoch === generation && activeEvent === event) {
@@ -427,9 +461,11 @@
 
     async function deleteComment(id) {
       if (!activeEvent || disabled || threadBusy) return;
-      const generation = epoch, event = activeEvent;
+      const generation = epoch, event = activeEvent, version = threadVersion;
       threadBusy = true;
       try {
+        if (!await ownsThread(event, version, generation)) throw new Error('Comments unavailable.');
+        if (generation !== epoch || version !== threadVersion || !thread.open) return;
         const { error } = await client.rpc('community_delete_wall_comment', { p_comment_id: id });
         if (error) throw error;
         if (generation === epoch && activeEvent === event) await loadThread();
@@ -510,7 +546,7 @@
         client = api; user = account; disabled = preview || !api || !account; epoch++;
         ownProfile = null; activeMember = null; connections = []; feed = []; leaderboard = null;
         squadReady = false; requesting.clear(); recentlyRequested.clear();
-        setting = false; reacting = false; threadBusy = false;
+        setting = false; reacting = false; threadBusy = false; send.disabled = false;
         if (thread.open) thread.close();
         if (memberDialog.open) memberDialog.close();
         rankList.replaceChildren(); list.replaceChildren();
@@ -519,6 +555,16 @@
         boardStatus.textContent = disabled ? 'Sign in to view rankings.' : '';
         wallStatus.textContent = disabled ? 'Sign in to view the Feed.' : '';
         revokeUnusedPhotos();
+      },
+      openOwnThread(event, headline) {
+        if (!disabled && event?.is_own === true && eventOwner(event.event_id) === String(user).toLowerCase()
+            && ['workout', 'gym_visit'].includes(event.event_type)) openThread({ ...event, headline }, true);
+      },
+      closeOwnThread() {
+        if (ownThread && thread.open) {
+          activeEvent = null; ownThread = false; threadVersion++;
+          thread.close();
+        }
       },
       refreshFeed,
       refreshBoard,

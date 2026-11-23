@@ -541,6 +541,7 @@
         if (choice.error) return choice;
         return client.from('client_community_profiles').delete().eq('user_id', userId);
       }, 'You left Social.');
+      document.dispatchEvent(new Event('fwb:community-visibility-changed'));
       if (!profile) {
         for (const selector of ['#client-community-share-xp', '#client-community-share-badges',
           '#client-community-share-workouts', '#client-community-share-gym-visits', '#client-community-share-public',
@@ -574,6 +575,8 @@
       },
       refresh,
       refreshBoard() { return social?.refreshBoard(); },
+      openOwnActivityComments(post, headline) { social?.openOwnThread(post, headline); },
+      closeOwnActivityComments() { social?.closeOwnThread(); },
       getAcceptedCount() { return acceptedCount; },
       syncAchievements(nextSnapshot) { snapshot = nextSnapshot; void publish(); }
     };

@@ -132,11 +132,12 @@ test('Feed renders three exercises, author workouts and live reactions and comme
   await tick();
   assert.deepEqual(actions.find(([call]) => call === 'community_add_wall_comment'),
     ['community_add_wall_comment', { p_event_id: eventID, p_body: 'Great workout' }]);
-  const comment = thread.children[1].children[0];
+  const threadRows = thread.children.find(child => child.className === 'client-social-thread');
+  const comment = threadRows.children[0];
   assert.equal(comment.children[1].children[1].textContent, 'Great workout');
   comment.children[2].handlers.click();
   await tick();
-  assert.equal(thread.children[1].children.length, 0);
+  assert.equal(threadRows.children.length, 0);
   controller.configure(client, null, true);
   assert.equal(thread.open, false);
   assert.equal(fields['wall-list'].children.length, 0);
