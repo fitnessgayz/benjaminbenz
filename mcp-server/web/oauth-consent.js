@@ -50,19 +50,20 @@ async function initialize() {
   if (data.client?.name) {
     clientNameElement.textContent = `${data.client.name} is requesting access to your coaching account.`;
     if (data.client.name.toLowerCase() === "fwb training client") {
-      document.title = "Connect FWB Training Client";
-      consentTitleElement.textContent = "Connect FWB Training Client?";
-      clientNameElement.textContent = "FWB Training Client is requesting access to your workout account.";
+      document.title = "Connect GRUNTR to ChatGPT";
+      consentTitleElement.textContent = "Connect GRUNTR to ChatGPT?";
+      clientNameElement.textContent = "ChatGPT is requesting access to your GRUNTR workout account.";
       requestedActionsElement.replaceChildren();
       for (const text of [
-        "Confirm which FWB Training Client account is connected.",
-        "Save a completed workout to your Logs only when you ask.",
+        "Confirm your connected GRUNTR account and read your workout history, training program, and recent training check-ins.",
+        "Save sets and completed workouts to your Logs when you ask.",
+        "Prepare routine previews for your approval in GRUNTR.",
       ]) {
         const item = document.createElement("li");
         item.textContent = text;
         requestedActionsElement.append(item);
       }
-      consentDisclaimerElement.textContent = "FWB Training Client is not Benjamin, medical care, or an emergency service.";
+      consentDisclaimerElement.textContent = "ChatGPT provides exercise guidance. Contact your coach for coaching or emergency services for urgent help.";
     }
   }
   if (data.scope?.trim()) {

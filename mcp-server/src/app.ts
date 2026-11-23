@@ -4,6 +4,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Express, Request, Response } from "express";
 
 import { AuthenticationError, createAuthenticator } from "./auth.js";
+import { GruntrWorkouts } from "./gruntr-workouts.js";
 import { createClientWorkoutMcpServer } from "./client-workout-mcp-server.js";
 import type { AppConfig } from "./config.js";
 import { createBenjaminMcpServer } from "./mcp-server.js";
@@ -71,10 +72,10 @@ export function createApp(config: AppConfig): Express {
 
   app.get("/docs/client", (_request, response) => {
     response.json({
-      name: "FWB Training Client",
-      purpose: "Save explicitly requested completed workouts to the signed-in client's iOS and web workout history.",
+      name: "GRUNTR",
+      purpose: "Log live or completed workouts, review history, and preview routine changes for the signed-in GRUNTR client.",
       mcp_endpoint: `${config.PUBLIC_BASE_URL}/client/mcp`,
-      privacy: "Only workout details provided for a save request are written. Full ChatGPT conversations are not stored.",
+      privacy: "GRUNTR stores explicit workout entries and time-limited routine proposals. Routine approval happens in GRUNTR.",
     });
   });
 
@@ -86,7 +87,7 @@ export function createApp(config: AppConfig): Express {
   function registerMcpEndpoint(
     path: string,
     protectedResourcePath: string,
-    createServer: (repository: SupabaseCoachingRepository) => McpServer,
+    createServer: (repository: SupabaseCoachingRepository, workouts: GruntrWorkouts) => McpServer,
   ) {
     app.post(path, async (request: Request, response: Response) => {
       let server: McpServer | undefined;
@@ -94,7 +95,7 @@ export function createApp(config: AppConfig): Express {
       try {
         const context = await authenticate(request.header("authorization"));
         const repository = new SupabaseCoachingRepository(context.client, context.clientEmail);
-        server = createServer(repository);
+        server = createServer(repository, new GruntrWorkouts(context.client, context.clientEmail, context.user.id));
         transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
         let cleanedUp = false;
@@ -130,7 +131,7 @@ export function createApp(config: AppConfig): Express {
   registerMcpEndpoint(
     "/client/mcp",
     "/.well-known/oauth-protected-resource/client/mcp",
-    createClientWorkoutMcpServer,
+    (repository, workouts) => createClientWorkoutMcpServer(repository, workouts, config.CLIENT_DASHBOARD_URL),
   );
 
   return app;

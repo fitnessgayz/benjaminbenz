@@ -27,6 +27,7 @@ create table if not exists public.client_programs (
   client_name text not null default '',
   program_title text not null default '',
   program_summary text not null default '',
+  workouts jsonb not null default '[]'::jsonb,
   fitness_goal text not null default '',
   focus_target text not null default '',
   coach_note_title text not null default '',

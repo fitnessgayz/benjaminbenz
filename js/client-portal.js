@@ -22976,6 +22976,9 @@ async function loadDashboard() {
     const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
     signedInDashboardEmail = signedInEmail;
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
+    if (!isCoachPortalEmail(signedInEmail)) {
+      void window.FWB_ROUTINE_APPROVAL?.open(supabaseClient);
+    }
     if (!isCoachDashboardPreview) initializeClientDashboardBrowserHistory(availableTabs);
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     // Alert recovery must not wait for workout data to load successfully.

@@ -190,7 +190,7 @@
     const userId = context?.userId;
     if (!userId) throw new Error("Sign in to open your saved workout plans.");
     const { data, error } = await context.supabase.from(table).select("id,title,plan,created_at")
-      .eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
+      .eq("user_id", userId).eq("is_deleted", false).order("created_at", { ascending: false }).limit(50);
     if (error) throw error;
     if (context?.userId !== userId) return;
     saved = (data || []).filter((row) => validPlan(row.plan));
@@ -298,7 +298,9 @@
       if (!row || !root.confirm(`Delete ${row.title}? This cannot be undone.`)) return;
       setBusy(true); status("Deleting plan…");
       try {
-        const { error } = await context.supabase.from(table).delete().eq("id", row.id).eq("user_id", context.userId);
+        const tableQuery = context.supabase.from(table);
+        const deletion = row.plan.source === "gruntr_chatgpt" ? tableQuery.update({ is_deleted: true }) : tableQuery.delete();
+        const { error } = await deletion.eq("id", row.id).eq("user_id", context.userId);
         if (error) throw error;
         saved = saved.filter((item) => item.id !== row.id);
         setBusy(false); showView("saved"); status("Plan deleted.");

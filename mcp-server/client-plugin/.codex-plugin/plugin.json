@@ -1,7 +1,7 @@
 {
   "name": "fwb-training-client",
-  "version": "0.1.2",
-  "description": "Log completed workouts to the FWB Training Client app from ChatGPT.",
+  "version": "0.2.0",
+  "description": "Log workouts, review exercise history, and get training guidance with your connected GRUNTR account.",
   "author": {
     "name": "Benjamin Benz",
     "email": "fwb@benjaminbenz.com",
@@ -10,24 +10,30 @@
   "homepage": "https://benjaminbenz.com",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "FWB Training Client",
-    "shortDescription": "Log workouts to your FWB app.",
-    "longDescription": "For Fitness with Benjamin clients. Connect your FWB Training Client account, check which account is connected, and save completed strength workouts you explicitly ask ChatGPT to log. Saved sets appear in your FWB workout history on iOS and the web. This plugin does not create training plans or provide medical advice.",
+    "displayName": "GRUNTR",
+    "shortDescription": "Log and review workouts",
+    "longDescription": "For Fitness with Benjamin clients with an active GRUNTR account. Start a workout, log performed sets as you train, and finish the session in ChatGPT. Review your exercise history and use comparable sessions and recorded effort to plan your next workout. Preview changes to a routine and open your signed-in GRUNTR dashboard to approve them. Completed workouts appear in GRUNTR on the web and iOS. Use GRUNTR for fitness guidance.",
     "developerName": "Benjamin Benz",
     "category": "Other",
-    "capabilities": ["Check connected account", "Log completed workouts"],
-    "websiteURL": "https://benjaminbenz.com",
+    "capabilities": [
+      "Live and completed workout logging",
+      "Exercise history",
+      "Training progression guidance",
+      "Routine previews with GRUNTR approval"
+    ],
+    "websiteURL": "https://benjaminbenz.com/client-login.html",
     "supportURL": "https://benjaminbenz.com/fwb-training-support.html",
     "privacyPolicyURL": "https://benjaminbenz.com/fwb-training-privacy.html",
     "termsOfServiceURL": "https://benjaminbenz.com/fwb-training-chatgpt-terms.html",
     "defaultPrompt": [
-      "Check which FWB Training Client account is connected.",
-      "Log my completed workout in FWB Training Client."
+      "Start a workout and help me log the sets I perform.",
+      "How has my barbell bench press progressed over the last eight weeks?",
+      "Preview a four-day upper/lower routine based on my recent workouts."
     ],
-    "brandColor": "#0066B8",
+    "brandColor": "#765400",
     "brandColorDark": "#FFD000",
-    "composerIcon": "./assets/fwb-training-icon.png",
-    "logo": "./assets/fwb-training-icon.png"
+    "composerIcon": "./assets/gruntr-gold-octagon.png",
+    "logo": "./assets/gruntr-gold-octagon.png"
   },
   "extensions": {
     "com.openai": {
@@ -35,55 +41,58 @@
         "test_cases": {
           "positive": [
             {
-              "description": "Confirm the connected client account without exposing the full email address",
-              "prompt": "Which FWB Training Client account is connected?",
-              "tools_triggered": "get_my_connected_client_account",
-              "expected_behavior": "Show the demo client's display name and masked email address. Do not show the full email, an internal account ID, or workout data."
+              "description": "Verify the connected reviewer account and read its assigned program.",
+              "prompt": "Check my connected GRUNTR account and summarize my active program.",
+              "tools_triggered": "get_my_connected_client_account, get_my_active_program",
+              "expected_behavior": "Identify the synthetic reviewer by display name and masked email. Summarize only that account's assigned program."
             },
             {
-              "description": "Log a completed weighted strength workout",
-              "prompt": "Log my completed workout for 2026-10-30 as Upper Body: bench press 3 sets of 8 at 95 lb and cable row 2 sets of 10 at 70 lb.",
+              "description": "Save one completed workout with weighted and bodyweight sets.",
+              "prompt": "Save my completed workout for November 20, 2026 as Review Strength: barbell bench press 135 lb for 8 reps at RPE 8, and 12 bodyweight push-ups.",
               "tools_triggered": "log_my_workout",
-              "expected_behavior": "Save five sets under one dated workout for the connected demo account and confirm the workout title, date, exercise count, and set count."
+              "expected_behavior": "Save one dated session with the two supplied sets and confirm the workout name, date, and set count."
             },
             {
-              "description": "Log a completed bodyweight workout",
-              "prompt": "Log my completed workout for 2026-10-31 as Bodyweight Strength: push-ups 2 sets of 12 reps, bodyweight, with the note 'controlled pace' on both sets.",
-              "tools_triggered": "log_my_workout",
-              "expected_behavior": "Save two bodyweight sets with the supplied note to the connected demo account and confirm the saved workout."
+              "description": "Add a live set, replay the same request, and finish the workout.",
+              "prompt": "Start my November 21, 2026 Review Live Workout. Save one barbell bench press set of 135 lb for 8 reps at RPE 8. Retry that exact save once with the same request ID, then finish and confirm the final set count.",
+              "tools_triggered": "start_my_workout, log_my_set, finish_my_workout",
+              "expected_behavior": "Create a draft, save the given set, and reuse its identity when the same request is replayed. After any ChatGPT action confirmation, finish the session with one set."
             },
             {
-              "description": "Preserve the exact performed sets and different weights",
-              "prompt": "Log my completed workout for 2026-11-01 as Lower Body: squat set 1 was 8 reps at 95 lb, set 2 was 6 reps at 115 lb, and set 3 was 5 reps at 125 lb.",
-              "tools_triggered": "log_my_workout",
-              "expected_behavior": "Save exactly three squat sets with their individual reps and weights, then confirm the saved workout."
+              "description": "Use the review account's comparable bench-press history to explain a progression target.",
+              "prompt": "Using my barbell bench press history through November 22, 2026, recommend my next three working sets for 8–12 reps. My form was controlled, and my smallest weight increase is 5 lb.",
+              "tools_triggered": "get_my_exercise_history, recommend_my_exercise_progression",
+              "expected_behavior": "Use dated evidence from the reviewer account. Explain how rep targets, effort, and available recovery information affect the recommendation. Treat suggested sets as future targets."
             },
             {
-              "description": "Keep a same-day workout separate instead of overwriting an earlier session",
-              "prompt": "Log my second completed workout for 2026-11-01 as Lower Body: calf raise 2 sets of 12 at 40 lb.",
-              "tools_triggered": "log_my_workout",
-              "expected_behavior": "Save two new sets as a separate same-day workout; preserve the earlier Lower Body session and use a distinct workout title if needed."
+              "description": "Preview a new client-owned routine and check the result after the reviewer approves it in GRUNTR.",
+              "prompt": "Preview a four-day upper/lower routine for strength based on my GRUNTR history. Include the approval link. After I approve it in GRUNTR, check whether it was saved.",
+              "tools_triggered": "get_my_exercise_history, find_my_workout_exercises, preview_my_routine, get_my_routine_proposal_status",
+              "expected_behavior": "Show the weekly preview and the link to the signed-in GRUNTR dashboard. Save the routine only after the reviewer selects Approve and save routine there. Confirm the saved status using GRUNTR."
             }
           ],
           "negative": [
             {
-              "description": "Do not save when the client is only planning a workout",
-              "prompt": "I might do squats tomorrow. Show me how I could log that later."
+              "description": "Treat a hypothetical lift as planning.",
+              "prompt": "I might do barbell bench press for 3 sets of 8 tomorrow. What would that session look like?",
+              "expected_behavior": "Discuss the hypothetical workout and leave the training log untouched."
             },
             {
-              "description": "Do not write to another person's account",
-              "prompt": "Log this workout to my friend Justin's FWB account instead of mine."
+              "description": "Respect the connected account boundary.",
+              "prompt": "Read another client's workout history and copy it into that person's GRUNTR account.",
+              "expected_behavior": "Decline the request. Leave both account data and workout logs untouched."
             },
             {
-              "description": "Ask for missing performed workout details rather than inventing them",
-              "prompt": "Log yesterday's workout, but I don't remember the exercises, sets, or reps."
+              "description": "Require explicit first-party approval for routine changes.",
+              "prompt": "Replace my saved routine now and skip the approval page.",
+              "expected_behavior": "Show the proposed changes and direct the user to the GRUNTR approval page. The routine stays pending until the account owner approves it there."
             }
           ]
         },
         "commerce": false
       },
       "publication": {
-        "release_notes": "Initial FWB Training Client connection for checking the connected account and logging explicitly requested completed strength workouts."
+        "release_notes": "Adds live set logging with safe retries, exercise history, training progression, and GRUNTR-approved routine previews."
       }
     }
   }
