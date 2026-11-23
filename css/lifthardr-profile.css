@@ -585,6 +585,7 @@ body.client-dashboard-page .lifthardr-profile-metrics button[aria-pressed="true"
    without changing controls in other dashboard tabs. */
 :root body.client-dashboard-page .lifthardr-profile {
   --profile-canvas: #101113;
+  --profile-surface: #292d33;
   --profile-card: #23262b;
   --profile-border: #44474e;
   --profile-ink: #fff;
@@ -597,6 +598,7 @@ body.client-dashboard-page .lifthardr-profile-metrics button[aria-pressed="true"
 }
 :root[data-client-theme="light"] body.client-dashboard-page .lifthardr-profile {
   --profile-canvas: #f4f5ef;
+  --profile-surface: #f0f3f0;
   --profile-card: #fff;
   --profile-border: #d6ded2;
   --profile-ink: #1b291f;
@@ -664,3 +666,79 @@ body.client-dashboard-page .lifthardr-profile-metrics button[aria-pressed="true"
   border: 1px solid var(--profile-border);
 }
 .lifthardr-profile-avatar svg { width: 32px; height: 32px; }
+
+/* Own Activity Feed: published stats and comments stay under their exact post. */
+.lifthardr-profile .gruntr-profile-activity-meta,
+.lifthardr-profile .gruntr-profile-activity-props,
+.lifthardr-profile .gruntr-profile-activity-comments {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.lifthardr-profile .gruntr-profile-activity-meta { flex-wrap: wrap; justify-content: flex-end; }
+.lifthardr-profile .gruntr-profile-activity-shared {
+  background: var(--profile-surface);
+  border-radius: 999px;
+  color: var(--profile-ink);
+  padding: 3px 6px;
+  font-size: .72rem;
+  font-weight: 600;
+}
+.lifthardr-profile .gruntr-profile-activity-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.lifthardr-profile [data-activity-kind="workout"] > .gruntr-profile-activity-actions {
+  margin-block-start: 12px;
+  padding-block-start: 8px;
+  border-top: 1px solid var(--profile-border);
+}
+.lifthardr-profile [data-activity-kind="checkIn"] > .gruntr-profile-activity-actions { grid-column: 2 / -1; }
+.lifthardr-profile .gruntr-profile-activity-left-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-width: 0;
+}
+.lifthardr-profile .gruntr-profile-activity-props {
+  color: var(--profile-muted);
+  font-size: .84rem;
+  font-weight: 650;
+}
+:root body.client-dashboard-page .lifthardr-profile .gruntr-profile-activity-actions button {
+  inline-size: auto !important;
+  max-inline-size: 100%;
+  min-height: 44px;
+  color: var(--profile-link);
+}
+.lifthardr-profile .gruntr-profile-activity-actions button:focus-visible {
+  outline: 2px solid var(--profile-link);
+  outline-offset: 2px;
+}
+.lifthardr-profile .gruntr-profile-activity-comments {
+  min-width: 0;
+  padding: 4px 12px;
+  border: 1px solid var(--profile-border);
+  border-radius: 999px;
+  background: var(--profile-surface);
+  font-size: .84rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.lifthardr-profile .gruntr-profile-activity-actions .gruntr-profile-activity-share {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  margin-inline-start: auto;
+  width: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.lifthardr-profile .gruntr-profile-activity-actions svg { width: 16px; height: 16px; flex: none; }
+.lifthardr-profile .gruntr-profile-activity-share svg { width: 20px; height: 20px; }

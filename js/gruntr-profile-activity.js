@@ -1,5 +1,26 @@
 (function (root) {
   'use strict';
+  const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+  const commentWindow = 72 * 60 * 60 * 1000;
+  function commentable(event, now = Date.now()) {
+    const time = Date.parse(event?.occurred_at);
+    return time <= now && now - time <= commentWindow;
+  }
+  function ownSharedPosts(data, owner) {
+    const posts = new Map();
+    if (!uuid.test(owner || '') || !Array.isArray(data)) return posts;
+    for (const row of data.slice(0, 100)) {
+      if (row?.is_own !== true || !Number.isSafeInteger(row.props_count) || row.props_count < 0) continue;
+      const [prefix, id, key, ...rest] = String(row.event_id || '').split(':');
+      if (rest.length || id?.toLowerCase() !== owner.toLowerCase()) continue;
+      if (prefix === 'workout' && row.event_type === 'workout' && uuid.test(key || '')) {
+        posts.set('workout:' + key.toLowerCase(), row);
+      } else if (prefix === 'gym' && row.event_type === 'gym_visit' && dayKey.test(key || '')) {
+        posts.set('gym:' + key, row);
+      }
+    }
+    return posts;
+  }
   const dayKey = /^\d{4}-\d{2}-\d{2}$/;
   const asText = value => String(value ?? '').trim();
   const positive = value => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0;
@@ -9,6 +30,9 @@
     workout: 'M7 7v10m-4-7v4m14-7v10m4-7v4M7 12h10M3 12h4m10 0h4',
     pr: 'M8 4h8v5c0 3-1.8 5-4 5S8 12 8 9V4ZM8 6H4v3c0 2 2 3 5 3m7-6h4v3c0 2-2 3-5 3m-3 2v4m-4 2h8',
     badge: 'm7 3 4 6m6-6-4 6M12 9a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z',
+    props: 'M7 10v11H3V10h4Zm0 0 5-7c2 0 2 2 1 5h5a2 2 0 0 1 2 2l-2 8a2 2 0 0 1-2 2H7',
+    comments: 'M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4v-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z',
+    share: 'M12 15V2m-4 4 4-4 4 4M7 9H5v12h14V9h-2',
     checkIn: 'M12 22s6-5 6-11a6 6 0 1 0-12 0c0 6 6 11 6 11Zm0-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z'
   };
   function icon(document, type) {
@@ -37,13 +61,20 @@
       if (!groups.has(key)) groups.set(key, {
         id: 'workout:' + key, type: 'workout', rank: 0, title: asText(row.workout_title) || 'Workout',
         key, day, time: 0, gym: asText(row.gym_name), exercises: new Set(), exerciseSets: new Map(),
-        duration: 0, cardioMinutes: 0, sets: 0, volume: 0, hasStrength: false
+        duration: 0, cardioMinutes: 0, sets: 0, volume: 0, hasStrength: false, postIDs: new Set(), hasSavedSession: false
       });
       const item = groups.get(key);
       if (day < item.day) item.day = day;
       if (!item.gym) item.gym = asText(row.gym_name);
       const time = Date.parse(row.completed_at);
-      if (Number.isFinite(time) && time > item.time) item.time = time;
+      if (Number.isFinite(time)) {
+        if (time > item.time) item.time = time;
+        // The Wall RPC prioritizes workout_session_id; private Logs retains its original grouping.
+        const postID = row.workout_session_id || row.session_id || row.id;
+        item.postIDs.add(uuid.test(postID || '') ? postID.toLowerCase() : null);
+        if (uuid.test(row.session_id || row.workout_session_id || '') && uuid.test(row.id || '') &&
+            Number.isFinite(Date.parse(row.updated_at))) item.hasSavedSession = true;
+      }
       const label = asText(row.exercise_name);
       if (label) item.exercises.add(label);
       item.duration = Math.max(item.duration, positive(row.workout_duration_seconds));
@@ -68,7 +99,12 @@
       }
     }
     const completed = [...groups.values()].filter(item => item.time > 0);
+    const occurrences = new Map();
+    for (const item of completed) for (const id of item.postIDs) {
+      if (id) occurrences.set(id, (occurrences.get(id) || 0) + 1);
+    }
     const entries = completed.map(item => ({ ...item,
+      postIDs: new Set([...item.postIDs].map(id => occurrences.get(id) === 1 ? id : null)),
       detail: [...item.exercises].slice(0, 3).join(' · '),
       exerciseRows: [...item.exerciseSets.values()].sort((a,b) => a.position - b.position),
       durationMinutes: item.duration ? item.duration / 60 : !item.hasStrength ? item.cardioMinutes : 0
@@ -105,9 +141,56 @@
     const more = feed.querySelector('[data-gruntr-profile-more]');
     const retry = feed.querySelector('[data-gruntr-profile-retry]');
     let selected = false, context = null, key = '', visits = [], visible = 12, version = 0, visitStatus = '';
+    let posts = new Map(), sharedVersion = 0, sharedStatus = '', sharedClose, ownerVerified = false;
+    function resetShared() {
+      ++sharedVersion;
+      posts = new Map();
+      ownerVerified = false;
+      sharedStatus = '';
+      sharedClose?.();
+      sharedClose = null;
+    }
+    function getPost(row) {
+      if (row.type === 'checkIn') return posts.get(row.id);
+      if (row.type !== 'workout' || row.postIDs.size !== 1 || !row.key.startsWith('session:')) return;
+      const [id] = row.postIDs;
+      return id ? posts.get('workout:' + id) : undefined;
+    }
+    async function activeOwner(data) {
+      const { data: auth, error } = await data.client.auth.getSession();
+      const user = auth?.session?.user;
+      return !error && user?.id === data.owner && asText(user.email).toLowerCase() === asText(data.email).toLowerCase();
+    }
+    async function loadShared() {
+      if (!selected || !realClient(context) || !context.openComments || !context.client.rpc || sharedStatus) return;
+      const data = context, ownerKey = key, request = ++sharedVersion;
+      sharedStatus = 'pending';
+      try {
+        if (!await activeOwner(data) || request !== sharedVersion || !selected) return;
+        ownerVerified = true;
+        const { data: rows, error } = await data.client.rpc('community_wall_feed');
+        if (!selected || request !== sharedVersion || key !== ownerKey) return;
+        const confirmed = await activeOwner(data);
+        if (selected && request === sharedVersion && key === ownerKey) {
+          ownerVerified = confirmed;
+          if (confirmed && !error) posts = ownSharedPosts(rows, data.owner);
+        }
+      } catch (_) { /* The private Activity Feed remains available without Social. */ }
+      finally {
+        if (request === sharedVersion) { sharedStatus = 'checked'; display(); }
+      }
+    }
+    function refreshShared() {
+      if (!selected) return;
+      resetShared();
+      display();
+      void loadShared();
+    }
+    document.addEventListener('fwb:community-visibility-changed', refreshShared);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshShared(); });
     function realClient(data) { return Boolean(data?.owner && data?.email && data?.client?.auth && !data.preview); }
     function clear() {
-      visits = []; visitStatus = ''; visible = 12;
+      resetShared(); visits = []; visitStatus = ''; visible = 12;
       feed.hidden = true;
       list.replaceChildren(); status.textContent = '';
       if (retry) retry.hidden = true;
@@ -129,6 +212,41 @@
         parent.append(node);
         return node;
       };
+      function addActions(parent, row, shared, title, canShare) {
+        const actions = add(parent, 'div', '', 'gruntr-profile-activity-actions');
+        if (shared) {
+          const left = add(actions, 'div', '', 'gruntr-profile-activity-left-actions');
+          const count = shared.props_count;
+          add(left, 'span', '', 'gruntr-profile-activity-props')
+            .append(icon(document, 'props'), `${number.format(count)} ${count === 1 ? 'prop' : 'props'}`);
+          if (commentable(shared) && context.openComments) {
+            const button = add(left, 'button', '', 'gruntr-profile-activity-comments');
+            button.type = 'button';
+            button.setAttribute('aria-haspopup', 'dialog');
+            button.append(icon(document, 'comments'), 'Comments');
+            button.addEventListener('click', () => {
+              if (!selected || getPost(row) !== shared) return;
+              if (!commentable(shared)) { refreshShared(); return; }
+              sharedClose = context.closeComments;
+              context.openComments(shared, title);
+            });
+          }
+        }
+        if (canShare) {
+          const button = add(actions, 'button', '', 'gruntr-profile-activity-share');
+          button.type = 'button';
+          button.setAttribute('aria-label', 'Share workout');
+          button.setAttribute('aria-haspopup', 'dialog');
+          button.append(icon(document, 'share'));
+          button.addEventListener('click', async () => {
+            const data = context, current = key;
+            try {
+              if (selected && button.isConnected && await activeOwner(data) && selected && button.isConnected && key === current)
+                context.shareWorkout?.(row, button);
+            } catch (_) { /* Signed-out or unavailable sessions cannot share. */ }
+          });
+        }
+      }
       for (const row of result.entries.slice(0, visible)) {
         const li = add(fragment, 'li');
         li.dataset.activityKind = row.type;
@@ -136,6 +254,7 @@
         date.dateTime = row.day;
         const parsed = new Date(row.day + 'T00:00:00Z');
         date.textContent = Number.isNaN(parsed.getTime()) ? row.day : dateLabel.format(parsed);
+        const shared = getPost(row);
         if (row.type !== 'workout') {
           const badge = add(li, 'span', '', 'gruntr-profile-activity-icon');
           badge.append(icon(document,row.type));
@@ -143,12 +262,15 @@
           add(copy,'strong',row.title);
           if (row.detail) add(copy,'span',row.detail);
           li.append(date);
+          if (shared) addActions(li, row, shared, shared.headline, false);
           continue;
         }
         const head = add(li, 'div', '', 'gruntr-profile-activity-workout-head');
         const tag = add(head, 'span', '', 'gruntr-profile-activity-tag');
         tag.append(icon(document,'workout'), 'Workout');
-        head.append(date);
+        const meta = add(head, 'div', '', 'gruntr-profile-activity-meta');
+        if (shared) add(meta, 'span', 'Shared', 'gruntr-profile-activity-shared');
+        meta.append(date);
         const title = context.workoutTitle?.(row.title) || row.title;
         if (context.openWorkout) {
           const action = add(li,'button','', 'gruntr-profile-activity-open');
@@ -195,6 +317,8 @@
             });
           }
         }
+        const canShare = ownerVerified && row.hasSavedSession && context.canShareWorkout?.(row);
+        if (shared || canShare) addActions(li, row, shared, title, canShare);
       }
       list.replaceChildren(fragment);
       more.hidden = result.entries.length <= visible;
@@ -241,23 +365,25 @@
     return {
       render(data) {
         const next = realClient(data) ? data.owner+'|'+data.email : '';
-        if (next !== key) { version++; key = next; clear(); }
+        if (next !== key || data.client !== context?.client) { version++; key = next; clear(); }
         context = data;
         display();
         if (selected && key && !visitStatus) void loadVisits();
+        if (selected && key) void loadShared();
       },
       selectTab(tab) {
         const changed = selected !== (tab === 'profile');
         selected = tab === 'profile';
         if (!selected && changed) {
           version++;
+          resetShared();
           if (visitStatus === 'pending') visitStatus = '';
         }
-        if (selected) { display(); if (changed) void loadVisits(); }
+        if (selected) { display(); if (changed) { void loadVisits(); void loadShared(); } }
       }
     };
   }
-  const api = { collect, mount };
+  const api = { collect, mount, ownSharedPosts, commentable };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root.document) root.FWB_GRUNTR_PROFILE_ACTIVITY = mount(root.document);
 }(typeof window !== 'undefined' ? window : globalThis));
