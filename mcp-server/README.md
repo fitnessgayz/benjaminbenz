@@ -16,7 +16,7 @@ The server deliberately does not store full ChatGPT conversations. It writes onl
 
 ## FWB Training Client connection
 
-The separate [FWB Training Client plugin](client-plugin/README.md) uses `/client/mcp` and starts with account verification and completed workout logging. It writes the same workout history fields used by the iOS client app. The original `/mcp` coaching connection remains available.
+The separate [FWB Training Client plugin](client-plugin/README.md) uses `/client/mcp` for live and completed workout logging, history, progression, and routine previews. It uses the shared iOS and web workout history. The original `/mcp` coaching connection remains available.
 
 ## Local verification
 
