@@ -22,37 +22,28 @@
   <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
-  <link rel="stylesheet" href="css/coach-workout-client-style.css?v=3" />
+  <link rel="stylesheet" href="css/coach-workout-client-style.css?v=5" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
   <link rel="stylesheet" href="css/coach-workspace.css?v=2" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
-  <header class="site-header dashboard-header">
-    <a class="brand coach-brand-lockup" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
-      <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="42" height="42" />
-      <strong>GRUNTR Coach</strong>
-    </a>
-    <div class="header-actions">
-      <a class="login-link" href="coach-admin.html?tab=home">Coach Home</a>
-      <button class="login-link is-current sign-out-button" type="button" data-coach-workout-sign-out hidden>Sign Out</button>
-    </div>
+  <header class="coach-gcoach-header">
+    <a class="coach-gcoach-icon" href="coach-admin.html?tab=home" aria-label="Back to Coach Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></a>
+    <h1 id="coach-workout-page-title">Log Workout</h1>
+    <button class="coach-gcoach-icon" type="submit" form="coach-workout-log-form" id="coach-workout-save" aria-label="Save workout without closing" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 9H3v11h18V9h-2"/></svg></button>
   </header>
 
-  <main class="admin-shell coach-workout-log-shell">
-    <section class="dashboard-hero coach-workout-log-hero" aria-labelledby="coach-workout-page-title">
-      <div>
-        <p class="kicker">GRUNTR Coach</p>
-        <h1 id="coach-workout-page-title">Log a client workout</h1>
-        <p>Record a client’s exercises after your session and save them directly to their Custom workout history.</p>
-      </div>
-      <a class="button button-ghost" href="coach-admin.html">Back to GRUNTR Coach</a>
-    </section>
-
+  <main class="admin-shell coach-workout-log-shell" aria-labelledby="coach-workout-page-title">
     <section class="admin-card coach-workout-access-status" id="coach-workout-access-status" role="status">
       Preparing GRUNTR Coach…
     </section>
 
     <form class="coach-workout-logger" id="coach-workout-log-form" hidden>
+      <div class="coach-gcoach-tabs" role="tablist" aria-label="Workout tools">
+        <button type="button" id="coach-workout-main-tab" role="tab" aria-selected="true" aria-controls="coach-workout-main-panel">Workout</button>
+        <button type="button" id="coach-workout-library-tab" role="tab" aria-selected="false" aria-controls="coach-workout-library-panel" tabindex="-1">Exercise Library</button>
+      </div>
+      <div class="coach-gcoach-workout" id="coach-workout-main-panel" role="tabpanel" aria-labelledby="coach-workout-main-tab">
       <section class="coach-workout-client-search" aria-labelledby="coach-workout-client-search-title">
         <label id="coach-workout-client-search-title" for="coach-workout-client-name">Find a client</label>
         <div class="coach-workout-client-control">
@@ -61,47 +52,46 @@
           <select id="coach-workout-client" hidden aria-hidden="true" tabindex="-1">
             <option value="">Choose a client</option>
           </select>
-          <a class="button coach-client-view-link" id="coach-workout-client-view" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
+          <a class="button coach-client-view-link" id="coach-workout-client-view" target="_blank" rel="noopener" hidden><span class="coach-gcoach-client-view-text">View client page</span> <span aria-hidden="true">↗</span></a>
         </div>
       </section>
-      <section class="admin-card coach-workout-session-details" aria-labelledby="coach-workout-session-title">
-        <div class="admin-section-heading compact-heading">
-          <div>
-            <p class="kicker">Session</p>
-            <h2 id="coach-workout-session-title">Workout details</h2>
-          </div>
-          <span class="status-pill coach-workout-autosave-pill">Autosave on</span>
+      <div class="coach-gcoach-tools">
+      <details class="coach-gcoach-tool">
+        <summary><span aria-hidden="true">◆</span><span data-coach-gym-label>Gym</span></summary>
+        <div class="coach-gcoach-popover">
+          <label for="coach-workout-gym">Gym location</label>
+          <input type="text" id="coach-workout-gym" list="coach-workout-gym-suggestions" maxlength="80" placeholder="Gym, Home, or Outdoors" autocomplete="off" />
+          <datalist id="coach-workout-gym-suggestions"><option value="Home"></option><option value="Outdoors"></option></datalist>
         </div>
+      </details>
+      <details class="coach-gcoach-tool">
+        <summary><span aria-hidden="true">◇</span><span data-coach-format-label>Straight Sets</span></summary>
+        <div class="coach-gcoach-popover">
+          <fieldset class="coach-workout-format-fieldset">
+            <legend>Workout format</legend>
+            <div class="coach-workout-format-options">
+              <label><input type="radio" name="coach_workout_format" value="single" checked required /><span><strong>Straight sets</strong></span></label>
+              <label><input type="radio" name="coach_workout_format" value="superset" required /><span><strong>Superset</strong></span></label>
+              <label><input type="radio" name="coach_workout_format" value="circuit" required /><span><strong>Circuit</strong></span></label>
+            </div>
+          </fieldset>
+        </div>
+      </details>
+      <details class="coach-gcoach-tool coach-gcoach-settings">
+        <summary aria-label="Workout settings"><span aria-hidden="true">⚙</span></summary>
+        <div class="coach-gcoach-popover">
         <div class="coach-workout-session-grid">
           <label>
             Workout date
             <input type="date" id="coach-workout-date" required />
           </label>
-          <label class="coach-workout-gym-control">
-            Add gym location
-            <input type="text" id="coach-workout-gym" list="coach-workout-gym-suggestions" maxlength="80" placeholder="Gym name, Home, or Outdoors" autocomplete="off" />
-            <datalist id="coach-workout-gym-suggestions"><option value="Home"></option><option value="Outdoors"></option></datalist>
-            <small>Choose a location for this session. It will be saved with every set.</small>
-          </label>
         </div>
-        <fieldset class="coach-workout-format-fieldset">
-          <legend>Workout format</legend>
-          <div class="coach-workout-format-options">
-            <label>
-              <input type="radio" name="coach_workout_format" value="single" checked required />
-              <span><strong>Straight sets</strong><small>Complete one exercise at a time.</small></span>
-            </label>
-            <label>
-              <input type="radio" name="coach_workout_format" value="superset" required />
-              <span><strong>Superset</strong><small>Alternate paired exercises.</small></span>
-            </label>
-            <label>
-              <input type="radio" name="coach_workout_format" value="circuit" required />
-              <span><strong>Circuit</strong><small>Move through every station each round.</small></span>
-            </label>
-          </div>
-        </fieldset>
-      </section>
+        <div class="coach-gcoach-settings-brand"><img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="32" height="32" /><span>GRUNTR Coach</span><span class="status-pill">Autosave on</span></div>
+        <button class="button button-ghost sign-out-button" type="button" data-coach-workout-sign-out hidden>Sign Out</button>
+        </div>
+      </details>
+      </div>
+      <button class="coach-gcoach-rest" type="button" id="coach-workout-start-rest" aria-controls="coach-rest-timer"><span aria-hidden="true">◷</span> Rest timer</button>
 
       <section class="admin-card coach-workout-exercise-section" aria-labelledby="coach-workout-exercises-title">
         <div class="admin-section-heading">
@@ -120,18 +110,25 @@
           <div class="coach-workout-group-stack" id="coach-workout-group-stack" data-coach-workout-group-stack hidden></div>
           <div class="coach-workout-exercise-list" id="coach-workout-exercises" aria-live="polite"></div>
         </div>
-        <button class="button button-ghost coach-workout-add-exercise" type="button" id="coach-workout-add-exercise">Add exercise</button>
+        <button class="button button-ghost coach-workout-add-exercise" type="button" id="coach-workout-add-exercise"><span aria-hidden="true">⊕</span> Add Exercise</button>
       </section>
 
       <section class="admin-card coach-workout-submit-panel">
         <p id="coach-workout-status" role="status">Autosave is on. Choose a client and add the exercises completed today.</p>
         <div class="coach-workout-submit-actions">
-          <button class="button button-ghost" type="button" id="coach-workout-reset" aria-label="Clear form" title="Clear form">⋯</button>
+          <button class="button button-ghost" type="button" id="coach-workout-reset" aria-label="Clear form" title="Clear form"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M9 6V3h6v3m-9 0 1 15h10l1-15M10 10v7m4-7v7"/></svg></button>
           <div class="coach-workout-save-actions">
-            <button class="button button-dark" type="submit" id="coach-workout-save">Save Workout</button>
             <button class="button coach-workout-finish-button" type="button" id="coach-workout-finish">Finish Workout</button>
           </div>
         </div>
+      </section>
+      </div>
+      <section class="coach-gcoach-library" id="coach-workout-library-panel" role="tabpanel" aria-labelledby="coach-workout-library-tab" hidden>
+        <label for="coach-workout-library-search">Find an exercise</label>
+        <input id="coach-workout-library-search" type="search" placeholder="Search by exercise or muscle" autocomplete="off" aria-controls="coach-workout-library-results" />
+        <div class="coach-gcoach-library-tools"><p data-coach-workout-library-status role="status"></p><button type="button" data-coach-workout-custom-exercise>Type a custom exercise</button></div>
+        <ul id="coach-workout-library-results" aria-label="Exercises"></ul>
+        <button type="button" class="button button-ghost" data-coach-workout-library-more hidden>Show more exercises</button>
       </section>
     </form>
   </main>
@@ -160,6 +157,6 @@
   </aside>
   <script src="js/coach-rest-timer.js?v=inline-rest-1"></script>
   <script src="js/one-rep-max.js?v=2"></script>
-  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1&amp;client-layout=3"></script>
+  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1&amp;client-layout=5"></script>
 </body>
 </html>

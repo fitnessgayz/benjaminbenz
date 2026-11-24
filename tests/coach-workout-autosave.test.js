@@ -9,7 +9,7 @@ const loggerSource = fs.readFileSync(path.join(projectRoot, "js/coach-workout-lo
 
 test("Session Logger exposes autosave with manual save and finish actions", () => {
   assert.match(loggerHtml, />Autosave on</);
-  assert.match(loggerHtml, /id="coach-workout-save">Save Workout</);
+  assert.match(loggerHtml, /type="submit" form="coach-workout-log-form" id="coach-workout-save" aria-label="Save workout without closing"/);
   assert.match(loggerHtml, /id="coach-workout-finish">Finish Workout</);
   assert.match(loggerSource, /const coachWorkoutAutosaveDelayMs = 10000/);
   assert.match(loggerSource, /form\.addEventListener\("input", \(event\) =>/);

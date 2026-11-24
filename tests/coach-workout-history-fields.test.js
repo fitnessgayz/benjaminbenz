@@ -52,6 +52,7 @@ function fixture() {
     document: { querySelectorAll: () => [card] },
     normalizeCoachWorkoutGroupedRows: () => 2,
     refreshCoachWorkoutCopyControls: () => {},
+    refreshCoachWorkoutMedia: () => {},
     coachWorkoutGroupedNameEditorMarkup: () => "", coachWorkoutGroupedHistoryMarkup: () => "",
     coachWorkoutGroupedExerciseCode: () => "A1"
   };

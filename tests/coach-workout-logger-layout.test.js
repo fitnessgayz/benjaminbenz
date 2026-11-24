@@ -231,12 +231,20 @@ test("reopens a collapsed grouped name editor before focusing a validation error
   assert.doesNotMatch(focusVisible, /coachWorkoutFormatValue\(\) === "single"/);
 });
 
-test("focuses the visible straight-set name editor after adding an exercise", () => {
-  const interactions = sourceForFunction("handleCoachWorkoutForm");
+test("Exercise Library tab opens from Add Exercise and preserves custom exercise entry", () => {
+  assert.match(loggerHtml, /role="tab" aria-selected="false" aria-controls="coach-workout-library-panel" tabindex="-1">Exercise Library/);
+  assert.match(sourceForFunction("handleCoachWorkoutForm"), /coach-workout-add-exercise[\s\S]*?selectCoachWorkoutTab\(true, true\)/);
+  const add = sourceForFunction("addCoachWorkoutLibraryExercise");
+  assert.match(add, /if \(!name\) focusCoachWorkoutVisibleField\(index, "name"\)/);
+  assert.match(add, /const duplicate = name && items\.find/);
+});
 
-  assert.match(interactions, /data-coach-grouped-name-input/);
-  assert.match(interactions, /\|\| exercise\?\.querySelector\("\[data-coach-workout-name\]"\)/);
-  assert.doesNotMatch(interactions, /coachWorkoutFormatValue\(\) === "single"/);
+test("Exercise Library searches names and muscles and excludes inactive entries", () => {
+  const search = Function(`${["coachWorkoutMuscleLabel", "normalizeCoachWorkoutHistoryName", "coachWorkoutLibraryMatches"].map(sourceForFunction).join("\n")}; return coachWorkoutLibraryMatches;`)();
+  const catalog = [{ name: "Goblet Squat", primary_muscle: "quadriceps" }, { name: "Bench Press", primary_muscle: "chest" }, { name: "Inactive Squat", primary_muscle: "quadriceps", is_active: false }];
+  assert.deepEqual(search(catalog, " quAD squat ").map((entry) => entry.name), ["Goblet Squat"]);
+  assert.deepEqual(search(catalog, "").map((entry) => entry.name), ["Bench Press", "Goblet Squat"]);
+  assert.match(sourceForFunction("loadCoachWorkoutExerciseCatalog"), /\.order\("id", \{ ascending: true \}\)[\s\S]*?\.range\(offset, offset \+ size - 1\)/);
 });
 
 test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () => {
@@ -259,7 +267,7 @@ test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () 
 
 test("places client search above workout details and starts with a first-exercise action", () => {
   const search = loggerHtml.indexOf('id="coach-workout-client-name"');
-  const details = loggerHtml.indexOf('class="admin-card coach-workout-session-details"');
+  const details = loggerHtml.indexOf('class="coach-gcoach-tools"');
   const firstExercise = loggerHtml.indexOf('id="coach-workout-first-exercise"');
   const groupedCards = loggerHtml.indexOf('id="coach-workout-group-stack"');
 
@@ -313,9 +321,9 @@ test("starts untouched straight superset and circuit sessions with 1 2 and 3 exe
 test("keeps the coach autosave save and finish controls with the new card layout", () => {
   const save = sourceForFunction("saveCoachWorkout");
 
-  assert.match(loggerHtml, /id="coach-workout-save"[^>]*>Save Workout<\/button>/);
+  assert.match(loggerHtml, /id="coach-workout-save" aria-label="Save workout without closing"/);
   assert.match(loggerHtml, /id="coach-workout-finish"[^>]*>Finish Workout<\/button>/);
-  assert.match(loggerHtml, /id="coach-workout-reset"[^>]*aria-label="Clear form"[^>]*>⋯<\/button>/);
+  assert.match(loggerHtml, /id="coach-workout-reset"[^>]*aria-label="Clear form"[^>]*><svg/);
   assert.match(loggerScript, /function scheduleCoachWorkoutAutosave/);
   assert.match(save, /client_workout_logs/);
   assert.match(save, /coachWorkoutExerciseValues/);
@@ -352,10 +360,22 @@ test("filters the exercise library into a scrollable dropdown with muscles under
   assert.match(loggerScript, /data-coach-workout-suggestion=/);
   assert.match(loggerScript, /\.filter\(\(item\) => item\.is_active !== false/);
   assert.match(loggerScript, /\.slice\(0, 16\)/);
-  assert.match(loggerScript, /\.select\("name,primary_muscle,secondary_muscles,is_active,sort_order"\)/);
+  assert.match(loggerScript, /\.select\("name,primary_muscle,secondary_muscles,is_active,sort_order,image_url,motion_url,instructions"\)/);
   assert.match(sourceForFunction("renderCoachWorkoutSuggestions"), /<strong>\$\{escapeCoachWorkoutHtml\(item\.name\)\}<\/strong>[\s\S]*?<span>\$\{escapeCoachWorkoutHtml\(muscleLabel\)\}<\/span>/);
   assert.match(styles, /\.coach-workout-suggestion-menu\s*\{[\s\S]*?max-height:\s*190px[\s\S]*?overflow-y:\s*auto/);
   assert.match(styles, /\.coach-workout-suggestion-menu button span\s*\{[\s\S]*?color:\s*var\(--muted\)/);
+});
+
+test("GCoach straight-set cards keep approved illustrations, inline PRs, and a compact Log action", () => {
+  const approved = new Function("coachWorkoutConfig", `${sourceForFunction("coachWorkoutApprovedMedia")}; return coachWorkoutApprovedMedia;`)({ url: "https://approved.example" });
+  const art = "https://approved.example/storage/v1/object/public/exercise-images/anatomy/2026-11-22/goblet-squat.webp";
+  assert.equal(approved(art), art);
+  assert.equal(approved(art.replace("approved.example", "untrusted.example")), "");
+  assert.equal(approved(art.replace("public", "private")), "");
+  assert.equal(approved("data:image/png;base64,AAAA"), "");
+  assert.match(sourceForFunction("coachWorkoutGroupedCardMarkup"), /data-coach-gcoach-art[\s\S]*?data-coach-gcoach-guide/);
+  assert.match(sourceForFunction("coachWorkoutGroupedSetRowMarkup"), /data-coach-gcoach-pr/);
+  assert.match(sourceForFunction("coachWorkoutGroupedSectionsMarkup"), /data-coach-gcoach-log[\s\S]*?<span>Set<\/span><span>PR<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
 });
 
 test("formats primary and secondary exercise muscles without duplicates", () => {

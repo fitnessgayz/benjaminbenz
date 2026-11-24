@@ -89,7 +89,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
 
   assert.match(read("coach-admin.html"), /rel="manifest" href="\/coach\.webmanifest"/);
   assert.match(read("coach-admin.html"), /<h1>Your coaching workspace<\/h1>/);
-  assert.match(read("coach-workout-log.html"), /<h1 id="coach-workout-page-title">Log a client workout<\/h1>/);
+  assert.match(read("coach-workout-log.html"), /<h1 id="coach-workout-page-title">Log Workout<\/h1>/);
   assert.doesNotMatch(read("coach-workout-log.html"), /user-scalable=no|maximum-scale=1/);
 
   const publicManifest = JSON.parse(read("site.webmanifest"));
