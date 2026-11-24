@@ -133,6 +133,7 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{[^}]*\}[^}]*\[data-web-notification-kind="workout_completed"\]\s*\{[^}]*border-block-end:[^}]*border-radius:\s*0/s);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{\s*\.coach-activity-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item \.web-notification-like\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-like::before\s*\{[^}]*inset:\s*8px 0/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-type-icon svg\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
   assert.match(sharedSource, /activityDescriptor\.includes\("challenge"\)[\s\S]*?\? "challenge"/);
   assert.match(sharedSource, /notificationKind === "check_in_submitted"[\s\S]*?\? "checkin"/);
