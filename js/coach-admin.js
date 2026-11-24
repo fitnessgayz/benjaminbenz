@@ -60,6 +60,7 @@ function workoutSetLabel(set) {
 }
 
 let programs = [];
+let coachClientProgramsStatus = "loading";
 let selectedProgramId = "";
 let coachAppleHealthController = null;
 let progressEntries = [];
@@ -77,6 +78,7 @@ let workoutAnalysisStatusText = "Choose a client to analyze workout logs.";
 let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
 let coachClientsView = "personal_training";
+let coachFwbSessionMonth = "";
 let clientSearchTerm = "";
 let clientSuggestionsOpen = false;
 let activeClientSuggestion = -1;
@@ -1546,6 +1548,41 @@ function coachClientSessionValues(usedCount, totalCount) {
     total: total > 0 ? total : null,
     remaining: total > 0 ? Math.max(0, total - used) : null
   };
+}
+
+function coachSessionToday(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(now);
+  const part = (type) => parts.find((item) => item.type === type).value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function moveCoachSessionMonth(month, offset) {
+  const date = new Date(`${month}-01T00:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + offset);
+  return date.toISOString().slice(0, 7);
+}
+
+function countCoachFwbSessions(clients, month, today) {
+  const seenClients = new Set();
+  let count = 0;
+  for (const program of clients) {
+    // Client profile data belongs to the primary record, not each copy of a program.
+    const email = normalizeEmail(program.client_email);
+    if (!email || seenClients.has(email)) continue;
+    seenClients.add(email);
+    const dates = new Set([
+      ...sessionDatesFromProgram(program),
+      ...sessionPackageHistoryFromProgram(program).flatMap((item) => item.dates)
+    ]);
+    for (const date of dates) {
+      if (!date.startsWith(`${month}-`) || date > today) continue;
+      const parsed = new Date(`${date}T00:00:00Z`);
+      if (toUtcIsoDateString(parsed) === date) count += 1;
+    }
+  }
+  return count;
 }
 
 function matchingClientSuggestions() {
@@ -4336,6 +4373,7 @@ function renderCoachSessionCounts() {
   for (const node of counts.querySelectorAll("[data-coach-alex-count]")) {
     node.textContent = alex[node.dataset.coachAlexCount] ?? "—";
   }
+  renderCoachFwbMonthlySessions(counts);
 
   const clients = coachClientRosterPrograms("all", activeClientPrograms());
   const rows = clients.map((program) => {
@@ -4359,6 +4397,23 @@ function renderCoachSessionCounts() {
   });
   counts.querySelector("[data-coach-client-count-rows]").replaceChildren(...rows);
   counts.querySelector("[data-coach-count-empty]").hidden = rows.length > 0;
+}
+
+function renderCoachFwbMonthlySessions(counts, today = coachSessionToday()) {
+  const currentMonth = today.slice(0, 7);
+  const month = coachFwbSessionMonth || currentMonth;
+  const label = new Intl.DateTimeFormat("en-US", {
+    month: "long", year: "numeric", timeZone: "UTC"
+  }).format(new Date(`${month}-01T00:00:00Z`));
+  const ready = coachClientProgramsStatus === "ready";
+  const total = ready ? countCoachFwbSessions([...activeClientPrograms(), ...archivedClientPrograms()], month, today) : null;
+  counts.querySelector("[data-coach-fwb-month-label]").textContent = label;
+  counts.querySelector("[data-coach-fwb-total]").textContent = total === null ? "—" : `${total} ${total === 1 ? "session" : "sessions"}`;
+  counts.querySelector("[data-coach-fwb-status]").textContent = ready
+    ? "From saved coaching session dates"
+    : coachClientProgramsStatus === "error" ? "Could not load session dates" : "Loading session dates…";
+  counts.querySelector('[data-coach-fwb-month="1"]').setAttribute("aria-disabled", String(month >= currentMonth));
+  counts.querySelector('[data-coach-fwb-month="-1"]').setAttribute("aria-disabled", String(month <= "0001-01"));
 }
 
 function renderCoachClientWorkspace() {
@@ -4431,6 +4486,19 @@ function handleCoachClientWorkspace() {
     }
   });
   document.getElementById("coach-client-session-counts")?.addEventListener("click", (event) => {
+    const step = event.target.closest("[data-coach-fwb-month]");
+    if (step) {
+      const today = coachSessionToday();
+      const currentMonth = today.slice(0, 7);
+      const month = coachFwbSessionMonth || currentMonth;
+      const offset = Number(step.dataset.coachFwbMonth);
+      if ((offset === 1 && month < currentMonth) || (offset === -1 && month > "0001-01")) {
+        const pickedMonth = moveCoachSessionMonth(month, offset);
+        coachFwbSessionMonth = pickedMonth === currentMonth ? "" : pickedMonth;
+      }
+      renderCoachFwbMonthlySessions(event.currentTarget, today);
+      return;
+    }
     const count = event.target.closest("[data-coach-count-client]");
     if (count) {
       const program = activeClientPrograms().find((item) => item.id === count.dataset.coachCountClient && item.active !== false);
@@ -4524,11 +4592,14 @@ async function loadPrograms() {
   const { data, error } = programResult;
 
   if (error) {
+    coachClientProgramsStatus = "error";
+    renderCoachSessionCounts();
     adminStatus("Could not load clients. Check the GRUNTR Coach Supabase policy.");
     return;
   }
 
   programs = data || [];
+  coachClientProgramsStatus = "ready";
   clientFitnessQuestionnaires = questionnaireResult.error ? [] : (questionnaireResult.data || []);
   renderCoachWorkoutClientOptions();
 
