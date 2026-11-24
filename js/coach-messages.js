@@ -3,9 +3,6 @@
   const PAGE_SIZE = 50;
   const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
   const messageLength = (value) => Array.from(String(value || "").trim()).length;
-  const draftMessage = ({ draft, activityContext }) => activityContext && draft.trim()
-    ? `Re: ${activityContext}\n\n${draft.trim()}`
-    : draft.trim();
   const mergeMessages = (current, incoming) => [...new Map([...current, ...incoming].map((row) => [row.id, row])).values()].sort((a, b) => a.id - b.id);
 
   // Capture the verified account's token before each HTTP request. A Supabase
@@ -42,7 +39,7 @@
     function thread(email = selectedEmail) {
       const key = normalizeEmail(email);
       if (!key) return null;
-      if (!threads.has(key)) threads.set(key, { email: key, messages: [], draft: "", activityContext: "", pending: null, sending: false, loading: false, loadingOlder: false, loaded: false, hasOlder: false, fetchedLatest: 0, error: "", readThrough: 0, reading: false });
+      if (!threads.has(key)) threads.set(key, { email: key, messages: [], draft: "", pending: null, sending: false, loading: false, loadingOlder: false, loaded: false, hasOlder: false, fetchedLatest: 0, error: "", readThrough: 0, reading: false });
       return threads.get(key);
     }
     async function rpc(name, args) {
@@ -63,10 +60,7 @@
     }
     function reconcilePending(state, rows) {
       if (!state.pending || !rows.some((row) => row.request_id === state.pending.id && row.sender_user_id === user.id)) return;
-      if (draftMessage(state) === state.pending.body) {
-        state.draft = "";
-        state.activityContext = "";
-      }
+      if (state.draft.trim() === state.pending.body) state.draft = "";
       state.pending = null;
       state.error = "";
     }
@@ -130,7 +124,7 @@
       const state = thread();
       if (destroyed || !state || !state.loaded || state.sending || (role === "coach" && !state.messages.length)) return;
       const draft = state.draft;
-      const body = state.pending?.body || draftMessage(state);
+      const body = state.pending?.body || draft.trim();
       if (!messageLength(body) || messageLength(body) > 4000) {
         state.error = "Write a message between 1 and 4,000 characters.";
         changed();
@@ -145,10 +139,7 @@
         const rows = await rpc("messaging_send", { ...target(state.email), p_body: body, p_request_id: pending.id });
         if (destroyed) return;
         state.messages = mergeMessages(state.messages, rows);
-        if (state.draft === draft) {
-          state.draft = "";
-          state.activityContext = "";
-        }
+        if (state.draft === draft) state.draft = "";
         if (state.pending === pending) state.pending = null;
         void refreshInbox();
       } catch (error) {
@@ -179,16 +170,7 @@
     }
     return {
       snapshot: () => ({ selectedEmail, current: thread(), inbox, inboxError, inboxBusy }),
-      select(email, { activityContext = "" } = {}) {
-        if (destroyed) return;
-        selectedEmail = role === "client" ? normalizeEmail(user.email) : normalizeEmail(email);
-        const state = thread();
-        if (role === "coach" && state && !state.draft.trim() && !state.pending && !state.sending) {
-          state.activityContext = Array.from(String(activityContext).replace(/\s+/g, " ").trim()).slice(0, 180).join("");
-        }
-        changed();
-        return refreshThread();
-      },
+      select(email) { if (destroyed) return; selectedEmail = role === "client" ? normalizeEmail(user.email) : normalizeEmail(email); changed(); return refreshThread(); },
       setDraft(value) { const state = thread(); if (state && !destroyed && !state.pending) state.draft = String(value); },
       editAsNewMessage() { const state = thread(); if (state && !destroyed && !state.sending) { state.pending = null; state.error = ""; changed(); } },
       refreshInbox, refreshThread, loadOlder, send, markRead,
@@ -255,8 +237,6 @@
     newer.hidden = true;
     const status = node("p", "fwb-message-status");
     status.setAttribute("role", "status");
-    const activityNote = node("p", "fwb-message-status");
-    activityNote.hidden = true;
     const pendingActions = node("div", "fwb-message-pending-actions");
     pendingActions.hidden = true;
     pendingActions.append(node("p", "fwb-message-status", "This message may already have arrived. Editing and sending again creates a new message."));
@@ -276,7 +256,7 @@
     const sendButton = button("Send", "fwb-message-send");
     actions.append(count, sendButton);
     composer.append(label, input, actions);
-    conversation.append(conversationTitle, activityNote, older, history, empty, newer, status, pendingActions, composer);
+    conversation.append(conversationTitle, older, history, empty, newer, status, pendingActions, composer);
     layout.append(conversation);
     root.append(heading, inboxStatus, layout);
     const store = createStore({ supabaseClient: rpcTransport || createAccountTransport({ supabaseClient, user, config: global.FWB_SUPABASE_CONFIG }), user, role, onChange: render });
@@ -294,12 +274,10 @@
     function renderComposer(state) {
       composer.hidden = !state || (isCoach && !state.messages.length);
       pendingActions.hidden = !state?.pending || state.sending;
-      activityNote.hidden = !state?.activityContext;
-      activityNote.textContent = state?.activityContext ? `Private reply about: ${state.activityContext}` : "";
       if (!state) return;
       input.disabled = !state.loaded || Boolean(state.pending);
       if (input.value !== state.draft) input.value = state.draft;
-      const length = messageLength(draftMessage(state));
+      const length = messageLength(state.draft);
       count.textContent = `${length.toLocaleString()} / 4,000`;
       input.setAttribute("aria-invalid", String(length > 4000));
       sendButton.disabled = !state.loaded || state.sending || length === 0 || length > 4000;
@@ -382,15 +360,15 @@
       if (destroyed || doc.visibilityState === "hidden") return;
       await Promise.all([store.refreshInbox(), visible() ? store.refreshThread() : Promise.resolve()]);
     }
-    function open(email, name, trigger, context) {
+    function open(email, name, trigger) {
       if (destroyed) return;
       if (email && name) names.set(normalizeEmail(email), name);
       active = true;
       restoreFocus = trigger || doc.activeElement;
       if (dialog && !dialog.open) dialog.showModal();
-      void store.select(isCoach ? email : user.email, context);
+      void store.select(isCoach ? email : user.email);
       void store.refreshInbox();
-      conversationTitle.focus({ preventScroll: !context?.activityContext });
+      conversationTitle.focus({ preventScroll: true });
     }
     listen(list, "click", (event) => { const item = event.target.closest("[data-client-email]"); if (item && list.contains(item)) open(item.dataset.clientEmail); });
     listen(refreshButton, "click", refresh);

@@ -166,6 +166,7 @@
       return {
         ...row,
         coach_workout: coachWorkoutDetails(workout),
+        coach_workout_log_id: workout?.source_log_id,
         action_url: logsUrl,
         coach_workout_email: clientEmail
       };
@@ -179,6 +180,7 @@
         kind: "workout_completed",
         title: `${workout.client_name} completed a workout`,
         coach_workout: coachWorkoutDetails(workout),
+        coach_workout_log_id: workout.source_log_id,
         action_url: logsUrl,
         coach_workout_email: workout.client_email,
         created_at: workout.completed_at,
@@ -714,7 +716,9 @@
         likeButton.append(likeIcon);
         actions.append(likeButton);
       }
-      if (role === "coach" && ["workout_completed", "check_in_submitted", "achievement"].includes(notificationKind)
+      const workoutLogId = row.coach_workout_log_id || null;
+      const notificationId = workoutLogId ? null : row.id || null;
+      if (role === "coach" && (workoutLogId || notificationId) && ["workout_completed", "check_in_submitted", "achievement"].includes(notificationKind)
           && typeof options.openCoachActivityComment === "function") {
         const client = options.coachActivityCommentClient?.(row, actionUrl);
         if (client) {
@@ -724,7 +728,8 @@
           commentButton.type = "button";
           commentButton.className = "coach-activity-comment";
           commentButton.setAttribute("aria-label", "Comment privately");
-          commentButton.title = "Open a private reply in Inbox";
+          commentButton.title = "Send a private notification";
+          commentButton.setAttribute("aria-haspopup", "dialog");
           icon.className = "coach-activity-comment-icon";
           icon.setAttribute("aria-hidden", "true");
           icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4v-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>';
@@ -732,7 +737,7 @@
           commentButton.append(icon, label);
           commentButton.addEventListener("click", () => {
             const subject = row.coach_workout?.title || String(row.title || "Client activity");
-            options.openCoachActivityComment(client, `${subject} · ${date.title}`);
+            options.openCoachActivityComment(client, { notificationId, workoutLogId, context: `${subject} · ${date.title}` }, commentButton);
           });
           actions.append(commentButton);
         }

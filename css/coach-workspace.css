@@ -281,7 +281,7 @@
   background: var(--canvas);
   border-color: var(--line);
 }
-:root body.coach-wall-page :is(.wall-panel, .wall-post, .wall-panel-heading button, .wall-header button) {
+:root body.coach-wall-page :is(.wall-panel-heading button, .wall-header button) {
   border-color: var(--line);
   background: var(--surface);
 }
@@ -595,6 +595,40 @@
   font-size: .75rem;
   font-weight: 650;
 }
+.coach-activity-comment-dialog {
+  width: min(480px, calc(100% - 28px));
+  max-height: calc(100dvh - max(28px, env(safe-area-inset-top)) - env(safe-area-inset-bottom));
+  padding: 18px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.coach-activity-comment-dialog::backdrop { background: rgb(0 0 0 / .68); }
+.coach-activity-comment-dialog form { display: grid; gap: 8px; }
+.coach-activity-comment-dialog :is(h2, p) { margin: 0; }
+.coach-comment-recipient { font-weight: 750; }
+.coach-activity-comment-dialog :is(#coach-comment-delivery, .coach-comment-detail, .coach-comment-status) {
+  color: var(--muted);
+  font-size: .9rem;
+  overflow-wrap: anywhere;
+}
+.coach-comment-status:empty { display: none; }
+.coach-activity-comment-dialog label { font-weight: 700; }
+:root body.coach-admin-page .coach-activity-comment-dialog textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--canvas);
+  font-size: 1rem;
+  resize: vertical;
+}
+.coach-comment-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+:root body.coach-admin-page .coach-comment-actions button { width: auto !important; min-height: 44px; }
 :root body.coach-admin-page .coach-activity-desk .coach-notification-status {
   margin: 0;
   padding: 0;

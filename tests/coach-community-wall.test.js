@@ -10,7 +10,8 @@ function node() {
     children: [], textContent: '', hidden: false, disabled: false, listeners: {},
     append(...items) { this.children.push(...items); },
     replaceChildren(...items) { this.children = items; },
-    addEventListener(event, callback) { this.listeners[event] = callback; }
+    addEventListener(event, callback) { this.listeners[event] = callback; },
+    setAttribute(name, value) { this[name] = value; }
   };
 }
 
@@ -62,6 +63,11 @@ test('coach sees opted-in Wall events and can give props once', async () => {
   await settle();
   assert.equal(elements['wall-posts'].children.length, 1);
   const card = elements['wall-posts'].children[0];
+  const time = card.children[0].children[2];
+  assert.equal(time.dateTime, '2026-10-06T12:00:00.000Z');
+  assert.match(time.textContent, /Oct.*6/);
+  assert.match(time.title, /Oct.*6.*2026/);
+  assert.match(time.textContent, /\d{1,2}:\d{2}/);
   assert.equal(card.children[1].textContent, 'Completed a workout');
   const button = card.children[2].children[0];
   assert.equal(button.textContent, 'Give props 👏');

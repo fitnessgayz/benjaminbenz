@@ -6,6 +6,9 @@
   const signOut = document.getElementById('wall-sign-out');
   const refresh = document.getElementById('wall-refresh');
   const avatars = { strength: '💪', runner: '🏃', cycling: '🚴', boxing: '🥊', yoga: '🧘', swimming: '🏊', martial: '🥋', star: '⭐', lifting: '🏋️', walking: '🚶', hiking: '🥾' };
+  const dayLabel = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+  const fullDayLabel = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const timeLabel = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
   let client;
   let busy = false;
 
@@ -28,12 +31,17 @@
       for (const event of data || []) {
         const card = element('article', '', 'wall-post');
         const head = element('div', '', 'wall-post-head');
-        head.append(element('span', avatars[event.avatar_id] || avatars.strength, 'wall-avatar'));
+        const avatar = element('span', avatars[event.avatar_id] || avatars.strength, 'wall-avatar');
+        avatar.setAttribute('aria-hidden', 'true');
+        head.append(avatar);
         head.append(element('strong', event.nickname || 'FWB client'));
-        const date = new Date(event.occurred_at);
+        const date = new Date(event.occurred_at || '');
         if (!Number.isNaN(date.getTime())) {
-          const time = element('time', date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+          const day = (date.getFullYear() === new Date().getFullYear() ? dayLabel : fullDayLabel).format(date);
+          const localTime = timeLabel.format(date);
+          const time = element('time', `${day} · ${localTime}`);
           time.dateTime = date.toISOString();
+          time.title = `${fullDayLabel.format(date)} · ${localTime}`;
           head.append(time);
         }
         card.append(head, element('p', event.headline || 'Shared a win'));
@@ -42,7 +50,8 @@
         button.type = 'button';
         button.disabled = Boolean(event.gave_props || !event.can_give_props);
         button.addEventListener('click', () => void giveProps(event.event_id));
-        actions.append(button, element('span', `${Number(event.props_count) || 0} props`));
+        const props = Number(event.props_count) || 0;
+        actions.append(button, element('span', `${props} ${props === 1 ? 'prop' : 'props'}`));
         card.append(actions);
         posts.append(card);
       }

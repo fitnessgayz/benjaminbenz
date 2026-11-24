@@ -207,7 +207,7 @@ test("deployed notification fallback keeps activity metadata and like controls",
   assert.equal(likeButton.title, "Give props");
 });
 
-test("Comment opens an activity-scoped private reply only for a resolved client", async () => {
+test("Comment opens a private notification composer only for a resolved client", async () => {
   const client = { id: "program-1", client_email: "client@example.com" };
   const opened = [];
   let eligible = true;
@@ -227,7 +227,10 @@ test("Comment opens an activity-scoped private reply only for a resolved client"
   assert.equal(opened.length, 0);
   comment.click();
   assert.equal(opened[0][0], client);
-  assert.match(opened[0][1], /^A client completed a workout · /);
+  assert.equal(opened[0][1].notificationId, "notice-1");
+  assert.equal(opened[0][1].workoutLogId, null);
+  assert.match(opened[0][1].context, /^A client completed a workout · /);
+  assert.equal(opened[0][2], comment);
   eligible = false;
   await harness.controller.refresh();
   assert.equal(harness.list.children[0].children[1].children.length, 1);
