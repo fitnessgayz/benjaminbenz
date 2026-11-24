@@ -14,3 +14,41 @@
   border-radius: 22%;
   object-fit: contain;
 }
+
+[data-coach-install][hidden] {
+  display: none !important;
+}
+
+.coach-install-link {
+  background: transparent;
+  border: 0;
+  padding: 0.4rem 0.15rem;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.coach-install-dialog {
+  width: min(26rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 1.25rem;
+  border: 1px solid #344968;
+  border-radius: 1rem;
+  background: #101e30;
+  color: #f5f8fc;
+  box-sizing: border-box;
+}
+
+.coach-install-dialog::backdrop {
+  background: rgb(3 13 28 / 70%);
+}
+
+.coach-install-dialog dt {
+  margin-top: 0.85rem;
+  font-weight: 700;
+}
+
+.coach-install-dialog dd {
+  margin: 0.25rem 0 0;
+}

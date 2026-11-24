@@ -35,11 +35,12 @@
   <link rel="stylesheet" href="css/coach-workout-schedule.css?v=1" />
   <link rel="stylesheet" href="css/client-access-requests.css?v=1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
-  <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
+  <link rel="stylesheet" href="/css/coach-brand.css?v=2" />
+  <script defer src="/js/coach-install.js?v=1"></script>
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
-    <a class="brand coach-brand-lockup" href="index.html#top" aria-label="GRUNTR Coach home">
+    <a class="brand coach-brand-lockup" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
       <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="42" height="42" />
       <strong>GRUNTR Coach</strong>
     </a>
@@ -135,6 +136,7 @@
           <button type="button" data-coach-mobile-more-destination="inbox"><strong>Messages</strong><span>Open your client inbox</span><span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span></button>
           <a href="coach-workout-log.html"><strong>Workout logger</strong><span>Record an in-person session</span></a>
           <a href="coach-exercise-library.html"><strong>Exercise library</strong><span>Manage exercises and media</span></a>
+          <button type="button" data-coach-install hidden><strong>Install GRUNTR Coach</strong><span>Add the coach app to your device</span></button>
           <button type="button" data-coach-mobile-more-destination="notifications"><strong>Settings</strong><span>Notifications, support, and privacy</span></button>
         </nav>
       </dialog>
