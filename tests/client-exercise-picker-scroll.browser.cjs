@@ -35,10 +35,13 @@ function customWorkoutExerciseAddConfig(format) {
 function normalizeCustomWorkoutFormat(format) { return format || "single"; }
 function customWorkoutCarousels() { return []; }
 function exerciseSuggestionRecords() {
-  return Array.from({ length: 24 }, (_, index) => ({
+  return [...Array.from({ length: 24 }, (_, index) => ({
     name: "Movement " + String(index + 1).padStart(2, "0"),
     libraryEntry: { equipment: "dumbbell", primary_muscle: "chest" }
-  }));
+  })), {
+    name: "Dumbbell Rear-Foot-Elevated Split Squat With Contralateral Hold",
+    libraryEntry: { equipment: "dumbbell", primary_muscle: "quads" }
+  }];
 }
 function exerciseSuggestionMuscleLabel(entry) { return entry.primary_muscle; }
 function customExerciseSuggestionMatches() { return []; }
@@ -130,6 +133,22 @@ async function assertFullScreen(dialog, { width, height, top = 0 }) {
   assert.equal(await dialog.evaluate((element) => getComputedStyle(element).borderRadius), "0px");
 }
 
+async function measureResultRow(row) {
+  return row.evaluate((element) => {
+    const { height } = element.getBoundingClientRect();
+    const thumbnail = element.querySelector(".custom-picker-image").getBoundingClientRect();
+    const add = element.querySelector(".custom-picker-add").getBoundingClientRect();
+    return { height, thumbnail: [thumbnail.width, thumbnail.height], add: [add.width, add.height] };
+  });
+}
+
+async function assertCompactRow(list) {
+  const row = list.getByRole("option", { name: "Movement 01 Chest" });
+  const size = await measureResultRow(row);
+  assert.deepEqual(size, { height: 54, thumbnail: [40, 40], add: [44, 44] });
+  return size.height;
+}
+
 async function assertPickerActions(page, viewport) {
   const trigger = page.locator("#trigger");
   const draft = page.locator("#workout-draft");
@@ -171,7 +190,15 @@ async function assertPickerActions(page, viewport) {
   assert.equal(await page.locator("[data-added-exercises]").count(), 0);
 
   await trigger.click();
-  await list.getByRole("option", { name: "Movement 01 Chest" }).click();
+  const row = list.getByRole("option", { name: "Movement 01 Chest" });
+  const addTarget = row.locator(".custom-picker-add");
+  assert.equal(await addTarget.textContent(), "+");
+  await addTarget.click();
+  assert.equal(await row.getAttribute("aria-selected"), "true");
+  assert.equal(await addTarget.textContent(), "Selected");
+  const selectedSize = await measureResultRow(row);
+  assert.equal(selectedSize.height, 54);
+  assert.ok(selectedSize.add.every((size) => size >= 44));
   await dialog.getByRole("button", { name: "Add exercise", exact: true }).click();
   await page.getByRole("button", { name: "Add to workout" }).click();
   await dialog.waitFor({ state: "detached" });
@@ -218,12 +245,26 @@ async function assertPickerActions(page, viewport) {
         const search = dialog.locator("#custom-workout-picker-search");
         await assertFullScreen(dialog, viewport);
         const list = dialog.locator("#custom-workout-picker-options");
+        const restingRowHeight = await assertCompactRow(list);
+        if (format === "single" && width === 360) {
+          const longRow = list.getByRole("option", { name: /Rear-Foot-Elevated Split Squat/ });
+          assert.ok(await longRow.locator("strong").evaluate((title) => {
+            const lineHeight = parseFloat(getComputedStyle(title).lineHeight);
+            return title.getBoundingClientRect().height >= lineHeight * 2 - 1 && title.scrollWidth <= title.clientWidth;
+          }), "Long exercise names wrap on narrow phones");
+          assert.equal(await longRow.locator("small").textContent(), "Quads");
+          assert.ok((await measureResultRow(longRow)).height > restingRowHeight);
+        }
         await assertListScrolls(page, list, "dialog", engine, format + " picker");
 
         await search.fill("Movement");
         await page.evaluate(() => window.setPickerVisibleViewport({ height: 375, top: 0 }));
         await assertFullScreen(dialog, { width, height: 375 });
         await list.getByRole("option", { name: /Add .Movement. as custom/ }).waitFor();
+        const keyboardRowHeight = await assertCompactRow(list);
+        if (format === "single") {
+          process.stdout.write(`${browserName} ${width}px picker row: ${restingRowHeight}px resting, ${keyboardRowHeight}px with keyboard\n`);
+        }
         await list.evaluate((element) => { element.scrollTop = 0; });
         await assertListScrolls(page, list, "dialog", engine, format + " picker with keyboard");
         const shortcut = await dialog.locator(".custom-picker-quick-suggestions").boundingBox();
@@ -282,6 +323,9 @@ async function assertPickerActions(page, viewport) {
     const dialog = desktop.locator(".custom-workout-exercise-dialog");
     const bounds = await dialog.boundingBox();
     assert.deepEqual(bounds, { x: 360, y: 6, width: 560, height: 848 });
+    assert.deepEqual(await measureResultRow(dialog.getByRole("option", { name: "Movement 01 Chest" })), {
+      height: 70, thumbnail: [56, 56], add: [30, 30]
+    });
     assert.ok(await dialog.getByLabel("Search exercises").evaluate((input) => input === document.activeElement));
     await desktop.close();
     process.stdout.write(`${browserName} 1280×860: existing desktop layout and search focus\n`);
