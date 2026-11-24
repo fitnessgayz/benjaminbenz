@@ -42,8 +42,8 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(client.background_color, "#050806");
   assert.equal(client.theme_color, "#050806");
   assert.equal(coach.name, "FWB Coach");
-  assert.equal(coach.background_color, "#030D1C");
-  assert.equal(coach.theme_color, "#030D1C");
+  assert.equal(coach.background_color, "#101113");
+  assert.equal(coach.theme_color, "#101113");
   assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-5e7e5c45/")));
   // The public site and Coach retain their own art and URLs.
   assert.ok(website.icons.every((icon) => /^\/images\/gruntr\/icon-/.test(icon.src)));
@@ -86,7 +86,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
     const html = read(file);
     assert.match(html, /apple-mobile-web-app-title" content="FWB Coach"/);
     assert.match(html, /application-name" content="FWB Coach"/);
-    assert.match(html, /theme-color" content="#030D1C"/);
+    assert.match(html, /theme-color" content="#101113"/);
   }
 
   assert.match(read("coach-admin.html"), /rel="manifest" href="\/coach\.webmanifest"/);

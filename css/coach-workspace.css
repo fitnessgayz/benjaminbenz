@@ -1,0 +1,331 @@
+/* Coach workspace colors match the charcoal, gold, and blue of GRUNTR web. */
+:root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page, .coach-wall-page) {
+  --canvas: #101113;
+  --ink-deep: #101113;
+  --ink: #f5f7fa;
+  --text-muted: #bdc5cc;
+  --surface: #1d2227;
+  --surface-soft: #24282e;
+  --border: #45494d;
+  --control-border: #68737e;
+  --brand-primary: #ffd400;
+  --brand-primary-hover: #ffe257;
+  --brand-primary-ink: #111;
+  --focus: var(--brand-primary);
+  --secondary-accent: #72b8ef;
+  --secondary-surface: #1c2d3b;
+  --secondary-border: #426a89;
+  --selected-surface: #28271d;
+  --nav-surface: var(--canvas);
+  --black: var(--ink-deep);
+  --white: var(--ink);
+  --paper: var(--surface);
+  --muted: var(--text-muted);
+  --line: var(--border);
+  --lime: var(--brand-primary);
+  --blue: var(--secondary-accent);
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+:root:has(> body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page, .coach-wall-page)) {
+  background: #101113;
+}
+:root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page) .site-header {
+  min-height: calc(64px + env(safe-area-inset-top));
+  padding-block-start: env(safe-area-inset-top);
+  padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  border-color: var(--line);
+  background: var(--canvas);
+}
+:root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page) .site-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+:root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page) .site-header .brand img {
+  flex: none;
+  border-radius: 50%;
+}
+:root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page) .site-header .brand strong {
+  display: inline;
+  font-size: .95rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+:root body.coach-admin-page .site-header .sign-out-button {
+  min-height: 44px;
+  padding-inline: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.coach-skip {
+  position: fixed;
+  inset: 8px auto auto 8px;
+  z-index: 2000;
+  padding: .6rem .9rem;
+  background: var(--lime);
+  color: var(--brand-primary-ink);
+  transform: translateY(-150%);
+}
+.coach-skip:focus { transform: none; }
+:root body.coach-admin-page .dashboard-hero:has(~ .admin-workspace:not([hidden])) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+:root body.coach-admin-page .admin-shell {
+  width: min(1480px, calc(100% - 48px));
+  padding-block-start: clamp(18px, 3vw, 38px);
+}
+:root body.coach-admin-page .admin-workspace[hidden] { display: none !important; }
+:root body.coach-admin-page .coach-admin-sidebar {
+  border-color: var(--line);
+  background: var(--surface) !important;
+  box-shadow: none !important;
+}
+:root body.coach-admin-page .coach-admin-sidebar-mark {
+  display: block;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+:root body.coach-admin-page .admin-tabs .admin-tab { color: var(--muted); }
+:root body.coach-admin-page .admin-tabs .admin-tab-session-logger {
+  border-color: var(--secondary-border);
+  background: var(--secondary-surface);
+  color: var(--secondary-accent);
+}
+:root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: none !important; }
+:root body.coach-admin-page .admin-tabs .admin-tab.is-active {
+  border-color: transparent;
+  background: var(--selected-surface);
+  color: var(--lime);
+}
+:root body.coach-admin-page .admin-tabs .admin-tab:focus-visible { outline-offset: -2px; }
+
+:root body.coach-admin-page .coach-home-panel {
+  gap: clamp(18px, 3vw, 32px);
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+.coach-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 15px;
+}
+.coach-overview-title h2 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: clamp(2rem, 4.1vw, 3.75rem);
+  line-height: 1.04;
+  letter-spacing: -.055em;
+  text-transform: none;
+}
+.coach-overview-title p { margin: 0; color: var(--muted); }
+:root body.coach-admin-page .coach-home-mobile-toolbar { justify-content: flex-end; }
+:root body.coach-admin-page .coach-home-notification-button {
+  border-color: var(--control-border);
+  background: var(--surface);
+  color: var(--ink);
+}
+.coach-overview-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+:root body.coach-admin-page .coach-overview-actions .button {
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: .55rem .9rem;
+  border-color: var(--control-border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .875rem;
+}
+:root body.coach-login-page #coach-login-form .button-dark {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--brand-primary-ink);
+}
+:root body.coach-login-page #coach-login-form .button-dark:hover {
+  background: var(--brand-primary-hover);
+}
+#coach-admin-workspace .coach-overview-actions .coach-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--brand-primary-ink);
+}
+#coach-admin-workspace .coach-overview-actions .coach-primary-action:hover { background: var(--brand-primary-hover); }
+:root body.coach-admin-page .coach-overview-actions .coach-home-text-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: .45em;
+  padding-inline: .65rem;
+}
+:root body.coach-admin-page .coach-home-text-link {
+  color: var(--secondary-accent);
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+
+:root body.coach-admin-page .coach-home-metrics .coach-home-shortcut {
+  justify-content: start;
+  min-width: 0;
+  min-height: 105px;
+  gap: 6px;
+  padding: clamp(10px, 1.6vw, 16px);
+  border: 1px solid var(--control-border);
+  border-radius: 14px !important;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+  text-align: start;
+}
+:root body.coach-admin-page .coach-home-metrics .coach-home-shortcut:hover { background: var(--surface-soft); }
+:root body.coach-admin-page .coach-home-metrics .coach-home-attention-metric { border-color: #a38a45; }
+:root body.coach-admin-page .coach-home-shortcut strong { color: var(--ink); font-size: clamp(1.8rem, 4vw, 2.7rem); line-height: 1; }
+:root body.coach-admin-page .coach-home-attention-metric strong { color: var(--lime); }
+:root body.coach-admin-page .coach-home-shortcut small { color: var(--muted); font-weight: 600; opacity: 1; }
+:root body.coach-admin-page .coach-home-shortcut em { color: var(--secondary-accent); }
+
+:root body.coach-admin-page .coach-home-dashboard-grid {
+  column-gap: clamp(18px, 2.8vw, 40px);
+  row-gap: 12px;
+}
+:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-module {
+  min-width: 0;
+  padding: 16px 0 12px;
+  border: 0;
+  border-block-start: 1px solid var(--line);
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+}
+:root body.coach-admin-page .coach-home-dashboard-grid :is(.coach-home-recent, .coach-home-inactive) { grid-column: auto; }
+:root body.coach-admin-page .coach-home-module-heading { gap: 10px; flex-wrap: wrap; }
+:root body.coach-admin-page .coach-home-calendar-actions { flex-wrap: wrap; justify-content: flex-start; }
+:root body.coach-admin-page .coach-home-calendar-actions .coach-home-text-link {
+  display: inline-flex;
+  align-items: center;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 44px;
+  padding-inline: 0 !important;
+  white-space: nowrap;
+}
+:root body.coach-admin-page .coach-home-calendar { margin-block-start: 12px; }
+:root body.coach-admin-page .coach-home-module .coach-home-list-row {
+  border-radius: 0 !important;
+  border-inline: 0;
+  border-block: 0;
+  border-block-end: 1px solid var(--line);
+  background: transparent;
+  box-shadow: none;
+}
+:root body.coach-admin-page :is(.admin-client-list, .selected-client-panel, .admin-editor > .admin-card:not(.coach-home-panel)) {
+  box-shadow: none;
+}
+:root body.coach-admin-page .admin-client-list .client-search-control {
+  border-color: var(--control-border);
+  background: var(--surface-soft);
+}
+
+:root body.coach-login-page .client-access {
+  gap: clamp(18px, 5vw, 64px);
+  background: transparent;
+}
+:root body.coach-login-page .access-intro h1 { color: var(--ink); text-transform: none; }
+:root body.coach-login-page .coach-access-panel { border-color: var(--line); background: var(--surface); box-shadow: none; }
+:root body:is(.coach-workout-log-page, .coach-exercise-library-page) .dashboard-hero {
+  border: 0;
+  border-block-end: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+:root body:is(.coach-workout-log-page, .coach-exercise-library-page) .dashboard-hero h1 { color: var(--ink); text-transform: none; }
+:root body.coach-wall-page .wall-header {
+  padding-block-start: max(12px, env(safe-area-inset-top));
+  background: var(--canvas);
+  border-color: var(--line);
+}
+:root body.coach-wall-page :is(.wall-panel, .wall-post, .wall-panel-heading button, .wall-header button) {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+@media (max-width: 900px) {
+  :root body.coach-admin-page .admin-shell {
+    width: min(800px, calc(100% - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right))));
+  }
+  :root body.coach-admin-page .admin-tabs :is(.admin-tab-session-logger, .admin-tab-exercise-library, [data-admin-tab="notifications"]) {
+    display: none !important;
+  }
+  :root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: flex !important; }
+  :root body.coach-admin-page .coach-home-notification-button {
+    width: 44px !important;
+    min-width: 44px !important;
+  }
+  :root body.coach-admin-page .coach-admin-sidebar {
+    inset: auto max(12px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    width: auto;
+    min-height: 0;
+    padding: 4px 8px;
+    border: 1px solid rgb(255 255 255 / 21%) !important;
+    border-radius: 999px !important;
+    background: rgb(36 40 46 / 85%) !important;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 32%) !important;
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+  }
+  :root body.coach-admin-page .admin-tabs .admin-tab {
+    min-height: 60px !important;
+    border-radius: 999px !important;
+    background: transparent;
+  }
+  :root body.coach-admin-page .admin-tabs .admin-tab::after { display: none; }
+  :root body.coach-admin-page .admin-tabs .admin-nav-label { font-size: .68rem; line-height: 1.15; }
+  :root body.coach-admin-page .admin-tabs .admin-tab.is-active .admin-nav-label { color: var(--lime); }
+  :root body.coach-admin-page .admin-tabs .admin-tab.is-active .admin-nav-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    padding: 6px;
+    border-radius: 50%;
+  }
+  html:has(> body.coach-admin-page) {
+    scroll-padding-block-end: calc(98px + env(safe-area-inset-bottom));
+  }
+  :root body.coach-admin-page .coach-home-dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 540px) {
+  .coach-overview-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #coach-admin-workspace .coach-overview-actions .coach-primary-action { grid-column: 1 / -1; }
+  :root body.coach-admin-page .coach-overview-actions .coach-home-text-link { display: none; } /* Available in More. */
+  :root body.coach-admin-page .coach-home-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

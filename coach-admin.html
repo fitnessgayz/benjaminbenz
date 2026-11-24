@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>FWB Coach | Fitness with Benjamin</title>
   <meta name="description" content="FWB Coach workspace for managing clients, training, and messages." />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
@@ -36,21 +36,22 @@
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/workout-progression.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2&amp;electric-gold=2" />
-  <meta name="theme-color" content="#030D1C" />
+  <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1&amp;training-log-contrast=1&amp;compact-activity-inbox=3" />
   <link rel="stylesheet" href="css/coach-workout-corrections.css?v=weight-corrections-1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/coach-workout-schedule.css?v=1" />
   <link rel="stylesheet" href="css/client-access-requests.css?v=1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=1" />
 </head>
 <body class="dashboard-page coach-admin-page">
+  <a class="coach-skip" href="#coach-main">Skip to workspace</a>
   <header class="site-header dashboard-header">
-    <a class="brand" href="index.html#top" aria-label="FWB Coach home">
-      <span>FWB</span>
-      <strong>Coach</strong>
+    <a class="brand" href="coach-admin.html" aria-label="FWB Coach home">
+      <img src="/fwb-brand-icon-gold-192-v5.png" alt="" width="36" height="36" />
+      <strong>FWB Coach</strong>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
-      <a href="#clients">Clients</a>
       <a id="client-view-link" aria-disabled="true" tabindex="-1">Client View</a>
       <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
     </nav>
@@ -59,7 +60,7 @@
     </div>
   </header>
 
-  <main class="admin-shell">
+  <main class="admin-shell" id="coach-main" tabindex="-1">
     <section class="dashboard-hero" aria-label="FWB Coach summary">
       <div>
         <p class="kicker">FWB Coach</p>
@@ -79,7 +80,7 @@
       <aside class="coach-admin-sidebar" aria-label="FWB Coach navigation">
         <div class="coach-admin-sidebar-header">
           <a class="coach-admin-sidebar-brand" href="coach-admin.html" aria-label="FWB Coach home">
-            <span class="coach-admin-sidebar-mark" aria-hidden="true">FWB</span>
+            <img class="coach-admin-sidebar-mark" src="/fwb-brand-icon-gold-192-v5.png" alt="" width="36" height="36" />
             <span class="coach-admin-sidebar-title">FWB Coach</span>
           </a>
           <button
@@ -138,10 +139,10 @@
           <button type="button" aria-label="Close more tools" data-coach-mobile-more-close>×</button>
         </div>
         <nav class="coach-mobile-more-menu" aria-label="Additional coach tools">
-          <button type="button" data-coach-mobile-more-destination="inbox"><strong>Messages</strong><span>Open your client inbox</span><span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span></button>
           <a href="coach-workout-log.html"><strong>Workout logger</strong><span>Record an in-person session</span></a>
           <a href="coach-exercise-library.html"><strong>Exercise library</strong><span>Manage exercises and media</span></a>
-          <button type="button" data-coach-mobile-more-destination="notifications"><strong>Settings</strong><span>Notifications, support, and privacy</span></button>
+          <a href="coach-community-wall.html"><strong>FWB Wall</strong><span>See the wins clients choose to share</span></a>
+          <button type="button" data-coach-mobile-more-destination="notifications"><strong>Activity &amp; settings</strong><span>Recent activity, notifications, and support</span></button>
         </nav>
       </dialog>
 
@@ -163,7 +164,7 @@
           <div class="client-autocomplete" id="client-autocomplete">
             <label class="client-search-control" for="client-search-input">
               <span id="client-search-label">Client name</span>
-              <input type="text" id="client-search-input" placeholder="Type a client name..." autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
+              <input type="text" id="client-search-input" placeholder="Search by name" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
             </label>
             <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
           </div>
@@ -171,34 +172,37 @@
         </section>
 
         <section class="admin-card coach-home-panel" data-admin-panel="home" aria-labelledby="coach-home-title">
-          <div class="coach-home-mobile-toolbar">
-            <button class="coach-home-notification-button" type="button" aria-label="Open coach settings" aria-haspopup="dialog" data-coach-home-settings>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Settings</span>
-              <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
-            </button>
-          </div>
-          <div class="coach-home-heading">
-            <div>
-              <p class="kicker">Coach home</p>
-              <h2 id="coach-home-title">Today at a glance</h2>
-              <p>Recent training, upcoming sessions, and the clients who may need a check-in.</p>
-              <a class="button button-ghost" href="coach-community-wall.html">Open FWB Wall →</a>
+          <header class="coach-overview">
+            <div class="coach-overview-title">
+              <h2 id="coach-home-title">Coach Home</h2>
+              <p>Upcoming sessions, client activity, and follow-ups.</p>
             </div>
-            <button class="button button-dark" type="button" id="new-client-button">Invite new client</button>
-          </div>
+            <div class="coach-home-mobile-toolbar">
+              <button class="coach-home-notification-button" type="button" aria-label="Open coach settings" data-coach-home-settings>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Settings</span>
+                <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
+              </button>
+            </div>
+            <nav class="coach-overview-actions" aria-label="Quick actions">
+              <a class="button button-dark coach-primary-action" href="coach-workout-log.html">Log a workout <span aria-hidden="true">→</span></a>
+              <button class="button button-ghost" type="button" data-coach-home-shortcut="clients">Find a client</button>
+              <button class="button button-ghost" type="button" id="new-client-button">Invite new client</button>
+              <a class="coach-home-text-link" href="coach-community-wall.html">FWB Wall <span aria-hidden="true">↗</span></a>
+            </nav>
+          </header>
 
           <div class="coach-home-metrics" aria-label="Coach summary">
             <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="clients">
               <span>Active clients</span>
               <strong id="coach-home-active-clients">0</strong>
-              <small>currently on your roster</small>
-            <em>View clients <span aria-hidden="true">→</span></em>
+              <small>On your roster</small>
+              <em>View clients <span aria-hidden="true">→</span></em>
             </button>
             <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="workouts">
               <span>Workouts</span>
               <strong id="coach-home-recent-workouts">0</strong>
-              <small>completed in the last 7 days</small>
+              <small>Last 7 days</small>
             <em>View activity <span aria-hidden="true">→</span></em>
             </button>
             <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="sessions">
@@ -210,25 +214,12 @@
             <button class="coach-home-shortcut coach-home-attention-metric" type="button" data-coach-home-shortcut="attention">
               <span>Needs attention</span>
               <strong id="coach-home-needs-attention">0</strong>
-              <small>low sessions or training inactivity</small>
+              <small>Low sessions or inactivity</small>
             <em>View follow-ups <span aria-hidden="true">→</span></em>
             </button>
           </div>
 
           <div class="coach-home-dashboard-grid">
-            <section class="coach-home-module coach-home-recent" aria-labelledby="coach-home-recent-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Training activity</p>
-                  <h3 id="coach-home-recent-title" tabindex="-1">Last workout by client</h3>
-                </div>
-                <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
-              </div>
-              <div class="coach-home-list" id="coach-home-recent-list">
-                <p class="empty-state">Workout activity will appear here.</p>
-              </div>
-            </section>
-
             <section class="coach-home-module coach-home-schedule" aria-labelledby="coach-home-schedule-title">
               <div class="coach-home-module-heading">
                 <div>
@@ -241,9 +232,22 @@
                 </div>
               </div>
               <p class="coach-home-calendar-status" id="coach-home-calendar-status" role="status">Connecting to FWB Calendar…</p>
-              <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
               <div class="coach-home-list coach-home-schedule-list" id="coach-home-schedule-list">
                 <p class="empty-state">FWB Calendar events will appear here.</p>
+              </div>
+              <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
+            </section>
+
+            <section class="coach-home-module coach-home-recent" aria-labelledby="coach-home-recent-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Training activity</p>
+                  <h3 id="coach-home-recent-title" tabindex="-1">Last workout by client</h3>
+                </div>
+                <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
+              </div>
+              <div class="coach-home-list" id="coach-home-recent-list">
+                <p class="empty-state">Workout activity will appear here.</p>
               </div>
             </section>
 

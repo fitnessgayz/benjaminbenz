@@ -15,9 +15,9 @@ test("installed apps keep distinct product identities and useful launch shortcut
   assert.notEqual(client.id, coach.id);
   assert.notEqual(client.start_url, coach.start_url);
   assert.equal(client.background_color, "#050806");
-  assert.equal(coach.background_color, "#030D1C");
+  assert.equal(coach.background_color, "#101113");
   assert.equal(client.theme_color, "#050806");
-  assert.equal(coach.theme_color, "#030D1C");
+  assert.equal(coach.theme_color, "#101113");
   assert.ok(client.shortcuts.length >= 3);
   assert.ok(coach.shortcuts.length >= 3);
 });
@@ -84,24 +84,26 @@ test("shared app styles use the approved palette beneath the color bridges", () 
   assert.ok(coachLinks.some((link) => /fwb-dark-theme\.css\?v=coach-blue-gold-1/.test(link[1])));
 });
 
-test("coach surfaces use a high-contrast electric-blue, gold, and navy identity", () => {
-  const css = read("css/fwb-dark-theme.css");
-  assert.match(css, /body:is\([\s\S]*?\.coach-admin-page[\s\S]*?--brand-primary:\s*#168bff/);
-  assert.match(css, /--secondary-accent:\s*#e7b955/);
-  assert.match(css, /--canvas:\s*#030d1c/);
-  assert.match(css, /--surface:\s*#071a31/);
-  assert.match(css, /body\.coach-admin-page \.web-notification-like\s*\{[^}]*color:\s*#041426[^}]*background:\s*#168bff/s);
-  assert.match(css, /\.web-notification-like\[aria-pressed="true"\]\s*\{[^}]*color:\s*#071a31[^}]*background:\s*#e7b955/s);
+test("Coach workspace surfaces share GRUNTR's charcoal, gold, and blue", () => {
+  const css = read("css/coach-workspace.css");
+  for (const [token, value] of Object.entries({
+    canvas: "#101113",
+    surface: "#1d2227",
+    "brand-primary": "#ffd400",
+    "secondary-accent": "#72b8ef",
+  })) {
+    assert.match(css, new RegExp(`--${token}: ${value};`, "i"));
+  }
 
   for (const file of [
     "coach-login.html",
     "coach-admin.html",
     "coach-workout-log.html",
     "coach-exercise-library.html",
-    "fwb-coach-support.html",
-    "fwb-coach-privacy.html",
+    "coach-community-wall.html",
   ]) {
-    assert.match(read(file), /fwb-dark-theme\.css\?v=coach-blue-gold-1/);
+    assert.match(read(file), /coach-workspace\.css\?v=1/);
+    assert.match(read(file), /theme-color" content="#101113"/);
   }
 });
 

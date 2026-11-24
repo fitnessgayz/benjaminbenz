@@ -323,7 +323,7 @@ test("keeps the coach autosave save and finish controls with the new card layout
 });
 
 test("allows accessible browser zoom on the coach session logger", () => {
-  assert.match(loggerHtml, /name="viewport" content="width=device-width, initial-scale=1\.0"/);
+  assert.match(loggerHtml, /name="viewport" content="width=device-width, initial-scale=1\.0(?:, viewport-fit=cover)?"/);
   assert.doesNotMatch(loggerHtml, /maximum-scale=1|user-scalable=no/);
 });
 

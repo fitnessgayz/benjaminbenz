@@ -7,6 +7,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "utf8");
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
+const workspaceStyles = fs.readFileSync(path.join(projectRoot, "css/coach-workspace.css"), "utf8");
 
 test("puts Home first in the coach admin sidebar", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
@@ -80,12 +81,10 @@ test("coach mobile dock uses the same final surface and compact breakpoint as th
   assert.match(styleSource, /@media \(max-width: 420px\)[\s\S]*?\.coach-admin-page \.admin-nav-icon,[\s\S]*?width:\s*30px[^}]*height:\s*30px[^}]*padding:\s*2px/s);
 });
 
-test("Session Logger is distinct without looking like the selected admin section", () => {
-  const sessionStyle = styleSource.match(/\.coach-admin-page \.admin-tab-session-logger\s*\{([^}]*)\}/)?.[1] || "";
-
-  assert.doesNotMatch(sessionStyle, /background:\s*var\(--lime\)/);
-  assert.match(sessionStyle, /background:\s*rgba\(215, 255, 63,/);
-  assert.match(sessionStyle, /border-color:\s*rgba\(137, 173, 0,/);
+test("Session Logger has a distinct tool accent in the desktop navigation", () => {
+  const sessionStyle = workspaceStyles.match(/\.admin-tabs \.admin-tab-session-logger\s*\{([^}]*)\}/)?.[1] || "";
+  assert.match(sessionStyle, /background:\s*var\(--secondary-surface\)/);
+  assert.match(sessionStyle, /border-color:\s*var\(--secondary-border\)/);
 });
 
 test("selected client summary reserves readable identity space beside its actions", () => {
@@ -109,13 +108,15 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile coach navigation keeps six stable destinations including Exercise Library", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?href="coach-workout-log\.html"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?href="coach-exercise-library\.html"[\s\S]*?data-admin-tab="notifications"/);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[^}]*overflow-x:\s*hidden[^}]*touch-action:\s*manipulation/s);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tab-mobile-more\s*\{[^}]*display:\s*none !important/s);
-  assert.match(styleSource, /flex:\s*1 1 0 !important[^}]*min-width:\s*0 !important/s);
-  assert.match(adminHtml, /data-admin-tab="notifications"[^>]*aria-label="Recent activity"[\s\S]*?<span class="admin-nav-label">Activity<\/span>/);
-  assert.match(adminHtml, /href="coach-exercise-library\.html"[^>]*aria-label="Exercise library"/);
+test("mobile dock keeps Home, Clients, Inbox, and More with direct tool links in More", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs :is\(\.admin-tab-session-logger, \.admin-tab-exercise-library, \[data-admin-tab="notifications"\]\)\s*\{[^}]*display: none !important/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
+  const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));
+  for (const file of ["coach-workout-log.html", "coach-exercise-library.html", "coach-community-wall.html"]) {
+    assert.ok(tools.includes(`href="${file}"`));
+  }
+  assert.match(tools, /data-coach-mobile-more-destination="notifications"/);
 });
 
 test("mobile Home uses a compact Settings shortcut with a corner activity badge", () => {
