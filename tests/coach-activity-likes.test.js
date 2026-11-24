@@ -26,6 +26,7 @@ function element(tag = "div") {
     textContent: "",
     className: "",
     classList: { toggle(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); } },
+    addEventListener(name, callback) { this[name] = callback; },
     append(...children) { this.children.push(...children); },
     replaceChildren(...children) { this.children = children; },
     setAttribute(name, value) { this[name] = value; },
@@ -33,7 +34,7 @@ function element(tag = "div") {
   };
 }
 
-function coachHarness({ deployedBackend = false, noticeOverrides = {} } = {}) {
+function coachHarness({ deployedBackend = false, noticeOverrides = {}, controllerOptions = {} } = {}) {
   const list = element("ol");
   const empty = element("p");
   const badge = element("span");
@@ -121,7 +122,7 @@ function coachHarness({ deployedBackend = false, noticeOverrides = {} } = {}) {
   URL, Intl, Uint8Array, Buffer };
   vm.runInNewContext(notificationsSource, sandbox);
   const controller = sandbox.window.FWBWebNotifications.createController({
-    supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement
+    supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement, ...controllerOptions
   });
   return { controller, list, status, listeners, rpcCalls, selectCalls, unreadSummary, workoutSummary, checkInSummary };
 }
@@ -156,7 +157,7 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   const notificationLink = firstItem.children[0];
   const header = notificationLink.children.find((child) => child.className === "coach-activity-entry-head");
   const [typeIcon, author, date] = header.children;
-  const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
+  const likeButton = firstItem.children[1].children.find((child) => child.dataset.webNotificationLike);
   assert.equal(firstItem.dataset.webNotificationKind, "workout_completed");
   assert.equal(typeIcon.dataset.webNotificationIcon, "workout");
   assert.match(typeIcon.innerHTML, /<rect x="6" y="4"/);
@@ -172,8 +173,9 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.ok(likeButton);
   assert.equal(likeButton.children[0].className, "web-notification-like-icon");
   assert.equal(likeButton.children[0]["aria-hidden"], "true");
-  assert.match(likeButton.children[0].innerHTML, /<svg.*stroke="currentColor".*M7 10v11/);
-  assert.equal(likeButton.children[1].textContent, "Give props");
+  assert.match(likeButton.children[0].innerHTML, /<svg.*stroke="currentColor".*M3 17/);
+  assert.equal(likeButton.children.length, 1);
+  assert.equal(likeButton.title, "Give props");
   assert.equal(likeButton["aria-pressed"], "false");
   assert.equal(likeButton["aria-label"], "Give props for this client update");
 
@@ -185,9 +187,9 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(harness.rpcCalls.length, 1);
   assert.equal(harness.rpcCalls[0].name, "toggle_client_activity_like");
   assert.equal(harness.rpcCalls[0].args.p_notification_id, "notice-1");
-  const updatedButton = harness.list.children[0].children.find((child) => child.dataset.webNotificationLike);
+  const updatedButton = harness.list.children[0].children[1].children.find((child) => child.dataset.webNotificationLike);
   assert.equal(updatedButton["aria-pressed"], "true");
-  assert.equal(updatedButton.children[1].textContent, "Props sent");
+  assert.equal(updatedButton.title, "Remove props");
   assert.match(harness.status.textContent, /Client notified/);
 });
 
@@ -199,10 +201,36 @@ test("deployed notification fallback keeps activity metadata and like controls",
   assert.equal(harness.selectCalls.some(({ table }) => table === "client_notifications"), false);
 
   const firstItem = harness.list.children[0];
-  const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
+  const likeButton = firstItem.children[1].children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
   assert.match(likeButton.children[0].innerHTML, /<svg/);
-  assert.equal(likeButton.children[1].textContent, "Give props");
+  assert.equal(likeButton.title, "Give props");
+});
+
+test("Comment opens an activity-scoped private reply only for a resolved client", async () => {
+  const client = { id: "program-1", client_email: "client@example.com" };
+  const opened = [];
+  let eligible = true;
+  const harness = coachHarness({ controllerOptions: {
+    coachActivityCommentClient: (notice, url) => {
+      assert.equal(notice.id, "notice-1");
+      assert.equal(url, "/coach-admin.html?tab=logs");
+      return eligible ? client : null;
+    },
+    openCoachActivityComment: (...args) => opened.push(args)
+  } });
+  await harness.controller.init();
+  const [props, comment] = harness.list.children[0].children[1].children;
+  assert.equal(props.title, "Give props");
+  assert.equal(comment.children[1].textContent, "Comment");
+  assert.equal(comment["aria-label"], "Comment privately");
+  assert.equal(opened.length, 0);
+  comment.click();
+  assert.equal(opened[0][0], client);
+  assert.match(opened[0][1], /^A client completed a workout · /);
+  eligible = false;
+  await harness.controller.refresh();
+  assert.equal(harness.list.children[0].children[1].children.length, 1);
 });
 
 test("coach activity cards distinguish challenges from workouts and check-ins", async () => {
@@ -251,7 +279,7 @@ test("customer-facing reaction copy uses props without renaming stable database 
   assert.match(propsMigration, /Benjamin gave you props for your workout/);
   assert.match(notificationsSource, /Give props for this client update/);
   assert.match(notificationsSource, /likeIcon\.innerHTML = '<svg/);
-  assert.match(notificationsSource, /likeLabel\.textContent = liked \? "Props sent" : "Give props"/);
+  assert.match(notificationsSource, /likeButton\.title = liked \? "Remove props" : "Give props"/);
   assert.doesNotMatch(notificationsSource, /Like this client update|♥ Liked|Client notified that you liked/);
   assert.match(client, /Coach replies, props \+ form reviews/);
 });

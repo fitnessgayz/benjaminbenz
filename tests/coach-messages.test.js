@@ -47,6 +47,22 @@ test("uncertain send preserves draft and retries the identical request UUID", as
   store.destroy();
 });
 
+test("a Coach Activity reply keeps its context private and preserves an existing draft", async () => {
+  const { store, calls } = harness(async (name, args) => ({ data: name === "messaging_send" ? [row(2, { body: args.p_body })]
+    : name === "messaging_history" ? [row(1, { sender_role: "client" })] : [] }), { role: "coach", user: { id: "coach-user", email: "coach@example.com" } });
+  await store.select(client.email, { activityContext: "Gym check-in · Nov 23" });
+  await store.send();
+  assert.equal(calls.some(({ name }) => name === "messaging_send"), false);
+  store.setDraft("Nice work!");
+  await store.select(client.email, { activityContext: "An unrelated workout" });
+  await store.send();
+  const payload = calls.find(({ name }) => name === "messaging_send").args;
+  assert.equal(payload.p_client_email, client.email);
+  assert.equal(payload.p_body, "Re: Gym check-in · Nov 23\n\nNice work!");
+  assert.equal(store.snapshot().current.activityContext, "");
+  store.destroy();
+});
+
 test("uncertain drafts stay frozen until explicit edit; retry keeps the original payload", async () => {
   let attempt = 0;
   const { store, calls } = harness(async (name) => {
@@ -215,7 +231,7 @@ test("client and coach entry points load the shared controller before their appl
   const messageCss = fs.readFileSync(path.join(root, "css/coach-messages.css"), "utf8");
   assert.match(messageCss, /:root body \.admin-card\.fwb-messages\s*\{[^}]*background: #f8f9f5;[^}]*border-color: #d8dcd3;/s);
   assert.match(messageCss, /\.fwb-message-inbox-item\s*\{[^}]*color: #171b16;[^}]*background: #fff;/s);
-  assert.match(messageCss, /\.fwb-message-inbox-item\.is-active\s*\{[^}]*background: #f2f8df;/s);
+  assert.match(messageCss, /\.fwb-message-inbox-item\.is-active\s*\{[^}]*background: #fff7dc;/s);
   assert.match(messageCss, /\.fwb-message-dialog\s*\{[^}]*background: #f8f9f5;[^}]*color: #171b16;/s);
   assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-bubble\.is-own\s*\{[^}]*background: #eaf3d5;/s);
   assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-composer textarea\s*\{[^}]*background: #fff;[^}]*color: #171b16;/s);

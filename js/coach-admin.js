@@ -6058,6 +6058,26 @@ function updateCoachActivityWorkouts() {
   coachNotificationsController.setCoachWorkouts(workouts);
 }
 
+function resolveCoachActivityCommentClient(row, actionUrl) {
+  const email = normalizeEmail(row.coach_workout_email || row.metadata?.client_email);
+  const destination = new URL(actionUrl, window.location.origin);
+  const id = destination.origin === window.location.origin && destination.pathname === "/coach-admin.html"
+    ? destination.searchParams.get("client")
+    : null;
+  const linked = id ? programs.find((program) => String(program.id) === id) : null;
+  const linkedEmail = normalizeEmail(linked?.client_email);
+  if (id && (!linkedEmail || (email && linkedEmail !== email))) return null;
+  const clientEmail = email || linkedEmail;
+  return clientEmail ? activeClientPrograms().find((program) => normalizeEmail(program.client_email) === clientEmail) || null : null;
+}
+
+function openCoachActivityComment(program, context) {
+  const current = activeClientPrograms().find((client) => client.id === program.id && client.client_email === program.client_email);
+  if (!current || !coachMessagesController) return;
+  setAdminTab("inbox");
+  coachMessagesController.open(current.client_email, current.client_name, undefined, { activityContext: context });
+}
+
 async function initializeCoachNotifications(user) {
   const root = document.querySelector("[data-web-notifications]");
   const status = root?.querySelector("[data-web-notification-status]");
@@ -6086,7 +6106,9 @@ async function initializeCoachNotifications(user) {
     },
     openCoachWorkoutLogs(email) {
       openCoachHomeClientSection(email, "logs");
-    }
+    },
+    coachActivityCommentClient: coachMessagesController ? resolveCoachActivityCommentClient : null,
+    openCoachActivityComment
   });
   updateCoachActivityWorkouts();
 

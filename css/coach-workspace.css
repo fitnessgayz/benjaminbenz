@@ -457,7 +457,7 @@
   color: var(--ink);
   background: transparent;
 }
-:root body.coach-admin-page .coach-activity-feed :is(.coach-activity-entry, .web-notification-like):focus-visible {
+:root body.coach-admin-page .coach-activity-feed :is(.coach-activity-entry, .web-notification-like, .coach-activity-comment):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -547,15 +547,21 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-:root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like {
+.coach-activity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+:root body.coach-admin-page .coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment) {
   position: relative;
   isolation: isolate;
   display: inline-flex;
-  justify-self: start;
+  justify-content: center;
   align-items: center;
   gap: 5px;
   inline-size: auto !important;
-  min-inline-size: 0;
+  min-inline-size: 44px !important;
   min-height: 44px;
   padding: 0 8px;
   border: 0;
@@ -563,7 +569,7 @@
   background: transparent;
   box-shadow: none;
 }
-.coach-activity-feed .web-notification-like::before {
+.coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment)::before {
   position: absolute;
   z-index: -1;
   inset: 8px 0;
@@ -572,18 +578,20 @@
   background: var(--surface-soft);
   content: "";
 }
-:root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like:is(:hover, [aria-pressed="true"]) {
+.coach-activity-feed .web-notification-like::before { inset-inline: 4px; }
+:root body.coach-admin-page .coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment):is(:hover, [aria-pressed="true"]) {
   color: var(--secondary-accent);
   background: transparent;
 }
-.coach-activity-feed .web-notification-like:is(:hover, [aria-pressed="true"])::before {
+.coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment):is(:hover, [aria-pressed="true"])::before {
   border-color: var(--secondary-border);
   background: var(--secondary-surface);
 }
 :root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like:disabled { color: var(--muted); opacity: .75; }
-.coach-activity-feed .web-notification-like-icon { display: grid; flex: none; }
-.coach-activity-feed .web-notification-like-icon svg { width: 14px; height: 14px; }
-.coach-activity-feed .web-notification-like-label {
+.coach-activity-feed :is(.web-notification-like-icon, .coach-activity-comment-icon) { display: grid; flex: none; }
+.coach-activity-feed :is(.web-notification-like-icon, .coach-activity-comment-icon) svg { width: 16px; height: 16px; }
+:root body.coach-admin-page .coach-activity-feed .coach-activity-comment > span {
+  color: inherit;
   font-size: .75rem;
   font-weight: 650;
 }

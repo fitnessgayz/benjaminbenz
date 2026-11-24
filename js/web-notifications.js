@@ -696,24 +696,48 @@
         }
       }
       item.append(link);
+      const actions = global.document.createElement("div");
+      actions.className = "coach-activity-actions";
       if (likeableCoachActivity(row)) {
         const liked = likedNotificationIds.has(row.id);
         const likeButton = global.document.createElement("button");
         const likeIcon = global.document.createElement("span");
-        const likeLabel = global.document.createElement("span");
         likeButton.type = "button";
         likeButton.className = "web-notification-like";
         likeButton.dataset.webNotificationLike = row.id;
         likeButton.setAttribute("aria-pressed", liked ? "true" : "false");
         likeButton.setAttribute("aria-label", liked ? "Remove props from this client update" : "Give props for this client update");
+        likeButton.title = liked ? "Remove props" : "Give props";
         likeIcon.className = "web-notification-like-icon";
         likeIcon.setAttribute("aria-hidden", "true");
-        likeIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 10v11H3V10h4Zm0 0 5-7c2 0 2 2 1 5h5a2 2 0 0 1 2 2l-2 8a2 2 0 0 1-2 2H7"/></svg>';
-        likeLabel.className = "web-notification-like-label";
-        likeLabel.textContent = liked ? "Props sent" : "Give props";
-        likeButton.append(likeIcon, likeLabel);
-        item.append(likeButton);
+        likeIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M3 17c1-2.8 1.8-6 2.3-9.3.2-1.3 1-2.5 2.1-3.2L10 3a1.5 1.5 0 0 1 1.8.3l1.5 1.5a1.5 1.5 0 0 1 0 2.1l-1.1 1.2a1.5 1.5 0 0 1-2.1 0L9.5 7.5l-.9 6a6.6 6.6 0 0 1 5.2-2.6c3.6 0 6.6 2.7 7.2 6.1.2 1.5-.5 2.2-1.7 2.8-2.4 1.1-5 1.6-7.5 1.6-2.9 0-5.5-.6-7.7-1.6A2 2 0 0 1 3 17Z"/><path d="M8.6 13.5a4.6 4.6 0 0 0-1 2.1"/></svg>';
+        likeButton.append(likeIcon);
+        actions.append(likeButton);
       }
+      if (role === "coach" && ["workout_completed", "check_in_submitted", "achievement"].includes(notificationKind)
+          && typeof options.openCoachActivityComment === "function") {
+        const client = options.coachActivityCommentClient?.(row, actionUrl);
+        if (client) {
+          const commentButton = global.document.createElement("button");
+          const icon = global.document.createElement("span");
+          const label = global.document.createElement("span");
+          commentButton.type = "button";
+          commentButton.className = "coach-activity-comment";
+          commentButton.setAttribute("aria-label", "Comment privately");
+          commentButton.title = "Open a private reply in Inbox";
+          icon.className = "coach-activity-comment-icon";
+          icon.setAttribute("aria-hidden", "true");
+          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4v-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>';
+          label.textContent = "Comment";
+          commentButton.append(icon, label);
+          commentButton.addEventListener("click", () => {
+            const subject = row.coach_workout?.title || String(row.title || "Client activity");
+            options.openCoachActivityComment(client, `${subject} · ${date.title}`);
+          });
+          actions.append(commentButton);
+        }
+      }
+      if (actions.children.length) item.append(actions);
       return item;
     }
 

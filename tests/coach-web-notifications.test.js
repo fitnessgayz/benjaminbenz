@@ -132,8 +132,8 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item\s*\{[^}]*border-block-end:\s*1px solid var\(--line\)/s);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{\s*\.coach-activity-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
-  assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item \.web-notification-like\s*\{[^}]*min-height:\s*44px/s);
-  assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-like::before\s*\{[^}]*inset:\s*8px 0[^}]*border-radius:\s*999px[^}]*background:\s*var\(--surface-soft\)/s);
+  assert.match(workspaceStyles, /\.coach-activity-actions :is\(\.web-notification-like, \.coach-activity-comment\)\s*\{[^}]*min-inline-size:\s*44px[^}]*min-height:\s*44px/s);
+  assert.match(workspaceStyles, /\.coach-activity-actions :is\(\.web-notification-like, \.coach-activity-comment\)::before\s*\{[^}]*inset:\s*8px 0[^}]*border-radius:\s*999px[^}]*background:\s*var\(--surface-soft\)/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-type-icon svg\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
   assert.match(sharedSource, /activityDescriptor\.includes\("challenge"\)[\s\S]*?\? "challenge"/);
   assert.match(sharedSource, /notificationKind === "check_in_submitted"[\s\S]*?\? "checkin"/);
@@ -188,4 +188,23 @@ test("matches coach activity by workout identity and keeps saved-only workouts r
   assert.equal(scopedRows.find((row) => row.id === "other").coach_workout_email, "b@example.test");
   assert.equal(scopedRows.find((row) => row.id === "other").coach_workout, null);
   assert.equal(scopedRows.find((row) => !row.id).coach_workout_email, "a@example.test");
+});
+
+test("Coach Activity comments resolve a current client and reject conflicting identities", () => {
+  const body = adminSource.match(/function resolveCoachActivityCommentClient\([\s\S]*?\n\}/)[0];
+  const alex = { id: "a", client_email: "alex@example.test" };
+  const sam = { id: "b", client_email: "sam@example.test" };
+  const archive = { id: "c", client_email: "archived@example.test" };
+  const resolve = vm.runInNewContext(`${body}\nresolveCoachActivityCommentClient`, {
+    window: { location: { origin: "https://coach.test" } },
+    URL,
+    programs: [alex, sam, archive],
+    activeClientPrograms: () => [alex, sam],
+    normalizeEmail: (value) => String(value || "").trim().toLowerCase()
+  });
+  assert.equal(resolve({ coach_workout_email: alex.client_email }, "/coach-admin.html?tab=logs&client=a"), alex);
+  assert.equal(resolve({}, "/coach-admin.html?tab=home&client=b"), sam);
+  assert.equal(resolve({ coach_workout_email: alex.client_email }, "/coach-admin.html?tab=logs&client=b"), null);
+  assert.equal(resolve({}, "/coach-admin.html?tab=home&client=c"), null);
+  assert.equal(resolve({}, "https://other.test/coach-admin.html?client=b"), null);
 });
