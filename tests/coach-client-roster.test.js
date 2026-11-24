@@ -11,7 +11,7 @@ const context = {};
 vm.runInNewContext([
   source("coachClientMembership"), source("coachClientRosterPrograms"),
   source("normalizeSessionCount"), source("coachClientSessionValues"),
-  source("coachSessionToday"), source("moveCoachSessionMonth")
+  source("coachSessionToday"), source("moveCoachSessionMonth"), source("formatCoachAlexStartTime")
 ].join("\n"), context);
 
 test("Clients opens on Personal training, followed by App only and All clients", () => {
@@ -110,13 +110,23 @@ test("FWB month navigation and current day use Pacific calendar dates", () => {
   assert.equal(context.moveCoachSessionMonth("2025-12", 1), "2026-01");
 });
 
-test("Sessions is a main navigation view with the coach's snapshot above the clients", () => {
+test("Sessions keeps FWB totals and the Alex Fitness history in separate tabs", () => {
   assert.match(html, /data-admin-tab="session-counts" aria-label="Sessions"/);
   assert.match(html, /id="coach-client-session-counts" data-admin-panel="session-counts" aria-labelledby="coach-session-count-title"/);
   const counts = html.slice(html.indexOf('id="coach-client-session-counts"'), html.indexOf('data-admin-panel="home"'));
-  assert.match(counts, /Alex Fitness[\s\S]*FWB sessions[\s\S]*Client session counts/);
-  assert.match(counts, /Coach’s count · saved summary/);
+  assert.match(counts, /role="tablist" aria-label="Session views"[\s\S]*data-coach-session-view="fwb"[\s\S]*data-coach-session-view="alex"/);
+  assert.match(counts, /id="coach-sessions-fwb" role="tabpanel"[\s\S]*Client session counts[\s\S]*id="coach-sessions-alex" role="tabpanel"[\s\S]*Completed Alex Fitness sessions/);
+  assert.match(source("refreshCoachAlexHistory"), /from\("coach_alex_fitness_history"\)/);
+  assert.match(source("refreshSelectedCoachSessions"), /refreshCoachAlexHistory\(\)[\s\S]*refreshCoachFwbMonthlySessions\(\)/);
   assert.match(counts, /aria-live="polite" aria-atomic="true"[^>]*><span data-coach-fwb-month-label>/);
   assert.match(source("handleCoachClientWorkspace"), /openCoachHomeClientSection\(program\.client_email, "sessions"\)/);
   assert.match(styles, /body\.coach-admin-page :is\(#clients, \.selected-client-panel, \[data-admin-panel="profile"\], #coach-client-session-counts\)[^}]*color-scheme:\s*light/s);
+});
+
+test("Alex Fitness shows the recorded Pacific wall-clock time or an explicit missing time", () => {
+  assert.equal(context.formatCoachAlexStartTime("06:15:00"), "6:15 AM");
+  assert.equal(context.formatCoachAlexStartTime("12:00:00"), "12:00 PM");
+  assert.equal(context.formatCoachAlexStartTime("17:05:00"), "5:05 PM");
+  assert.equal(context.formatCoachAlexStartTime("00:00:00"), "12:00 AM");
+  assert.equal(context.formatCoachAlexStartTime(null), "Time not recorded");
 });

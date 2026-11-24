@@ -79,6 +79,10 @@ let showingArchivedClients = false;
 let coachClientsView = "personal_training";
 let coachFwbSessionMonth = "";
 let coachFwbSessionRequest = 0;
+let coachAlexHistory = [];
+let coachAlexPage = 0;
+let coachAlexHistoryRequest = 0;
+const coachAlexHistoryPageSize = 25;
 let clientSearchTerm = "";
 let clientSuggestionsOpen = false;
 let activeClientSuggestion = -1;
@@ -1020,7 +1024,7 @@ function setAdminTab(tabName) {
   }
   if (nextTab === "session-counts") {
     renderCoachSessionCounts();
-    refreshCoachFwbMonthlySessions();
+    refreshSelectedCoachSessions();
   }
 
   if (nextTab === "library") {
@@ -4349,11 +4353,6 @@ function renderClientList() {
 function renderCoachSessionCounts() {
   const counts = document.getElementById("coach-client-session-counts");
   if (!counts || counts.hidden) return;
-  const alex = coachClientSessionValues(alexFitnessMasterSessions.used, alexFitnessMasterSessions.total);
-  for (const node of counts.querySelectorAll("[data-coach-alex-count]")) {
-    node.textContent = alex[node.dataset.coachAlexCount] ?? "—";
-  }
-
   const clients = coachClientRosterPrograms("all", activeClientPrograms());
   const rows = clients.map((program) => {
     const row = document.createElement("tr");
@@ -4415,6 +4414,86 @@ async function refreshCoachFwbMonthlySessions(today = coachSessionToday()) {
     month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles"
   }).format(new Date(data.refreshed_at));
   sync.textContent = `Last synced ${syncedOn}`;
+}
+
+function refreshSelectedCoachSessions() {
+  if (document.getElementById("coach-sessions-alex")?.hidden === false) {
+    refreshCoachAlexHistory();
+  } else {
+    refreshCoachFwbMonthlySessions();
+  }
+}
+
+function formatCoachAlexStartTime(value) {
+  const match = /^(\d{2}):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/.exec(value || "");
+  if (!match || Number(match[1]) >= 24) return "Time not recorded";
+  const hour = Number(match[1]);
+  return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? "AM" : "PM"}`;
+}
+
+function renderCoachAlexHistory(panel) {
+  const packageValue = panel.querySelector("[data-coach-alex-package]").value;
+  const entries = packageValue ? coachAlexHistory.filter((entry) => String(entry.package_number) === packageValue) : coachAlexHistory;
+  const lastPage = Math.max(0, Math.ceil(entries.length / coachAlexHistoryPageSize) - 1);
+  coachAlexPage = Math.min(lastPage, Math.max(0, coachAlexPage));
+  const start = coachAlexPage * coachAlexHistoryPageSize;
+  const page = entries.slice(start, start + coachAlexHistoryPageSize);
+  const table = panel.querySelector(".coach-alex-history-table");
+  const rows = page.map((entry) => {
+    const row = document.createElement("tr");
+    const date = document.createElement("td");
+    const dateValue = document.createElement("time");
+    dateValue.dateTime = entry.session_date;
+    dateValue.textContent = formatSessionDate(entry.session_date);
+    date.append(dateValue);
+    const startTime = document.createElement("td");
+    startTime.textContent = formatCoachAlexStartTime(entry.start_time);
+    startTime.classList.toggle("coach-alex-unrecorded", !entry.start_time);
+    const number = document.createElement("td");
+    number.textContent = `P${entry.package_number} · #${entry.session_number}`;
+    number.setAttribute("aria-label", `Package ${entry.package_number}, session ${entry.session_number}`);
+    row.append(date, startTime, number);
+    return row;
+  });
+  table.querySelector("[data-coach-alex-rows]").replaceChildren(...rows);
+  table.hidden = rows.length === 0;
+  panel.querySelector("[data-coach-alex-pagination]").hidden = lastPage === 0;
+  panel.querySelector("[data-coach-alex-range]").textContent = rows.length ? `${start + 1}–${start + rows.length} of ${entries.length}` : "";
+  panel.querySelector('[data-coach-alex-page="-1"]').setAttribute("aria-disabled", String(coachAlexPage === 0));
+  panel.querySelector('[data-coach-alex-page="1"]').setAttribute("aria-disabled", String(coachAlexPage === lastPage));
+}
+
+async function refreshCoachAlexHistory() {
+  const panel = document.getElementById("coach-sessions-alex");
+  if (!coachSupabase || !panel || panel.hidden || document.getElementById("coach-client-session-counts")?.hidden
+      || document.getElementById("coach-admin-workspace")?.hidden) return;
+
+  const request = ++coachAlexHistoryRequest;
+  const status = panel.querySelector("[data-coach-alex-status]");
+  if (!coachAlexHistory.length) status.textContent = "Loading Alex Fitness history…";
+
+  const { data, error } = await coachSupabase.from("coach_alex_fitness_history")
+    .select("source_read_at,sessions").eq("singleton", true).maybeSingle();
+  if (request !== coachAlexHistoryRequest) return;
+  if (error) {
+    status.textContent = coachAlexHistory.length ? "Could not refresh. Showing last loaded history." : "Could not load Alex Fitness history";
+    return;
+  }
+
+  coachAlexHistory = Array.isArray(data?.sessions) ? data.sessions : [];
+  const picker = panel.querySelector("[data-coach-alex-package]");
+  const selectedPackage = picker.value;
+  const packages = [...new Set(coachAlexHistory.map((entry) => entry.package_number))].sort((a, b) => b - a);
+  picker.replaceChildren(new Option("All packages", ""), ...packages.map((number) => new Option(`Package ${number}`, String(number))));
+  if (packages.includes(Number(selectedPackage))) picker.value = selectedPackage;
+  panel.querySelector("[data-coach-alex-filter]").hidden = packages.length < 2;
+  if (coachAlexHistory.length) {
+    const syncedOn = coachSessionToday(new Date(data.source_read_at));
+    status.textContent = `${coachAlexHistory.length} recorded · Last synced ${formatSessionDate(syncedOn)}`;
+  } else {
+    status.textContent = "Alex Fitness history has not been imported yet";
+  }
+  renderCoachAlexHistory(panel);
 }
 
 function renderCoachClientWorkspace() {
@@ -4486,7 +4565,39 @@ function handleCoachClientWorkspace() {
       selectCoachRosterProgram(clients.find((program) => program.id === roster.dataset.coachRosterClient));
     }
   });
-  document.getElementById("coach-client-session-counts")?.addEventListener("click", (event) => {
+  const sessions = document.getElementById("coach-client-session-counts");
+  const sessionTabs = [...sessions.querySelectorAll("[data-coach-session-view]")];
+  const selectSessionTab = (selected) => {
+    if (selected.getAttribute("aria-selected") === "true") return;
+    for (const tab of sessionTabs) {
+      const active = tab === selected;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      document.getElementById(tab.getAttribute("aria-controls")).hidden = !active;
+    }
+    refreshSelectedCoachSessions();
+  };
+  sessions.querySelector(".coach-session-views").addEventListener("keydown", (event) => {
+    const index = sessionTabs.indexOf(event.target);
+    if (index < 0) return;
+    const next = { Home: sessionTabs[0], End: sessionTabs.at(-1), ArrowLeft: sessionTabs[1 - index], ArrowRight: sessionTabs[1 - index] }[event.key];
+    if (!next) return;
+    event.preventDefault();
+    selectSessionTab(next);
+    next.focus();
+  });
+  sessions.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-coach-session-view]");
+    if (tab) {
+      selectSessionTab(tab);
+      return;
+    }
+    const page = event.target.closest("[data-coach-alex-page]");
+    if (page && page.getAttribute("aria-disabled") !== "true") {
+      coachAlexPage += Number(page.dataset.coachAlexPage);
+      renderCoachAlexHistory(document.getElementById("coach-sessions-alex"));
+      return;
+    }
     const step = event.target.closest("[data-coach-fwb-month]");
     if (step) {
       const today = coachSessionToday();
@@ -4506,8 +4617,12 @@ function handleCoachClientWorkspace() {
       if (program) openCoachHomeClientSection(program.client_email, "sessions");
     }
   });
+  sessions.querySelector("[data-coach-alex-package]").addEventListener("change", (event) => {
+    coachAlexPage = 0;
+    renderCoachAlexHistory(event.target.closest('[role="tabpanel"]'));
+  });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && activeAdminTab === "session-counts") refreshCoachFwbMonthlySessions();
+    if (!document.hidden && activeAdminTab === "session-counts") refreshSelectedCoachSessions();
   });
   renderCoachClientWorkspace();
 }
@@ -6227,7 +6342,7 @@ async function showAdminWorkspace(user) {
   }
 
   initializeCoachMessages(user);
-  if (activeAdminTab === "session-counts") refreshCoachFwbMonthlySessions();
+  if (activeAdminTab === "session-counts") refreshSelectedCoachSessions();
 
   await Promise.all([
     loadPrograms(),

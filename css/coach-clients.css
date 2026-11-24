@@ -117,21 +117,37 @@
 .coach-client-empty { margin: 8px 0; color: var(--muted); }
 :root body.coach-admin-page #coach-client-session-counts:not([hidden]) { display: grid; gap: 10px; }
 #coach-session-count-title { scroll-margin-block-start: 86px; }
-.coach-alex-sessions {
+.coach-session-views { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+:root body.coach-admin-page #coach-client-session-counts [hidden] { display: none !important; }
+.coach-alex-history-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px 18px;
-  padding: 10px;
-  background: var(--selected-surface);
-  border-inline-start: 3px solid #bd9000;
+  margin-block-end: 8px;
 }
-:root body.coach-admin-page .coach-alex-sessions h3 { margin: 0; color: var(--ink); font-size: 1rem; }
-.coach-alex-sessions p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
-.coach-session-summary { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 0; }
-.coach-session-summary dt { color: var(--muted); font-size: .775rem; }
-.coach-session-summary dd { margin: 0; font-weight: 780; font-variant-numeric: tabular-nums; }
+:root body.coach-admin-page .coach-alex-history-heading h3 { margin: 0; color: var(--ink); font-size: 1rem; }
+.coach-alex-history-heading :is(p, label), .coach-alex-pagination p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
+.coach-alex-history-heading label { display: grid; gap: 3px; }
+:root body.coach-admin-page .coach-alex-history-heading select {
+  min-height: 44px;
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1rem;
+}
+.coach-alex-pagination { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-block: 8px; text-align: center; }
+:root body.coach-admin-page .coach-alex-pagination .button {
+  min-height: 44px; min-width: 44px; width: auto !important; padding: 3px 8px;
+  border: 1px solid var(--control-border); background: var(--surface); color: var(--secondary-accent); font-size: .8rem;
+}
+.coach-alex-pagination .button[aria-disabled="true"] { opacity: .48; cursor: default; }
+.coach-alex-history-table { width: 100%; border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.coach-alex-history-table :is(td, th) { padding: 9px 5px; text-align: start; border-block-end: 1px solid var(--line); }
+.coach-alex-history-table thead th { font-size: .8rem; color: var(--muted); }
+.coach-alex-history-table td:last-child { white-space: nowrap; }
+.coach-alex-unrecorded { color: var(--muted); }
 .coach-fwb-sessions {
   display: flex;
   flex-wrap: wrap;
