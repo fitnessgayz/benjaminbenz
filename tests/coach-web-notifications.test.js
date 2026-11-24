@@ -130,7 +130,7 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(styleSource, /@media \(max-width: 780px\)[\s\S]*?\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{[^}]*\}[^}]*\[data-web-notification-kind="workout_completed"\]\s*\{[^}]*border-block-end:[^}]*border-radius:\s*0/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item\s*\{[^}]*border-block-end:\s*1px solid var\(--line\)/s);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{\s*\.coach-activity-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item \.web-notification-like\s*\{[^}]*min-height:\s*44px/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-like::before\s*\{[^}]*inset:\s*8px 0[^}]*border-radius:\s*999px[^}]*background:\s*var\(--surface-soft\)/s);
@@ -139,8 +139,8 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(sharedSource, /notificationKind === "check_in_submitted"[\s\S]*?\? "checkin"/);
   assert.match(sharedSource, /notificationKind === "workout_completed"[\s\S]*?\? "workout"/);
   assert.match(workspaceStyles, /\.coach-activity-header \.coach-notification-mark-all:not\(\[hidden\]\)\s*\{[^}]*display:\s*inline-flex[^}]*min-height:\s*44px/s);
-  assert.match(workspaceStyles, /\.coach-activity-feed \.is-unread \.coach-activity-entry-title::after\s*\{[^}]*border-radius:\s*50%/s);
-  assert.match(workspaceStyles, /\.coach-activity-feed \.coach-activity-workout-tag > span\s*\{[^}]*color:\s*var\(--coach-activity-green\)/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.is-unread \.coach-activity-entry-author::after\s*\{[^}]*border-radius:\s*50%/s);
+  assert.match(workspaceStyles, /\.coach-activity-entry-head\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/s);
 });
 
 test("mobile Activity stays in the workspace while Settings opens its disclosure", () => {

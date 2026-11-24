@@ -109,7 +109,7 @@
     }
   }
 
-  function formatNotificationDate(value) {
+  function formatNotificationDate(value, dateOnly = false) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
       return "Recently";
@@ -117,8 +117,7 @@
     return new Intl.DateTimeFormat(undefined, {
       month: "short",
       day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
+      ...(dateOnly ? {} : { hour: "numeric", minute: "2-digit" })
     }).format(date);
   }
 
@@ -198,24 +197,36 @@
       return node;
     };
     link.className = "coach-activity-entry";
-    title.className = "coach-activity-entry-title";
+    const isWorkout = notificationKind === "workout_completed";
+    const workout = isWorkout ? row.coach_workout : null;
+    const ending = isWorkout
+      ? /^(.+) (completed a workout)$/i
+      : notificationKind === "check_in_submitted"
+        ? /^(.+) (checked in at the gym|completed a mood check-in|submitted a weekly check-in)$/i
+        : null;
+    const activity = ending?.exec(title.textContent);
+    const author = workout?.clientName || activity?.[1];
+    const summary = workout?.title || (activity && activity[2][0].toUpperCase() + activity[2].slice(1));
+    const header = make("span", "coach-activity-entry-head");
+    const name = make("strong", "coach-activity-entry-author", author || (isWorkout ? "Workout" : title.textContent));
+    date.title = date.textContent;
+    date.setAttribute("aria-label", date.textContent);
+    date.textContent = formatNotificationDate(row.created_at, true);
+    header.append(typeIcon, name, date);
+    link.append(header);
+
     if (notificationKind === "workout_completed") {
-      const workout = row.coach_workout;
-      const head = make("span", "coach-activity-workout-head");
-      const tag = make("span", "coach-activity-workout-tag");
-      tag.append(typeIcon, make("span", "", "Workout"));
-      head.append(tag, date);
       const heading = make("span", "coach-activity-workout-heading");
-      if (workout?.title) title.textContent = workout.title;
+      title.className = "coach-activity-entry-title";
+      if (summary) title.textContent = summary;
       heading.append(title);
       if (row.coach_workout_email) {
         const arrow = make("span", "coach-activity-chevron", "›");
         arrow.setAttribute("aria-hidden", "true");
         heading.append(arrow);
       }
-      link.append(head, heading);
-      if (workout?.clientName) body.textContent = workout.clientName;
-      if (workout?.clientName || row.body) {
+      link.append(heading);
+      if (!workout?.title && row.body) {
         body.className = "coach-activity-entry-detail";
         link.append(body);
       }
@@ -231,10 +242,11 @@
       }
       if (row.coach_workout_email) link.append(make("span", "coach-activity-log-link", "Training logs"));
     } else {
-      const copy = make("span", "coach-activity-event-copy");
-      copy.append(title);
-      if (row.body) copy.append(body);
-      link.append(typeIcon, copy, date);
+      if (summary) link.append(make("span", "coach-activity-entry-title", summary));
+      if (row.body && !(summary === "Checked in at the gym" && row.body === "Open Coach Admin to view their activity.")) {
+        body.className = "coach-activity-entry-detail";
+        link.append(body);
+      }
     }
     if (!row.read_at) link.append(make("span", "coach-activity-unread-label", "Unread"));
   }
