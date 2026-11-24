@@ -15489,43 +15489,6 @@ textarea,
   letter-spacing: -.035em;
 }
 
-.coach-home-calendar-actions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 14px;
-}
-
-.coach-home-calendar-actions a {
-  display: inline-block;
-}
-
-.coach-home-calendar-actions button:disabled {
-  cursor: wait;
-  opacity: .45;
-}
-
-.coach-home-calendar-status {
-  margin: -8px 0 12px;
-  color: var(--muted);
-  font-size: .76rem;
-  font-weight: 900;
-}
-
-.coach-home-calendar-status.is-synced::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 7px;
-  border-radius: 50%;
-  background: #ffd400;
-}
-
-.coach-home-calendar-status.is-error {
-  color: #8c6200;
-}
-
 .coach-home-text-link,
 .coach-home-row-action {
   padding: 0;
@@ -15608,133 +15571,6 @@ textarea,
   border-color: #c8cbc4;
 }
 
-.coach-home-calendar {
-  padding: 15px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #f8f8f4;
-}
-
-.coach-home-calendar-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.coach-home-calendar-heading strong {
-  font-size: 1.08rem;
-  font-weight: 900;
-}
-
-.coach-home-calendar-heading span {
-  color: var(--muted);
-  font-size: .72rem;
-  font-weight: 900;
-}
-
-.coach-home-calendar-weekdays,
-.coach-home-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-}
-
-.coach-home-calendar-weekdays {
-  margin-bottom: 4px;
-}
-
-.coach-home-calendar-weekdays span {
-  color: var(--muted);
-  font-size: .66rem;
-  font-weight: 900;
-  text-align: center;
-}
-
-.coach-home-calendar-day {
-  position: relative;
-  display: grid;
-  aspect-ratio: 1;
-  place-items: center;
-  border-radius: 50%;
-  font-size: .72rem;
-}
-
-.coach-home-calendar-day b {
-  font-weight: 800;
-}
-
-.coach-home-calendar-day.has-session {
-  color: var(--black);
-  background: var(--lime);
-}
-
-.coach-home-calendar-day.is-today {
-  box-shadow: inset 0 0 0 2px var(--black);
-}
-
-.coach-home-calendar-day i {
-  position: absolute;
-  top: -3px;
-  right: -2px;
-  display: grid;
-  width: 17px;
-  height: 17px;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: var(--black);
-  font-size: .58rem;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.coach-home-schedule-list {
-  margin-top: 10px;
-}
-
-.coach-home-session-row {
-  grid-template-columns: minmax(100px, 1fr) minmax(0, 1fr) auto;
-  width: 100%;
-  min-height: 54px;
-  color: var(--black);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.coach-home-session-row strong,
-.coach-home-session-date {
-  font-weight: 900;
-}
-
-.coach-home-session-date {
-  display: grid;
-  gap: 2px;
-}
-
-.coach-home-session-date small {
-  color: var(--muted);
-  font-size: .67rem;
-  font-weight: 900;
-}
-
-.coach-home-session-row em {
-  color: var(--muted);
-  font-size: .74rem;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.coach-home-session-row.is-canceled {
-  opacity: .62;
-}
-
-.coach-home-session-row.is-canceled strong {
-  text-decoration: line-through;
-}
-
 .coach-home-sheet-grid {
   display: grid;
   gap: 8px;
@@ -15813,9 +15649,6 @@ textarea,
     justify-self: start;
   }
 
-  .coach-home-session-row {
-    grid-template-columns: minmax(110px, 1fr) minmax(0, 1fr) auto;
-  }
 }
 
 @media (max-width: 480px) {
@@ -15845,19 +15678,12 @@ textarea,
     justify-self: start;
   }
 
-  .coach-home-calendar-actions {
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .coach-home-list-row,
-  .coach-home-session-row {
+  .coach-home-list-row {
     grid-template-columns: 1fr auto;
     gap: 8px;
   }
 
-  .coach-home-list-row .coach-home-row-copy,
-  .coach-home-session-row strong {
+  .coach-home-list-row .coach-home-row-copy {
     grid-column: 1 / -1;
   }
 

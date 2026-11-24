@@ -185,8 +185,7 @@
 }
 
 :root body.coach-admin-page .coach-home-dashboard-grid {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 18px clamp(18px, 3vw, 44px);
 }
@@ -198,41 +197,7 @@
   background: transparent;
   box-shadow: none;
 }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-schedule {
-  grid-row: span 2;
-  padding-block-start: 0;
-}
 :root body.coach-admin-page .coach-home-module-heading { gap: 8px; flex-wrap: wrap; }
-:root body.coach-admin-page .coach-home-schedule .coach-home-module-heading {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-:root body.coach-admin-page .coach-home-calendar-status { margin: 0 0 10px; }
-:root body.coach-admin-page .coach-home-calendar-actions {
-  flex-wrap: wrap;
-  width: auto;
-  justify-content: flex-start;
-}
-:root body.coach-admin-page .coach-home-calendar-actions .coach-home-text-link {
-  display: inline-flex;
-  align-items: center;
-  width: auto !important;
-  min-width: 0 !important;
-  min-height: 44px;
-  padding-inline: 0 !important;
-  white-space: nowrap;
-}
-:root body.coach-admin-page .coach-home-calendar { margin-block-end: 12px; }
-:root body.coach-admin-page .coach-home-schedule-list .coach-home-session-row {
-  grid-template-columns: minmax(76px, auto) minmax(0, 1fr) auto;
-  gap: 8px;
-  padding-inline: 8px;
-}
-:root body.coach-admin-page .coach-home-schedule-list .coach-home-session-row > strong {
-  grid-column: auto;
-  overflow-wrap: anywhere;
-}
 
 :root body.coach-admin-page .coach-home-metrics {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -290,7 +255,6 @@
 .coach-home-disclosure[open] > summary::after { transform: rotate(225deg); }
 .coach-home-disclosure > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .coach-home-disclosure > summary:hover { color: var(--secondary-accent); }
-.coach-home-month { margin-block-start: 8px; }
 .coach-home-wall-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 
 :root body.coach-admin-page .coach-home-module .coach-home-list-row {
@@ -377,9 +341,7 @@
   }
   :root body.coach-admin-page .coach-home-dashboard-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
   }
-  :root body.coach-admin-page .coach-home-dashboard-grid .coach-home-schedule { grid-row: auto; }
   .coach-home-wall-link { display: none; }
 }
 

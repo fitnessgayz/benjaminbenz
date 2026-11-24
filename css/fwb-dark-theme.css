@@ -110,7 +110,7 @@
   .client-home-snapshot-section, .client-home-monthly-report-card,
   .client-home-snapshot-metrics > span, .client-home-training-metrics > span,
   .coach-home-metrics :is(article, .coach-home-shortcut),
-  .coach-home-list-row, .coach-home-session-row, .session-sheet-editor,
+  .coach-home-list-row, .session-sheet-editor,
   .nutrition-macro-overview, .nutrition-macro-chart-center,
   .workout-row-number, .exercise-library-badges small,
   .client-home-settings-placeholder, .client-settings-nav-row,
@@ -291,7 +291,7 @@
   background-color: var(--lime);
   border-color: var(--lime);
 }
-:root body.dashboard-page :is(.daily-checkin-status.is-error, .coach-home-calendar-status.is-error) { color: var(--danger); }
+:root body.dashboard-page .daily-checkin-status.is-error { color: var(--danger); }
 
 /* The inbox has its own older color system. */
 :root body.dashboard-page .fwb-messages { --message-surface: var(--surface); color: var(--ink); }
@@ -320,7 +320,7 @@
   .apple-health-card, .google-health-settings, .google-health-activity,
   .profile-photo-card, .client-questionnaire-identity, .client-questionnaire-privacy,
   .client-questionnaire-empty, .client-questionnaire-loading, .client-questionnaire-error,
-  .coach-home-calendar, .coach-notification-preference, .coach-mobile-more-menu > a,
+  .coach-notification-preference, .coach-mobile-more-menu > a,
   .selected-client-mobile-menu button, .workout-exercise-dock-sheet,
   .workout-exercise-list [data-workout-exercise-jump]) {
   color: var(--ink); background: var(--surface); border-color: var(--line);
@@ -370,7 +370,7 @@
   .workout-generator-muscle-choice:has(input:checked),
   .google-health-settings button[data-google-health-connect],
   .google-health-settings button[data-google-health-sync], .profile-photo-save,
-  .client-account-form button, .coach-home-calendar-day.has-session,
+  .client-account-form button,
   .client-workout-picker-choose, .training-log-copy-button,
   .coach-workout-round-stepper button:last-child) {
   color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
@@ -1018,7 +1018,7 @@
   .client-added-exercise-review-heading > button, .client-added-exercises-link,
   .exercise-library-group-heading span, .exercise-library-card-heading small,
   .exercise-library-view-tabs button span, .selected-client-meta span,
-  .session-date-chip, .coach-home-calendar-day i, .client-exercise-name-row,
+  .session-date-chip, .client-exercise-name-row,
   .coach-workout-copy-undo, .coach-workout-set-actions button,
   .coach-workout-grouped-actions button, .coach-workout-add-superset,
   .coach-workout-group-add-exercise, .coach-workout-exercise-toggle,

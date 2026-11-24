@@ -32,17 +32,12 @@ test("Coach Home is the first and default sidebar destination", () => {
   assert.match(adminSource, /coachAdminTabNames\.has\(tabName\) \? tabName : "home"/);
 });
 
-test("Coach Home exposes live workout, schedule, session, sheet, and follow-up modules", () => {
+test("Coach Home exposes workouts, session sheets, and follow-up modules", () => {
   const homeStart = adminHtml.indexOf('data-admin-panel="home"');
   const homeEnd = adminHtml.indexOf('data-admin-client-context', homeStart);
   const home = adminHtml.slice(homeStart, homeEnd);
 
   assert.match(home, /id="coach-home-recent-list"/);
-  assert.match(home, /id="coach-home-calendar"/);
-  assert.match(home, /id="coach-home-calendar-status"/);
-  assert.match(home, /data-coach-home-refresh-calendar/);
-  assert.match(home, /Open calendar/);
-  assert.match(home, /id="coach-home-schedule-list"/);
   assert.match(home, /id="coach-home-sheet-list"/);
   assert.match(home, /Alex Fitness, B2 Master Session/);
   assert.match(home, /id="coach-home-session-alert-list"/);
@@ -96,14 +91,11 @@ test("home actions open the selected client's training logs or sessions", () => 
   assert.match(handler, /data-coach-home-open-logs/);
   assert.match(handler, /data-coach-home-open-sessions/);
   assert.match(handler, /data-coach-home-tab/);
-  assert.match(handler, /data-coach-home-refresh-calendar/);
   assert.match(opener, /fillForm\(program\)/);
   assert.match(opener, /setAdminTab\(tabName\)/);
 });
 
-test("mobile Home prioritizes the schedule and keeps extra detail in disclosures", () => {
-  assert.ok(adminHtml.indexOf('id="coach-home-schedule-list"') < adminHtml.indexOf('class="coach-home-metrics"'));
-  assert.match(adminHtml, /<details class="coach-home-disclosure coach-home-month">\s*<summary>Month view<\/summary>/);
+test("mobile Home keeps extra detail in disclosures", () => {
   for (const label of ["Recent workouts", "Session sheets", "Client follow-ups and requests"]) {
     assert.ok(adminHtml.includes(`<summary>${label}</summary>`));
   }

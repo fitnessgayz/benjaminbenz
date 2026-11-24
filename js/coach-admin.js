@@ -106,13 +106,7 @@ let coachMessagesController = null;
 let inviteClientReturnFocus = null;
 let inviteClientSavedProgram = null;
 let pendingSignupApproval = null;
-let coachCalendarEvents = [];
-let coachCalendarLoaded = false;
-let coachCalendarLoading = false;
-let coachCalendarError = "";
-let coachCalendarSyncedAt = "";
 let clientWorkoutScheduleLoadToken = 0;
-const coachCalendarTimeZone = "America/Los_Angeles";
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -3877,163 +3871,6 @@ function latestWorkoutByClient(logs = recentTrainingLogs) {
   return latestByEmail;
 }
 
-function coachHomeSavedSessionEntries() {
-  const seen = new Set();
-
-  return activeClientPrograms()
-    .flatMap((program) => sessionDatesFromProgram(program).map((date) => ({
-      date,
-      client_email: normalizeEmail(program.client_email),
-      client_name: program.client_name || program.client_email || "Client"
-    })))
-    .filter((entry) => {
-      const key = `${entry.client_email}:${entry.date}`;
-
-      if (!entry.date || seen.has(key)) {
-        return false;
-      }
-
-      seen.add(key);
-      return true;
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function dateInCoachCalendarTimeZone(value) {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: coachCalendarTimeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-  const valueFor = (type) => parts.find((part) => part.type === type)?.value || "";
-
-  return `${valueFor("year")}-${valueFor("month")}-${valueFor("day")}`;
-}
-
-function coachCalendarClientForTitle(title) {
-  const normalizedTitle = String(title || "")
-    .toLowerCase()
-    .replace(/\b(cancelled|canceled|training|session|workout)\b/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-  if (!normalizedTitle) {
-    return null;
-  }
-
-  const matches = activeClientPrograms().filter((program) => {
-    const normalizedName = String(program.client_name || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-
-    return normalizedName && normalizedName === normalizedTitle;
-  });
-
-  return matches.length === 1 ? matches[0] : null;
-}
-
-function coachHomeScheduleEntries() {
-  if (!coachCalendarLoaded) {
-    return coachHomeSavedSessionEntries().map((entry) => ({
-      ...entry,
-      source: "saved",
-      title: entry.client_name,
-      canceled: false,
-      start_at: `${entry.date}T12:00:00`
-    }));
-  }
-
-  return coachCalendarEvents
-    .map((event) => {
-      const program = coachCalendarClientForTitle(event.title);
-      const date = dateInCoachCalendarTimeZone(event.start);
-
-      return {
-        date,
-        title: event.title || "Training session",
-        client_name: program?.client_name || event.title || "Training session",
-        client_email: normalizeEmail(program?.client_email),
-        start_at: event.start,
-        end_at: event.end,
-        all_day: event.all_day === true,
-        canceled: event.canceled === true,
-        source: "fwb"
-      };
-    })
-    .filter((entry) => entry.date)
-    .sort((a, b) => String(a.start_at).localeCompare(String(b.start_at)));
-}
-
-function formatCoachCalendarEventTime(entry) {
-  if (entry.source !== "fwb" || entry.all_day) {
-    return entry.all_day ? "All day" : "Session date";
-  }
-
-  const start = new Date(entry.start_at);
-  const end = new Date(entry.end_at);
-
-  if (Number.isNaN(start.getTime())) {
-    return "Time unavailable";
-  }
-
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: coachCalendarTimeZone,
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  const startLabel = formatter.format(start);
-
-  return Number.isNaN(end.getTime()) ? startLabel : `${startLabel}–${formatter.format(end)}`;
-}
-
-async function loadCoachCalendarEvents({ force = false } = {}) {
-  if (!coachSupabase || coachCalendarLoading || (coachCalendarLoaded && !force)) {
-    return;
-  }
-
-  coachCalendarLoading = true;
-  coachCalendarError = "";
-  renderCoachHome();
-
-  const from = new Date();
-  const to = new Date();
-  from.setDate(from.getDate() - 35);
-  to.setDate(to.getDate() + 150);
-
-  try {
-    const { data, error } = await withRequestTimeout(
-      coachSupabase.functions.invoke("coach-calendar-events", {
-        body: { from: from.toISOString(), to: to.toISOString() }
-      }),
-      "FWB Calendar took too long to respond.",
-      15000
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    coachCalendarEvents = Array.isArray(data?.events) ? data.events.filter((event) => (
-      event && typeof event.start === "string" && typeof event.title === "string"
-    )) : [];
-    coachCalendarSyncedAt = typeof data?.synced_at === "string" ? data.synced_at : new Date().toISOString();
-    coachCalendarLoaded = true;
-  } catch (error) {
-    coachCalendarError = error?.message || "FWB Calendar could not be loaded.";
-  } finally {
-    coachCalendarLoading = false;
-    renderCoachHome();
-  }
-}
-
 function coachHomeSessionAlerts() {
   return activeClientPrograms()
     .map((program) => {
@@ -4067,58 +3904,6 @@ function coachHomeInactiveClients(latestByEmail = latestWorkoutByClient()) {
     });
 }
 
-function renderCoachHomeCalendar(entries = coachHomeScheduleEntries()) {
-  const calendar = document.getElementById("coach-home-calendar");
-
-  if (!calendar) {
-    return;
-  }
-
-  const today = isoDateFromLocalDate();
-  const upcoming = entries.find((entry) => entry.date >= today && !entry.canceled);
-  const target = dateFromIsoDate(upcoming?.date || today) || new Date();
-  const year = target.getUTCFullYear();
-  const month = target.getUTCMonth();
-  const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay();
-  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  const countsByDate = entries.filter((entry) => !entry.canceled).reduce((counts, entry) => {
-    counts.set(entry.date, (counts.get(entry.date) || 0) + 1);
-    return counts;
-  }, new Map());
-  const cells = [];
-
-  for (let index = 0; index < firstWeekday; index += 1) {
-    cells.push('<span class="coach-home-calendar-day is-empty" aria-hidden="true"></span>');
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const count = countsByDate.get(date) || 0;
-    const classes = [
-      "coach-home-calendar-day",
-      date === today ? "is-today" : "",
-      count > 0 ? "has-session" : ""
-    ].filter(Boolean).join(" ");
-    const label = count > 0 ? `${day}, ${count} session${count === 1 ? "" : "s"}` : String(day);
-
-    cells.push(`<span class="${classes}" aria-label="${escapeHtml(label)}"><b>${day}</b>${count > 0 ? `<i>${count}</i>` : ""}</span>`);
-  }
-
-  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
-  const monthCount = entries.filter((entry) => entry.date.startsWith(monthPrefix) && !entry.canceled).length;
-
-  calendar.innerHTML = `
-    <div class="coach-home-calendar-heading">
-      <strong>${target.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}</strong>
-      <span>${monthCount} session${monthCount === 1 ? "" : "s"}</span>
-    </div>
-    <div class="coach-home-calendar-weekdays" aria-hidden="true">
-      ${["S", "M", "T", "W", "T", "F", "S"].map((day) => `<span>${day}</span>`).join("")}
-    </div>
-    <div class="coach-home-calendar-grid">${cells.join("")}</div>
-  `;
-}
-
 function renderCoachHome() {
   const activeClients = activeClientPrograms();
   const pendingMembershipRequests = activeClients.filter((program) =>
@@ -4130,7 +3915,6 @@ function renderCoachHome() {
     .sort((a, b) => String(b.completed_at || b.last_updated || b.entry_date || "").localeCompare(String(a.completed_at || a.last_updated || a.entry_date || "")));
   const sessionAlerts = coachHomeSessionAlerts();
   const inactiveClients = coachHomeInactiveClients(latestByEmail);
-  const scheduledSessions = coachHomeScheduleEntries();
   const alexFitnessUsedSessions = normalizeSessionCount(alexFitnessMasterSessions.used);
   const alexFitnessTotalSessions = normalizeSessionCount(alexFitnessMasterSessions.total);
   const alexFitnessRemainingSessions = Math.max(0, alexFitnessTotalSessions - alexFitnessUsedSessions);
@@ -4192,57 +3976,6 @@ function renderCoachHome() {
           </article>
         `).join("")
       : '<p class="empty-state">No membership requests are waiting.</p>';
-  }
-
-  renderCoachHomeCalendar(scheduledSessions);
-  const calendarStatus = document.getElementById("coach-home-calendar-status");
-
-  if (calendarStatus) {
-    if (coachCalendarLoading) {
-      calendarStatus.textContent = "Syncing with FWB Calendar…";
-      calendarStatus.className = "coach-home-calendar-status is-loading";
-    } else if (coachCalendarLoaded) {
-      const syncedAt = new Date(coachCalendarSyncedAt);
-      const syncedLabel = Number.isNaN(syncedAt.getTime())
-        ? "just now"
-        : syncedAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-      calendarStatus.textContent = `Synced with FWB Calendar at ${syncedLabel}.`;
-      calendarStatus.className = "coach-home-calendar-status is-synced";
-    } else if (coachCalendarError) {
-      calendarStatus.textContent = "FWB Calendar is temporarily unavailable. Showing saved session dates instead.";
-      calendarStatus.className = "coach-home-calendar-status is-error";
-    } else {
-      calendarStatus.textContent = "Connecting to FWB Calendar…";
-      calendarStatus.className = "coach-home-calendar-status";
-    }
-  }
-
-  const scheduleList = document.getElementById("coach-home-schedule-list");
-
-  if (scheduleList) {
-    const today = dateInCoachCalendarTimeZone(new Date());
-    const futureDates = scheduledSessions.filter((entry) => entry.date >= today).slice(0, 6);
-    const displayedDates = futureDates.length > 0
-      ? futureDates
-      : scheduledSessions.slice(-6).reverse();
-
-    scheduleList.innerHTML = displayedDates.length > 0
-      ? displayedDates.map((entry) => {
-          const tagName = entry.client_email ? "button" : "article";
-          const buttonAttributes = entry.client_email
-            ? ` type="button" data-coach-home-open-sessions="${escapeHtml(entry.client_email)}"`
-            : "";
-          const status = entry.canceled ? "Canceled" : (entry.date >= today ? "Upcoming" : "Completed");
-
-          return `
-            <${tagName} class="coach-home-list-row coach-home-session-row${entry.canceled ? " is-canceled" : ""}"${buttonAttributes}>
-              <span class="coach-home-session-date">${escapeHtml(formatSessionDate(entry.date))}<small>${escapeHtml(formatCoachCalendarEventTime(entry))}</small></span>
-              <strong>${escapeHtml(entry.title || entry.client_name)}</strong>
-              <em>${status}</em>
-            </${tagName}>
-          `;
-        }).join("")
-      : `<p class="empty-state">${coachCalendarLoading ? "Loading FWB Calendar…" : "No FWB training sessions are scheduled in this date range."}</p>`;
   }
 
   const sheetList = document.getElementById("coach-home-sheet-list");
@@ -6312,7 +6045,6 @@ async function showAdminWorkspace(user) {
     loadPrograms(),
     loadClientAccessRequests(),
     loadExerciseLibrary(),
-    loadCoachCalendarEvents(),
     initializeCoachNotifications(user)
   ]);
 }
@@ -6443,15 +6175,6 @@ function handleCoachHomeActions() {
     const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
     const membershipButton = event.target.closest("[data-coach-home-open-membership]");
     const tabButton = event.target.closest("[data-coach-home-tab]");
-    const refreshCalendarButton = event.target.closest("[data-coach-home-refresh-calendar]");
-
-    if (refreshCalendarButton) {
-      refreshCalendarButton.disabled = true;
-      loadCoachCalendarEvents({ force: true }).finally(() => {
-        refreshCalendarButton.disabled = false;
-      });
-      return;
-    }
 
     if (logsButton) {
       openCoachHomeClientSection(logsButton.dataset.coachHomeOpenLogs, "logs");

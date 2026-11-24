@@ -30,13 +30,7 @@ test("calendar feed is bounded and returns only display-safe event fields", () =
   assert.doesNotMatch(functionSource, /attendees:\s/);
 });
 
-test("Coach Home syncs FWB events with time, cancellation, refresh, and fallback", () => {
-  assert.match(adminSource, /functions\.invoke\("coach-calendar-events"/);
-  assert.match(adminSource, /coachCalendarTimeZone = "America\/Los_Angeles"/);
-  assert.match(adminSource, /coachHomeSavedSessionEntries\(\)/);
-  assert.match(adminSource, /entry\.canceled \? "Canceled"/);
-  assert.match(adminSource, /formatCoachCalendarEventTime\(entry\)/);
-  assert.match(adminSource, /loadCoachCalendarEvents\(\{ force: true \}\)/);
-  assert.match(adminHtml, /FWB Calendar/);
-  assert.match(adminHtml, /calendar\.google\.com\/calendar\/u\/0\/r\?cid=/);
+test("Coach Home renders without requesting the calendar feed", () => {
+  assert.doesNotMatch(adminSource, /coach-calendar-events|loadCoachCalendarEvents/);
+  assert.doesNotMatch(adminHtml, /coach-home-schedule-list|data-coach-home-refresh-calendar|id="coach-home-calendar"/);
 });
