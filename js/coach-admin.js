@@ -75,6 +75,7 @@ let workoutAnalysis = null;
 let workoutAnalysisStatusText = "Choose a client to analyze workout logs.";
 let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
+let coachClientsView = "all";
 let clientSearchTerm = "";
 let clientSuggestionsOpen = false;
 let activeClientSuggestion = -1;
@@ -963,11 +964,12 @@ function updateClientViewLink(program = selectedProgram()) {
 function setAdminTab(tabName) {
   const nextTab = coachAdminTabNames.has(tabName) ? tabName : "home";
   const workspace = document.getElementById("coach-admin-workspace");
+  const isClientTool = ["profile", "program", "workouts", "nutrition", "progress", "sessions", "logs", "notes"].includes(nextTab);
 
   activeAdminTab = nextTab;
   if (workspace) workspace.dataset.activeTab = nextTab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => {
-    const isActive = button.dataset.adminTab === nextTab;
+    const isActive = button.dataset.adminTab === nextTab || (button.dataset.adminTab === "clients" && isClientTool);
 
     button.classList.toggle("is-active", isActive);
     if (isActive) {
@@ -1444,14 +1446,13 @@ function updateSelectedClientSummary(program = selectedProgram()) {
 
   const form = document.getElementById("program-editor");
   const name = document.getElementById("selected-client-name");
+  const clientStatus = document.getElementById("selected-client-status");
   const email = document.getElementById("selected-client-email");
   const meta = document.getElementById("selected-client-meta");
-  const saveButton = document.getElementById("selected-save-profile-button");
   const profileArchiveButton = document.getElementById("profile-archive-client-button");
   const profileDeleteButton = document.getElementById("profile-delete-client-button");
   const clientName = formValue(form, "client_name") || program?.client_name || "Choose a client";
   const clientEmail = formValue(form, "client_email") || program?.client_email || "Search or create a client to start editing.";
-  const clientPhone = formValue(form, "client_phone") || program?.client_phone || "";
   const sessionProgram = {
     ...program,
     session_count_used: form?.elements.session_count_used?.value ?? program?.session_count_used,
@@ -1480,31 +1481,17 @@ function updateSelectedClientSummary(program = selectedProgram()) {
   if (name) {
     name.textContent = clientName;
   }
+  if (clientStatus) clientStatus.textContent = isExistingClient ? status : "";
 
   if (email) {
     email.textContent = clientEmail;
   }
 
   if (meta) {
-    const statusNode = document.createElement("span");
-    const titleNode = document.createElement("span");
-
-    statusNode.textContent = status;
-    titleNode.textContent = programTitle;
-
-    if (clientPhone) {
-      const phoneNode = document.createElement("span");
-
-      phoneNode.textContent = clientPhone;
-      meta.replaceChildren(statusNode, titleNode, phoneNode);
-    } else {
-      meta.replaceChildren(statusNode, titleNode);
-    }
+    meta.textContent = isExistingClient ? programTitle : "";
   }
-
-  if (saveButton) {
-    saveButton.disabled = !isExistingClient;
-  }
+  const clientPanel = document.querySelector("[data-admin-client-context]");
+  if (clientPanel) clientPanel.dataset.clientInView = String(isExistingClient);
 
   document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
     button.disabled = !isExistingClient;
@@ -1534,10 +1521,30 @@ function programsForCurrentClientView() {
   return showingArchivedClients ? archivedClientPrograms() : activeClientPrograms();
 }
 
+function coachClientMembership(program) {
+  return program.account_type === "beta_tester" ? "app_access_only" : program.membership_type || "app_access_only";
+}
+
+function coachClientRosterPrograms(view, candidates, archived = false) {
+  return candidates.filter((program) =>
+    (archived || program.active !== false) &&
+    (view === "all" || coachClientMembership(program) === view)
+  );
+}
+
+function coachClientSessionValues(usedCount, totalCount) {
+  const used = normalizeSessionCount(usedCount);
+  const total = normalizeSessionCount(totalCount);
+  return {
+    used: total > 0 || used > 0 ? used : null,
+    total: total > 0 ? total : null,
+    remaining: total > 0 ? Math.max(0, total - used) : null
+  };
+}
+
 function matchingClientSuggestions() {
   if (!clientSearchTerm) return [];
-  return programsForCurrentClientView().filter((program) =>
-    (showingArchivedClients || program.active !== false) &&
+  return coachClientRosterPrograms(coachClientsView, programsForCurrentClientView(), showingArchivedClients).filter((program) =>
     [program.client_name, program.client_email].join(" ").toLowerCase().includes(clientSearchTerm)
   );
 }
@@ -4301,6 +4308,7 @@ function renderClientList() {
   if (archivedButton) {
     archivedButton.textContent = showingArchivedClients ? "Active clients" : "Archived clients";
     archivedButton.classList.toggle("is-selected", showingArchivedClients);
+    archivedButton.setAttribute("aria-pressed", String(showingArchivedClients));
   }
 
   if (deleteArchivedButton) {
@@ -4309,8 +4317,123 @@ function renderClientList() {
   }
 
   document.getElementById("client-search-label").textContent = showingArchivedClients ? "Archived client name" : "Client name";
-  input.placeholder = showingArchivedClients ? "Type an archived client name..." : "Type a client name...";
+  input.placeholder = showingArchivedClients ? "Search archived clients" : "Search by name or email";
+  renderCoachClientWorkspace();
   renderClientSuggestions();
+}
+
+function renderCoachClientWorkspace() {
+  const panel = document.getElementById("clients");
+  const roster = document.getElementById("coach-client-roster");
+  const counts = document.getElementById("coach-client-session-counts");
+  if (!panel || !roster || !counts) return;
+
+  const showingCounts = coachClientsView === "session-counts";
+  panel.dataset.clientView = coachClientsView;
+  roster.hidden = showingCounts;
+  counts.hidden = !showingCounts;
+  for (const tab of panel.querySelectorAll("[data-coach-clients-view]")) {
+    const selected = tab.dataset.coachClientsView === coachClientsView;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && !showingCounts) roster.setAttribute("aria-labelledby", tab.id);
+  }
+
+  const names = (program) => program.client_name || program.client_email || "Client";
+  if (showingCounts) {
+    const alex = coachClientSessionValues(alexFitnessMasterSessions.used, alexFitnessMasterSessions.total);
+    for (const node of counts.querySelectorAll("[data-coach-alex-count]")) {
+      node.textContent = alex[node.dataset.coachAlexCount] ?? "—";
+    }
+
+    const clients = coachClientRosterPrograms("all", activeClientPrograms());
+    const rows = clients.map((program) => {
+      const row = document.createElement("tr");
+      const nameCell = document.createElement("th");
+      nameCell.scope = "row";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.coachCountClient = program.id;
+      button.textContent = names(program);
+      button.setAttribute("aria-label", `Edit session count for ${names(program)}`);
+      nameCell.append(button);
+      row.append(nameCell);
+      const values = coachClientSessionValues(program.session_count_used, program.session_count_total);
+      for (const value of [values.used, values.total, values.remaining]) {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "—";
+        row.append(cell);
+      }
+      return row;
+    });
+    counts.querySelector("[data-coach-client-count-rows]").replaceChildren(...rows);
+    counts.querySelector("[data-coach-count-empty]").hidden = rows.length > 0;
+    return;
+  }
+
+  const clients = coachClientRosterPrograms(coachClientsView, programsForCurrentClientView(), showingArchivedClients);
+  const labels = { personal_training: "Personal training", online_training: "Online training", app_access_only: "App only" };
+  const rows = clients.map((program) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.coachRosterClient = program.id;
+    if (program.id === selectedProgramId) button.setAttribute("aria-current", "true");
+    const name = document.createElement("strong");
+    name.textContent = names(program);
+    const membership = document.createElement("span");
+    membership.textContent = labels[coachClientMembership(program)] || "Membership not set";
+    button.append(name, membership);
+    item.append(button);
+    return item;
+  });
+  roster.querySelector("[data-coach-client-rows]").replaceChildren(...rows);
+  const empty = roster.querySelector("[data-coach-client-empty]");
+  empty.hidden = rows.length > 0;
+  empty.textContent = showingArchivedClients ? "No archived clients in this view." : "No active clients in this view.";
+  const clientPanel = document.querySelector("[data-admin-client-context]");
+  if (clientPanel) clientPanel.dataset.clientInView = String(clients.some((program) => program.id === selectedProgramId));
+}
+
+function handleCoachClientWorkspace() {
+  const panel = document.getElementById("clients");
+  if (!panel) return;
+  const tabs = [...panel.querySelectorAll("[data-coach-clients-view]")];
+  const select = (tab) => {
+    if (coachClientsView === tab.dataset.coachClientsView) return;
+    coachClientsView = tab.dataset.coachClientsView;
+    clientSearchTerm = "";
+    document.getElementById("client-search-input").value = "";
+    closeClientSuggestions();
+    renderCoachClientWorkspace();
+  };
+  for (const tab of tabs) tab.addEventListener("click", () => select(tab));
+  panel.querySelector(".coach-client-views").addEventListener("keydown", (event) => {
+    const index = tabs.indexOf(event.target);
+    if (index < 0) return;
+    let next;
+    if (event.key === "Home") next = tabs[0];
+    if (event.key === "End") next = tabs.at(-1);
+    if (event.key === "ArrowRight") next = tabs[(index + 1) % tabs.length];
+    if (event.key === "ArrowLeft") next = tabs[(index + tabs.length - 1) % tabs.length];
+    if (!next) return;
+    event.preventDefault();
+    select(next);
+    next.focus();
+  });
+  panel.addEventListener("click", (event) => {
+    const roster = event.target.closest("[data-coach-roster-client]");
+    if (roster) {
+      const clients = coachClientRosterPrograms(coachClientsView, programsForCurrentClientView(), showingArchivedClients);
+      selectCoachRosterProgram(clients.find((program) => program.id === roster.dataset.coachRosterClient));
+    }
+    const count = event.target.closest("[data-coach-count-client]");
+    if (count) {
+      const program = activeClientPrograms().find((item) => item.id === count.dataset.coachCountClient && item.active !== false);
+      if (program) openCoachHomeClientSection(program.client_email, "sessions");
+    }
+  });
+  renderCoachClientWorkspace();
 }
 
 function closeClientSuggestions() {
@@ -4359,13 +4482,16 @@ function renderClientSuggestions() {
 }
 
 function selectClientSuggestion(programId) {
-  const program = matchingClientSuggestions().find((item) => item.id === programId);
+  selectCoachRosterProgram(matchingClientSuggestions().find((program) => program.id === programId));
+}
+
+function selectCoachRosterProgram(program) {
   const useMobileClientHub = globalThis.matchMedia?.("(max-width: 900px)")?.matches === true;
   if (!program) return;
   document.getElementById("client-search-input").value = program.client_name || program.client_email;
   clientSearchTerm = "";
   closeClientSuggestions();
-  fillForm(program);
+  if (selectedProgramId !== program.id) fillForm(program);
   renderClientList();
   setAdminTab(useMobileClientHub ? "clients" : "profile");
   adminStatus("Ready.");
@@ -6206,6 +6332,7 @@ function handleCoachActivityDesk() {
 function openCoachHomeShortcut(destination) {
   if (destination === "clients") {
     showingArchivedClients = false;
+    coachClientsView = "all";
     clientSearchTerm = "";
     const input = document.getElementById("client-search-input");
     if (input) input.value = "";
@@ -8082,6 +8209,7 @@ async function bootCoachAdmin() {
   handleArchiveClient();
   handleArchivedClientsToggle();
   handleClientSearch();
+  handleCoachClientWorkspace();
   handleDeleteArchivedClient();
   handleCopyClientDialog();
   handleProgramHistoryActions();

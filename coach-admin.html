@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
   <link rel="stylesheet" href="css/coach-workspace.css?v=2&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3" />
+  <link rel="stylesheet" href="css/coach-clients.css?v=1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <a class="coach-skip" href="#coach-main">Skip to workspace</a>
@@ -146,24 +147,54 @@
         <input type="hidden" name="session_package_history" />
 
         <section class="admin-client-list" id="clients" data-admin-panel="clients" aria-label="Client list">
-          <div class="admin-section-heading">
+          <div class="admin-section-heading coach-clients-heading">
             <div>
-              <p class="kicker">Clients</p>
-              <h2>Choose a client</h2>
+              <h2>Clients</h2>
             </div>
             <div class="client-list-actions">
               <button class="button button-dark" type="button" data-open-invite-client>Add client</button>
-              <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
             </div>
           </div>
-          <div class="client-autocomplete" id="client-autocomplete">
-            <label class="client-search-control" for="client-search-input">
-              <span id="client-search-label">Client name</span>
-              <input type="text" id="client-search-input" placeholder="Search by name" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
-            </label>
-            <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+          <div class="coach-client-views" role="tablist" aria-label="Client views">
+            <button type="button" role="tab" id="coach-clients-all" data-coach-clients-view="all" aria-controls="coach-client-roster" aria-selected="true">All clients</button>
+            <button type="button" role="tab" id="coach-clients-personal" data-coach-clients-view="personal_training" aria-controls="coach-client-roster" aria-selected="false" tabindex="-1">Personal training</button>
+            <button type="button" role="tab" id="coach-clients-app" data-coach-clients-view="app_access_only" aria-controls="coach-client-roster" aria-selected="false" tabindex="-1">App only</button>
+            <button type="button" role="tab" id="coach-clients-sessions" data-coach-clients-view="session-counts" aria-controls="coach-client-session-counts" aria-selected="false" tabindex="-1">Session counts</button>
           </div>
-          <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
+          <section class="coach-client-roster" id="coach-client-roster" role="tabpanel" aria-labelledby="coach-clients-all">
+            <div class="coach-client-search-bar">
+              <div class="client-autocomplete" id="client-autocomplete">
+                <label class="client-search-control" for="client-search-input">
+                  <span id="client-search-label" class="coach-client-visually-hidden">Client name</span>
+                  <input type="text" id="client-search-input" placeholder="Search by name or email" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
+                </label>
+                <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+              </div>
+              <button class="button button-ghost" type="button" id="archived-clients-button" aria-pressed="false">Archived clients</button>
+            </div>
+            <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
+            <ul class="coach-client-rows" data-coach-client-rows aria-label="Clients"></ul>
+            <p class="coach-client-empty" data-coach-client-empty hidden></p>
+          </section>
+          <section class="coach-client-counts" id="coach-client-session-counts" role="tabpanel" aria-labelledby="coach-clients-sessions" hidden>
+            <div class="coach-alex-sessions">
+              <div>
+                <h3>Alex Fitness</h3>
+                <p>Coach’s count · saved summary</p>
+              </div>
+              <dl class="coach-session-summary" aria-label="Alex Fitness session count">
+                <div><dt>Used</dt><dd data-coach-alex-count="used">—</dd></div>
+                <div><dt>Total</dt><dd data-coach-alex-count="total">—</dd></div>
+                <div><dt>Left</dt><dd data-coach-alex-count="remaining">—</dd></div>
+              </dl>
+            </div>
+            <table class="coach-client-count-table">
+              <caption>Client session counts</caption>
+              <thead><tr><th scope="col">Client</th><th scope="col">Used</th><th scope="col">Total</th><th scope="col">Left</th></tr></thead>
+              <tbody data-coach-client-count-rows></tbody>
+            </table>
+            <p class="coach-client-empty" data-coach-count-empty hidden>No active clients to show.</p>
+          </section>
         </section>
 
         <section class="admin-card coach-home-panel" data-admin-panel="home" aria-labelledby="coach-home-title">
@@ -282,34 +313,37 @@
 
         <section class="admin-card" data-admin-panel="inbox" data-coach-messages aria-label="Coach inbox" hidden></section>
 
-        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context hidden>
+        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context data-client-in-view="false" hidden>
           <div class="selected-client-copy">
-            <p class="kicker">Selected client</p>
-            <h2 id="selected-client-name">Choose a client</h2>
-            <p id="selected-client-email">Search or create a client to start editing.</p>
+            <div class="coach-client-identity"><h2 id="selected-client-name">Choose a client</h2><span id="selected-client-status"></span></div>
+            <p id="selected-client-email" hidden>Search or create a client to start editing.</p>
           </div>
-          <div class="selected-client-meta" id="selected-client-meta">
-            <span>No client selected</span>
+          <div class="coach-client-summary-line">
+            <div class="selected-client-meta" id="selected-client-meta"></div>
+            <div class="selected-session-count" id="selected-session-count" hidden>
+              <strong id="selected-session-count-value">--</strong>
+              <span>sessions</span>
+            </div>
           </div>
           <nav class="selected-client-mobile-menu" aria-label="Selected client tools">
-            <button type="button" data-client-mobile-destination="profile"><strong>Profile</strong><span>Contact and account details</span></button>
-            <button type="button" data-client-mobile-destination="program"><strong>Program</strong><span>Training plan and goals</span></button>
-            <button type="button" data-client-mobile-destination="workouts"><strong>Workouts</strong><span>Assigned training</span></button>
-            <button type="button" data-client-mobile-destination="nutrition"><strong>Food</strong><span>Nutrition targets and logs</span></button>
-            <button type="button" data-client-mobile-destination="progress"><strong>Progress</strong><span>Stats and check-ins</span></button>
-            <button type="button" data-client-mobile-destination="sessions"><strong>Sessions</strong><span>Package and dates</span></button>
-            <button type="button" data-client-mobile-destination="logs"><strong>Logs</strong><span>Workout history</span></button>
-            <button type="button" data-client-mobile-destination="notes"><strong>Notes</strong><span>Private coaching notes</span></button>
+            <button type="button" data-client-mobile-destination="profile" aria-label="Profile"><strong>Profile</strong></button>
+            <button type="button" data-client-mobile-destination="program" aria-label="Program"><strong>Program</strong></button>
+            <button type="button" data-client-mobile-destination="workouts" aria-label="Workouts"><strong>Workouts</strong></button>
+            <button type="button" data-client-mobile-destination="nutrition" aria-label="Food"><strong>Food</strong></button>
+            <button type="button" data-client-mobile-destination="progress" aria-label="Progress"><strong>Progress</strong></button>
+            <button type="button" data-client-mobile-destination="sessions" aria-label="Sessions"><strong>Sessions</strong></button>
+            <button type="button" data-client-mobile-destination="logs" aria-label="Logs"><strong>Logs</strong></button>
+            <button type="button" data-client-mobile-destination="notes" aria-label="Notes"><strong>Notes</strong></button>
           </nav>
           <div class="selected-client-actions">
-            <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>View messages</button>
-            <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
-            <button class="button button-ghost" type="button" id="selected-client-password-reset-button" hidden>Send password reset link</button>
-            <div class="selected-session-count" id="selected-session-count" hidden>
-              <span>Session count</span>
-              <strong id="selected-session-count-value">--</strong>
-            </div>
-            <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
+            <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>Message</button>
+            <details class="coach-client-more">
+              <summary aria-label="More client actions">⋯</summary>
+              <div class="coach-client-more-actions">
+                <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
+                <button class="button button-ghost" type="button" id="selected-client-password-reset-button" hidden>Send password reset link</button>
+              </div>
+            </details>
           </div>
         </section>
 
@@ -1194,6 +1228,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3"></script>
+<script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=1"></script>
 </body>
 </html>
