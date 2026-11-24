@@ -15096,14 +15096,12 @@ function clientWorkoutListMarkup(workouts) {
       : "Personal Training access is not verified.";
     const panel = (id, content) => `<section id="workout-hub-${id}" class="workout-choice-list client-workout-hub-section"
       role="tabpanel" aria-labelledby="workout-hub-tab-${id}" ${id === active ? "" : "hidden"}>${content}</section>`;
-    const card = (action, icon, title, description, id, cover, extraClass = "") => {
+    const card = (action, icon, title, description, id, extraClass = "") => {
       const content = clientWorkoutChoiceContent({
         icon, title, description, titleId: `${id}-title`, descriptionId: `${id}-description`
       });
-      return `<button type="button" class="workout-choice-card workout-hub-choice${cover ? " has-shortcut-cover" : ""}${extraClass ? ` ${extraClass}` : ""}" ${action}
-        aria-labelledby="${id}-title" aria-describedby="${id}-description">${cover ? `
-          <img class="workout-choice-cover" src="/images/gruntr/workout-shortcuts/${cover}.jpg" alt="" loading="lazy" decoding="async" />
-          <span class="workout-choice-card-content">${content}</span>` : content}</button>`;
+      return `<button type="button" class="workout-choice-card workout-hub-choice${extraClass ? ` ${extraClass}` : ""}" ${action}
+        aria-labelledby="${id}-title" aria-describedby="${id}-description">${content}</button>`;
     };
     return `<div class="workout-program-picker client-workout-hub">
       <div class="client-workout-hub-tabs" role="tablist" aria-label="Workout sections">${sections.map(([id, label]) => `
@@ -15113,12 +15111,12 @@ function clientWorkoutListMarkup(workouts) {
       ${access.state !== "available" ? `<p id="client-personal-training-access-hint" class="client-workout-hub-empty">${escapeHtml(lockHint)}</p>` : ""}
       ${panel("routines", `
         ${card('data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Log Workout"',
-          "plus", "Start Workout", "Log a workout from scratch.", "workout-start", "start", "client-workout-hub-custom-start")}
+          "plus", "Start Workout", "Log a workout from scratch.", "workout-start", "client-workout-hub-custom-start")}
         <button type="button" class="client-workout-hub-start client-workout-hub-resume" data-resume-active-workout>
           <span aria-hidden="true">▶</span> Resume Workout
         </button>
-        ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore", "explore")}
-        ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous", "previous")}
+        ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore")}
+        ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous")}
       `)}
       ${panel("personal", access.state === "available" ? `
         ${programs.map(program => {
@@ -15127,13 +15125,13 @@ function clientWorkoutListMarkup(workouts) {
           const name = program.program_title || "Your assigned program";
           const description = count ? `${name} · ${count} ${count === 1 ? "workout" : "workouts"}` : name;
           return card(`data-preview-program="${index}"`, "calendar", "Trainer Program", description,
-            `workout-personal-${index}`, "personal-training");
+            `workout-personal-${index}`);
         }).join("")}
-        ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan sessions from your coach or saved workouts.", "workout-calendar", "calendar")}
+        ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan sessions from your coach or saved workouts.", "workout-calendar")}
       ` : "")}
       ${panel("trainer", `
-        ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer", "trainer")}
-        ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved", "saved")}
+        ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer")}
+        ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved")}
       `)}
     </div>${clientWorkoutChoiceDialogMarkup()}`;
   }
