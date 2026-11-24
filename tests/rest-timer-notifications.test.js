@@ -191,9 +191,10 @@ function createNotificationPreferenceHarness({ permission = "default", storedPre
 function createServiceWorkerHarness(windowClients = []) {
   const listeners = new Map();
   const openedDestinations = [];
+  const notifications = [];
   const self = {
     location: { origin: "https://fitness.test" },
-    registration: { showNotification: async () => {} },
+    registration: { showNotification: async (title, options) => notifications.push({ title, options }) },
     clients: {
       async matchAll() {
         return windowClients;
@@ -209,7 +210,7 @@ function createServiceWorkerHarness(windowClients = []) {
   };
 
   vm.runInNewContext(worker, { self, URL, Date });
-  return { listeners, openedDestinations };
+  return { listeners, openedDestinations, notifications };
 }
 
 test("offers an explicit, accessible timer-alert opt in", () => {
@@ -272,7 +273,7 @@ test("initialization does not request permission and explicit enable requests it
   assert.ok(requestIndex >= 0 && requestIndex < registerIndex);
   assert.match(registration, /navigator\.serviceWorker[\s\S]*?\.register\(restTimerNotificationServiceWorkerUrl, \{ scope: "\/" \}\)/);
   assert.match(support, /isIosDevice\(\) && !isStandaloneWebApp\(\)/);
-  assert.match(sourceForFunction("restTimerNotificationUiState"), /add FWB to your Home Screen/);
+  assert.match(sourceForFunction("restTimerNotificationUiState"), /add GRUNTR to your Home Screen/);
 });
 
 test("notifies exactly once for each completed timer run", () => {
@@ -400,19 +401,53 @@ test("service worker handles timer and dynamic same-origin pushes", () => {
   assert.match(sourceForFunction("initializeRestTimerNotifications"), /setClientDashboardTab\("workouts"\)/);
 });
 
+test("web push uses the new GRUNTR artwork for both roles and older payloads", async () => {
+  const { listeners, notifications } = createServiceWorkerHarness();
+  async function push(value) {
+    let completion;
+    listeners.get("push")({
+      data: value && { json: () => value },
+      waitUntil(promise) { completion = promise; }
+    });
+    await completion;
+    return notifications.at(-1).options;
+  }
+
+  const icon = manifest.icons.find((entry) => entry.sizes === "192x192" && entry.purpose === "any").src;
+  const badge = icon.replace("icon-192.png", "notification-badge-96.png");
+  for (const artwork of [icon, badge]) assert.ok(fs.existsSync(path.join(root, artwork)));
+
+  const timer = await push();
+  assert.equal(timer.icon, icon);
+  assert.equal(timer.badge, badge);
+  const client = await push({ icon: "/fwb-home-icon-192.png", badge: "/favicon-32.png",
+    data: { url: "/client-dashboard.html?tab=social", notificationId: "notification-1" } });
+  assert.equal(client.icon, icon);
+  assert.equal(client.badge, badge);
+  assert.equal(client.data.notificationId, "notification-1");
+
+  const coach = await push({ icon: "/fwb-brand-icon-gold-192-v5.png", badge: "/favicon-32.png",
+    data: { url: "/coach-admin.html?tab=notifications" } });
+  assert.equal(coach.icon, icon);
+  assert.equal(coach.badge, badge);
+  assert.match(coach.data.url, /\/coach-admin\.html\?tab=notifications$/);
+  const previous = await push({ icon: "/images/gruntr/client-5e7e5c45/icon-192.png?v=1" });
+  assert.equal(previous.icon, icon);
+});
+
 test("timer-alert copy explains that the web app must remain open", () => {
-  assert.match(sourceForFunction("restTimerNotificationUiState"), /Keep FWB open while the timer runs/);
-  assert.match(sourceForFunction("restTimerMarkup"), /keep FWB open while the timer runs/);
+  assert.match(sourceForFunction("restTimerNotificationUiState"), /Keep GRUNTR open while the timer runs/);
+  assert.match(sourceForFunction("restTimerMarkup"), /keep GRUNTR open while the timer runs/);
 });
 
 test("client PWA opens at the dashboard and cache-busts notification assets", () => {
   assert.equal(manifest.id, "/client-dashboard.html");
   assert.equal(manifest.start_url, "/client-dashboard.html");
   assert.equal(manifest.display, "standalone");
-  assert.match(dashboard, /href="\/client\.webmanifest"/);
-  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
-  assert.match(dashboard, /js\/web-notifications\.js\?v=coach-activity-likes-5/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
+  assert.match(dashboard, /href="\/client\.webmanifest(?:\?[^"\s]+)?"/);
+  assert.match(dashboard, /js\/web-notifications\.js\?[^"\s]+&amp;notification-artwork=2"/);
+  assert.match(dashboard, /js\/client-portal\.js\?[^"\s]+&amp;notification-artwork=2"/);
+  assert.match(dashboard, /js\/client-unfinished-workout-reminder\.js\?[^"\s]+&amp;notification-artwork=2"/);
 });
 
 test("Pages deployment includes the client manifest and timer service worker", () => {

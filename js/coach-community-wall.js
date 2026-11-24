@@ -84,7 +84,7 @@
       return;
     }
     if (String(data.user.email || '').toLowerCase() !== 'benjaminbenz.fit@gmail.com') {
-      status.textContent = 'This page is available to the FWB coach account.';
+      status.textContent = 'This page is available to the GRUNTR Coach account.';
       return;
     }
     signOut.hidden = false;

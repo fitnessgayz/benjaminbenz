@@ -9,6 +9,8 @@ const clientLogin = fs.readFileSync(path.join(root, "client-login.html"), "utf8"
 const coachAdmin = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
 const coachWorkout = fs.readFileSync(path.join(root, "coach-workout-log.html"), "utf8");
 const coachExerciseLibrary = fs.readFileSync(path.join(root, "coach-exercise-library.html"), "utf8");
+const coachDocs = ["coach-community-wall.html", "fwb-coach-support.html", "fwb-coach-privacy.html"]
+  .map((filename) => fs.readFileSync(path.join(root, filename), "utf8"));
 const coachManifest = JSON.parse(fs.readFileSync(path.join(root, "coach.webmanifest"), "utf8"));
 const clientManifest = JSON.parse(fs.readFileSync(path.join(root, "client.webmanifest"), "utf8"));
 const adminScript = fs.readFileSync(path.join(root, "js/coach-admin.js"), "utf8");
@@ -17,7 +19,7 @@ const pagesWorkflow = fs.readFileSync(path.join(root, ".github/workflows/pages.y
 
 test("coach app has a distinct install identity and coach entry point", () => {
   assert.equal(coachManifest.id, "/coach-app");
-  assert.equal(coachManifest.name, "FWB Coach");
+  assert.equal(coachManifest.name, "GRUNTR Coach");
   assert.equal(coachManifest.start_url, "/coach-admin.html");
   assert.equal(clientManifest.name, "GRUNTR");
   assert.notEqual(coachManifest.name, clientManifest.name);
@@ -26,15 +28,22 @@ test("coach app has a distinct install identity and coach entry point", () => {
   assert.doesNotMatch(coachLogin, /id="client-login-form"/);
   assert.match(clientLogin, /id="client-login-form"/);
   assert.doesNotMatch(clientLogin, /id="coach-login-form"/);
-  assert.match(clientLogin, /href="coach-login\.html">Open the FWB Coach app/);
+  assert.match(clientLogin, /href="coach-login\.html">Open the GRUNTR Coach app/);
   assert.match(pagesWorkflow, /client\.webmanifest coach\.webmanifest/);
 });
 
 test("every coach surface stays inside the coach app install identity", () => {
-  for (const html of [coachAdmin, coachWorkout, coachExerciseLibrary]) {
+  for (const html of [coachLogin, coachAdmin, coachWorkout, coachExerciseLibrary, ...coachDocs]) {
     assert.match(html, /rel="manifest" href="\/coach\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Coach"/);
+    assert.match(html, /apple-mobile-web-app-title" content="GRUNTR Coach"/);
+    assert.match(html, /application-name" content="GRUNTR Coach"/);
+    assert.match(html, /rel="icon" type="image\/png" sizes="32x32" href="\/images\/gruntr\/client-22e30eae\/icon-32\.png"/);
+    assert.match(html, /rel="apple-touch-icon" sizes="180x180" href="\/images\/gruntr\/client-22e30eae\/icon-180\.png"/);
+    assert.match(html, /class="coach-brand-logo" src="\/images\/gruntr\/client-22e30eae\/icon-192\.png" alt=""/);
   }
+  assert.equal((coachAdmin.match(/class="coach-brand-logo"/g) || []).length, 2);
+  assert.equal(coachManifest.short_name, "GRUNTR Coach");
+  assert.deepEqual(coachManifest.icons, clientManifest.icons);
   assert.match(adminScript, /const coachLoginUrl = "coach-login\.html/);
   assert.match(workoutScript, /const coachWorkoutLoginUrl = "coach-login\.html/);
 });
@@ -43,5 +52,5 @@ test("coach app remains connected to the shared Supabase client", () => {
   assert.match(coachLogin, /js\/supabase-config\.js/);
   assert.match(coachLogin, /js\/auth-session\.js/);
   assert.match(coachLogin, /js\/client-portal\.js/);
-  assert.match(coachLogin, /Connected to FWB Training/);
+  assert.match(coachLogin, /Connected to GRUNTR/);
 });

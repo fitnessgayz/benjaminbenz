@@ -256,59 +256,59 @@ function pushCopy(notification: NotificationRow) {
   const copy: Record<string, { title: string; body: string }> = {
     "client:coach_reply": {
       title: "New coaching update",
-      body: "Open FWB to view your private coaching update."
+      body: "Open GRUNTR to view your private coaching update."
     },
     "client:coach_reaction": {
       title: "Benjamin gave you props for your update",
-      body: "Open FWB to see which activity your coach celebrated."
+      body: "Open GRUNTR to see which activity your coach celebrated."
     },
     "client:program_update": {
       title: "Training plan update",
-      body: "Open FWB to review your latest training plan."
+      body: "Open GRUNTR to review your latest training plan."
     },
     "client:nutrition_plan_update": {
       title: "Nutrition plan update",
-      body: "Open FWB to review your latest nutrition guidance."
+      body: "Open GRUNTR to review your latest nutrition guidance."
     },
     "client:session_reminder": {
       title: "Session reminder",
-      body: "Open FWB to view your session information."
+      body: "Open GRUNTR to view your session information."
     },
     "client:workout_reminder": {
       title: "Workout reminder",
-      body: "Open FWB when you are ready to train."
+      body: "Open GRUNTR when you are ready to train."
     },
     "client:weekly_check_in": {
       title: "Weekly check-in reminder",
-      body: "Open FWB when you are ready to check in."
+      body: "Open GRUNTR when you are ready to check in."
     },
     "client:monthly_report": {
       title: "Monthly report ready",
-      body: "Open FWB to view your private training report."
+      body: "Open GRUNTR to view your private training report."
     },
     "client:session_balance": {
       title: "Session balance update",
-      body: "Open FWB to review your coaching-session balance."
+      body: "Open GRUNTR to review your coaching-session balance."
     },
     "client:nutrition_reminder": {
       title: "Nutrition log reminder",
-      body: "Open FWB if you would like to add today’s food entries."
+      body: "Open GRUNTR if you would like to add today’s food entries."
     },
     "client:progress_reminder": {
       title: "Progress update",
-      body: "Open FWB to review or update your private progress information."
+      body: "Open GRUNTR to review or update your private progress information."
     },
     "client:achievement": {
       title: "Workout saved",
-      body: "Open FWB to view your completed workout."
+      body: "Open GRUNTR to view your completed workout."
     },
     "client:workout_comment": {
       title: "New workout reply",
-      body: "Open FWB to read the private comment from your coach."
+      body: "Open GRUNTR to read the private comment from your coach."
     },
     "client:form_check_feedback": {
       title: "Form check reviewed",
-      body: "Open FWB to read your private coaching feedback."
+      body: "Open GRUNTR to read your private coaching feedback."
     },
     "coach:workout_completed": {
       title: "Client workout completed",
@@ -320,7 +320,7 @@ function pushCopy(notification: NotificationRow) {
     },
     "coach:achievement": {
       title: "Client badge earned",
-      body: "Open FWB Coach to celebrate the achievement."
+      body: "Open GRUNTR Coach to celebrate the achievement."
     },
     "coach:check_in_submitted": {
       title: "Client check-in submitted",
@@ -365,8 +365,8 @@ function pushCopy(notification: NotificationRow) {
   };
 
   return copy[`${notification.recipient_role}:${notification.kind}`] || {
-    title: "New FWB notification",
-    body: "Open FWB to view this update."
+    title: "New GRUNTR notification",
+    body: "Open GRUNTR to view this update."
   };
 }
 
@@ -507,8 +507,8 @@ async function dispatchNotifications(
           title: safeCopy.title,
           body: safeCopy.body,
           tag: row.dedupe_key || row.id,
-          icon: "/fwb-home-icon-192.png",
-          badge: "/favicon-32.png",
+          icon: "/images/gruntr/client-22e30eae/icon-192.png",
+          badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
           data: {
             url: row.action_url,
             notificationId: row.id
@@ -593,7 +593,7 @@ async function generateScheduledNotifications(adminClient: AdminClient) {
           recipient_role: "client",
           kind: "weekly_check_in",
           title: "Your weekly check-in is ready",
-          body: "Open FWB when you have a moment to share how training and recovery are going.",
+          body: "Open GRUNTR when you have a moment to share how training and recovery are going.",
           action_url: "/client-dashboard.html?tab=home",
           dedupe_key: `weekly-check-in:${user?.id}:${parts.date}`,
           metadata: {}
@@ -619,7 +619,7 @@ async function generateScheduledNotifications(adminClient: AdminClient) {
           recipient_role: "client",
           kind: "workout_reminder",
           title: "Your next workout is ready",
-          body: "Open FWB whenever you are ready to train and log your workout.",
+          body: "Open GRUNTR whenever you are ready to train and log your workout.",
           action_url: "/client-dashboard.html?tab=workouts",
           dedupe_key: `workout-reminder:${user?.id}:${parts.date}`,
           metadata: {}
@@ -639,7 +639,7 @@ async function generateScheduledNotifications(adminClient: AdminClient) {
           recipient_role: "client",
           kind: "nutrition_reminder",
           title: "Nutrition log reminder",
-          body: "Open FWB if you would like to add today’s food entries.",
+          body: "Open GRUNTR if you would like to add today’s food entries.",
           action_url: "/client-dashboard.html?tab=nutrition",
           dedupe_key: `nutrition-reminder:${user?.id}:${parts.date}`,
           metadata: {}
@@ -661,7 +661,7 @@ async function generateScheduledNotifications(adminClient: AdminClient) {
           recipient_role: "client",
           kind: "progress_reminder",
           title: "Monthly progress check-in",
-          body: "Open FWB when you are ready to add this month’s measurements or progress notes.",
+          body: "Open GRUNTR when you are ready to add this month’s measurements or progress notes.",
           action_url: "/client-dashboard.html?tab=stats",
           dedupe_key: `progress-reminder:${user?.id}:${monthStart}`,
           metadata: {}
@@ -682,7 +682,7 @@ async function generateScheduledNotifications(adminClient: AdminClient) {
           recipient_role: "client",
           kind: "monthly_report",
           title: "Your monthly training report is ready",
-          body: "Open FWB to review your private training summary.",
+          body: "Open GRUNTR to review your private training summary.",
           action_url: `/client-dashboard.html?tab=progress&report=${reportMonth}`,
           dedupe_key: `monthly-report:${user?.id}:${reportMonth}`,
           metadata: { month: reportMonth }
@@ -817,8 +817,8 @@ Deno.serve(async (request) => {
         user_id: user.id,
         recipient_role: isCoach ? "coach" : "client",
         kind: "general",
-        title: "FWB notifications are on",
-        body: "This test confirms that private FWB alerts can reach this device.",
+        title: "GRUNTR notifications are on",
+        body: "This test confirms that private GRUNTR alerts can reach this device.",
         action_url: isCoach ? "/coach-admin.html" : "/client-dashboard.html?tab=home",
         dedupe_key: `test:${user.id}:${testMinute}`,
         metadata: {}

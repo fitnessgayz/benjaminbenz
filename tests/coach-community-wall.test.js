@@ -77,5 +77,5 @@ test('another signed-in account cannot load the coach Wall', async () => {
   const { elements, calls } = run('client@example.com');
   await settle();
   assert.equal(calls.length, 0);
-  assert.match(elements['wall-status'].textContent, /coach account/);
+  assert.match(elements['wall-status'].textContent, /GRUNTR Coach account/);
 });

@@ -64,7 +64,7 @@ test("sets expectations and privacy context before the public questionnaire", ()
 
 test("uses the approved GRUNTR brand on public client pages", () => {
   for (const page of [...publicConversionPages, read("app-preview.html")]) {
-    assert.match(page, /aria-label="GRUNTR home"><img src="\/images\/gruntr\/icon-192\.png" alt=""[^>]*><b>GRUNTR<\/b><\/a>/);
+    assert.match(page, /aria-label="GRUNTR home"><img src="\/images\/gruntr\/client-22e30eae\/icon-192\.png" alt=""[^>]*><b>GRUNTR<\/b><\/a>/);
   }
   for (const page of [interest, privateInterest]) {
     assert.match(page, /GRUNTR app interest list/);

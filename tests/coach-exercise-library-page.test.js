@@ -17,7 +17,7 @@ test("exercise library opens as a focused coach tool like the workout logger", (
   assert.ok(adminHtml.indexOf('data-admin-tab="home"') < adminHtml.indexOf('href="coach-workout-log.html"'));
   assert.match(libraryHtml, /<body class="dashboard-page coach-exercise-library-page">/);
   assert.match(libraryHtml, /id="exercise-library-page-title">Exercise library<\/h1>/);
-  assert.match(libraryHtml, /href="coach-admin\.html">Back to FWB Coach<\/a>/);
+  assert.match(libraryHtml, /href="coach-admin\.html">Back to GRUNTR Coach<\/a>/);
   assert.ok(manifest.shortcuts.some((shortcut) => shortcut.url === "/coach-exercise-library.html"));
 });
 

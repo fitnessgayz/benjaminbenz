@@ -210,7 +210,7 @@ const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
-const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
+const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-3";
 let exerciseLibraryEntries = [];
 const exerciseNameRefreshTimers = new WeakMap();
 const exerciseNameRefreshDelay = 120;
@@ -4412,7 +4412,7 @@ function configureClientProgressAccess() {
   });
 
   if (coachPreview) {
-    setClientProgressStatus("Client measurements are read-only here. Use FWB Coach to make changes.");
+    setClientProgressStatus("Client measurements are read-only here. Use GRUNTR Coach to make changes.");
     setClientProgressPhotoStatus("Client progress photos are read-only in Coach View.");
     setClientDexaStatus("DEXA reports are read-only in Coach View.");
   }
@@ -5246,7 +5246,7 @@ function handleClientProgressPhotoUpload() {
       fileInput.value = "";
       noteInput.value = "";
       await loadClientProgressPhotos();
-      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and FWB Coach.");
+      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and GRUNTR Coach.");
     } catch (error) {
       setClientProgressPhotoStatus(error?.message || "Photo upload failed.");
     } finally {
@@ -8100,7 +8100,7 @@ function restTimerNotificationUiState() {
       disabled: true,
       label: "Timer alerts unavailable",
       help: support.reason === "ios-home-screen"
-        ? "On iPhone, add FWB to your Home Screen, then open it there to enable alerts."
+        ? "On iPhone, add GRUNTR to your Home Screen, then open it there to enable alerts."
         : "This browser cannot show timer notifications. Vibration and the on-screen timer still work."
     };
   }
@@ -8119,8 +8119,8 @@ function restTimerNotificationUiState() {
     disabled: false,
     label: enabled ? "Timer alerts on" : "Enable timer alerts",
     help: enabled
-      ? "Keep FWB open while the timer runs; you’ll get a system alert when rest ends."
-      : "Turn this on once, then keep FWB open while the timer runs."
+      ? "Keep GRUNTR open while the timer runs; you’ll get a system alert when rest ends."
+      : "Turn this on once, then keep GRUNTR open while the timer runs."
   };
 }
 
@@ -8199,8 +8199,8 @@ async function showRestTimerCompleteNotification() {
 
   const options = {
     body: "Your next set is ready.",
-    icon: "/images/gruntr/icon-192.png",
-    badge: "/favicon-32.png",
+    icon: "/images/gruntr/client-22e30eae/icon-192.png",
+    badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
     tag: "fwb-rest-timer-complete",
     renotify: true,
     silent: false,
@@ -8325,7 +8325,7 @@ function restTimerMarkup() {
         </div>
         <div class="rest-timer-notification-setting">
           <button type="button" data-rest-timer-notifications aria-pressed="false">Enable timer alerts</button>
-          <small data-rest-timer-notification-help>Turn this on once, then keep FWB open while the timer runs.</small>
+          <small data-rest-timer-notification-help>Turn this on once, then keep GRUNTR open while the timer runs.</small>
         </div>
       </section>
     </div>
@@ -20267,7 +20267,7 @@ function handleClientProgressSave() {
     }
 
     renderProgress(data || []);
-    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and FWB Coach.");
+    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and GRUNTR Coach.");
 
     if (button) {
       button.disabled = false;
@@ -22799,7 +22799,7 @@ async function handleCoachPortalLogin() {
 
       if (!isCoachPortalEmail(loginData.user?.email)) {
         await supabaseClient.auth.signOut();
-        if (status) status.textContent = "This login is not authorized for FWB Coach.";
+        if (status) status.textContent = "This login is not authorized for GRUNTR Coach.";
         return;
       }
 
@@ -22976,7 +22976,7 @@ async function loadDashboard() {
     if (!targetClientEmail) {
       setDashboardMessage(
         "Choose a client",
-        "Select a client in FWB Coach, then open Client View."
+        "Select a client in GRUNTR Coach, then open Client View."
       );
       return;
     }

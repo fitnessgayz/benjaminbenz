@@ -41,17 +41,15 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(client.short_name, "GRUNTR");
   assert.equal(client.background_color, "#050806");
   assert.equal(client.theme_color, "#050806");
-  assert.equal(coach.name, "FWB Coach");
+  assert.equal(coach.id, "/coach-app");
+  assert.equal(coach.name, "GRUNTR Coach");
   assert.equal(coach.background_color, "#101113");
   assert.equal(coach.theme_color, "#101113");
-  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-5e7e5c45/")));
-  // The public site and Coach retain their own art and URLs.
-  assert.ok(website.icons.every((icon) => /^\/images\/gruntr\/icon-/.test(icon.src)));
-  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any")
-    .map((icon) => ({ ...icon, src: icon.src.replace("/client-5e7e5c45", "") })));
-  const exact = fs.readFileSync(path.join(root, "images/gruntr/client-5e7e5c45/icon-1024.png"));
-  assert.equal(createHash("sha256").update(exact).digest("hex"), "5e7e5c4580c75c4935b323795753344443e4dcc12b024c54b76542ee2304dfe0");
-  assert.ok(coach.icons.every((icon) => icon.src.startsWith("/fwb-brand-icon-gold-")));
+  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-22e30eae/")));
+  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any"));
+  const exact = fs.readFileSync(path.join(root, "images/gruntr/client-22e30eae/icon-1024.png"));
+  assert.equal(createHash("sha256").update(exact).digest("hex"), "4a05711ec176a7b062566730453d83b2a51eae4dbb9857e9bf49d1e6bbad61ee");
+  assert.deepEqual(coach.icons, client.icons);
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
@@ -59,11 +57,11 @@ test("client and coach manifests use approved installed identities", () => {
 test("client auth and onboarding stay inside the GRUNTR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
-    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=5e7e5c45"/);
+    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=22e30eae"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
-    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-5e7e5c45\/icon-180\.png"/);
-    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/client-5e7e5c45\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-22e30eae\/icon-180\.png"/);
+    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/client-22e30eae\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
   }
 
   const login = read("client-login.html");
@@ -79,13 +77,13 @@ test("installed entry pages expose the same product names and deep-ink browser c
   assert.match(clientDashboard, /apple-mobile-web-app-title" content="GRUNTR"/);
   assert.match(clientDashboard, /application-name" content="GRUNTR"/);
   assert.match(clientDashboard, /<title>GRUNTR<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/client-5e7e5c45\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/client-22e30eae\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {
     const html = read(file);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Coach"/);
-    assert.match(html, /application-name" content="FWB Coach"/);
+    assert.match(html, /apple-mobile-web-app-title" content="GRUNTR Coach"/);
+    assert.match(html, /application-name" content="GRUNTR Coach"/);
     assert.match(html, /theme-color" content="#101113"/);
   }
 
@@ -140,7 +138,7 @@ test("PWA manifests provide correctly sized product icons", () => {
 
 test("public sharing uses the GRUNTR logo and native products use the canonical monogram", () => {
   const publicHome = read("index.html");
-  assert.match(publicHome, /property="og:image" content="https:\/\/benjaminbenz\.com\/images\/gruntr\/icon-1024\.png"/);
+  assert.match(publicHome, /property="og:image" content="https:\/\/benjaminbenz\.com\/images\/gruntr\/client-22e30eae\/icon-1024\.png"/);
   assert.match(read("css/style.css"), /fwb-brand-icon-gold-192-v5\.png/);
 
   const nativeIcons = [

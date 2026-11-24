@@ -1,11 +1,22 @@
 const defaultTimerNotification = {
   title: "Rest complete",
   body: "Your next set is ready.",
-  icon: "/fwb-brand-icon-gold-192-v5.png",
-  badge: "/favicon-32.png",
+  icon: "/images/gruntr/client-22e30eae/icon-192.png",
+  badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
   tag: "fwb-rest-timer-complete",
   url: "/client-dashboard.html?tab=workouts"
 };
+
+const retiredNotificationArtwork = new Set([
+  "/fwb-brand-icon-gold-192-v5.png",
+  "/fwb-home-icon-192.png",
+  "/favicon-32.png",
+  "/images/gruntr/icon-192.png",
+  "/images/gruntr/client-b45a7399/icon-192.png",
+  "/images/gruntr/client-b45a7399/icon-32.png",
+  "/images/gruntr/client-5e7e5c45/icon-192.png",
+  "/images/gruntr/client-5e7e5c45/icon-32.png"
+]);
 
 function timerNotificationUrl(event) {
   if (!event?.data) {
@@ -35,18 +46,22 @@ function timerNotificationContent(event) {
     const text = typeof candidate === "string" ? candidate.trim() : "";
     return (text || fallback).slice(0, maximumLength);
   };
+  const url = timerNotificationDestination(timerNotificationUrl(event));
+  const artworkPath = (candidate, fallback) => {
+    if (typeof candidate !== "string" || !/^\/(?![/\\])/.test(candidate)) return fallback;
+    const path = new URL(candidate, self.location.origin);
+    return path.origin === self.location.origin && !retiredNotificationArtwork.has(path.pathname)
+      ? candidate
+      : fallback;
+  };
 
   return {
     title: safeText(value?.title, defaultTimerNotification.title, 160),
     body: safeText(value?.body, defaultTimerNotification.body, 500),
-    icon: typeof value?.icon === "string" && value.icon.startsWith("/") && !value.icon.startsWith("//")
-      ? value.icon
-      : defaultTimerNotification.icon,
-    badge: typeof value?.badge === "string" && value.badge.startsWith("/") && !value.badge.startsWith("//")
-      ? value.badge
-      : defaultTimerNotification.badge,
+    icon: artworkPath(value?.icon, defaultTimerNotification.icon),
+    badge: artworkPath(value?.badge, defaultTimerNotification.badge),
     tag: safeText(value?.tag, defaultTimerNotification.tag, 300),
-    url: timerNotificationDestination(timerNotificationUrl(event)),
+    url,
     notificationId: safeText(value?.data?.notificationId, "", 100)
   };
 }

@@ -1,0 +1,16 @@
+.coach-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coach-brand-lockup strong {
+  display: inline;
+}
+
+.coach-brand-logo {
+  display: block;
+  flex: none;
+  border-radius: 22%;
+  object-fit: contain;
+}

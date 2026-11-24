@@ -109,15 +109,15 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
     workout_reminder: "Workout reminder",
     weekly_check_in: "Weekly check-in reminder",
     monthly_report: "Monthly report ready",
-    general: "FWB notification"
+    general: "GRUNTR notification"
   };
 
-  return titles[category] || "FWB notification";
+  return titles[category] || "GRUNTR notification";
 }
 
 function safePushBody(category: string, notification: Record<string, unknown> = {}) {
   if (category === "monthly_report") {
-    return "Open FWB to view your private training report.";
+    return "Open GRUNTR to view your private training report.";
   }
   if (category === "progress_submitted" && notification.title === "Client uploaded a progress photo") {
     return "Open Coach Admin to view the private progress photo.";
@@ -136,13 +136,13 @@ function safePushBody(category: string, notification: Record<string, unknown> = 
       "Open Coach Admin to review the completed workout log.";
   }
   if (category === "coach_reaction") {
-    return "Open FWB to see which activity your coach celebrated.";
+    return "Open GRUNTR to see which activity your coach celebrated.";
   }
   if (category === "achievement") {
-    return "Open FWB Coach to celebrate the client’s achievement.";
+    return "Open GRUNTR Coach to celebrate the client’s achievement.";
   }
 
-  return "Open FWB to view your update.";
+  return "Open GRUNTR to view your update.";
 }
 
 async function requireMutation(
@@ -205,7 +205,7 @@ Deno.serve(async (request) => {
       const { error: insertError } = await admin.from("client_notifications").insert({
         user_id: data.user.id,
         kind: "general",
-        title: "FWB test alert",
+        title: "GRUNTR test alert",
         body: "Browser alerts are working on this device.",
         web_category: "general",
         web_url: data.user.email?.toLowerCase() === coachEmail
@@ -298,6 +298,8 @@ Deno.serve(async (request) => {
               title: safePushTitle(category, notification),
               body: safePushBody(category, notification),
               tag: `fwb-${notification.id}`,
+              icon: "/images/gruntr/client-22e30eae/icon-192.png",
+              badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
               data: { url: notification.web_url || "/client-dashboard.html?notifications=1" }
             }),
             {

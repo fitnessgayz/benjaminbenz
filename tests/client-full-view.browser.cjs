@@ -221,7 +221,7 @@ async function checkSections(page) {
   await flat(page, ".client-home-planner");
   const homeLogo = page.getByRole("button", { name: "Open profile", exact: true });
   assert.equal(await homeLogo.getAttribute("data-client-settings-destination"), "profile");
-  assert.equal(await homeLogo.locator("img").getAttribute("src"), "/images/gruntr/client-5e7e5c45/icon-192.png");
+  assert.equal(await homeLogo.locator("img").getAttribute("src"), "/images/gruntr/client-22e30eae/icon-192.png");
   await homeLogo.locator("img").evaluate(img => img.decode());
   const logoStyle = await homeLogo.evaluate(button => {
     const css = getComputedStyle(button);
@@ -315,7 +315,7 @@ async function checkSections(page) {
   await panel(page, "notifications");
   await flat(page, ".client-settings-redesign-list");
   const logo = page.getByRole("img", { name: "GRUNTR", exact: true }).last();
-  assert.equal(await logo.getAttribute("src"), "/images/gruntr/client-5e7e5c45/icon-192.png");
+  assert.equal(await logo.getAttribute("src"), "/images/gruntr/client-22e30eae/icon-192.png");
   await logo.evaluate(img => img.decode());
 
   const settingsViews = await page.locator(".client-settings-detail").evaluateAll(views => views.map(view => view.dataset.clientSettingsView));
