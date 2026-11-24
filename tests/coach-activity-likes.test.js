@@ -34,7 +34,7 @@ function element(tag = "div") {
 }
 
 function coachHarness({ deployedBackend = false, noticeOverrides = {} } = {}) {
-  const list = element("ul");
+  const list = element("ol");
   const empty = element("p");
   const badge = element("span");
   const markAll = element("button");
@@ -154,12 +154,17 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(await harness.controller.init(), true);
   const firstItem = harness.list.children[0];
   const notificationLink = firstItem.children[0];
-  const typeIcon = notificationLink.children.find((child) => child.className === "web-notification-type-icon");
+  const header = notificationLink.children.find((child) => child.className === "coach-activity-workout-head");
+  const [typeIcon, typeLabel] = header.children[0].children;
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.equal(firstItem.dataset.webNotificationKind, "workout_completed");
   assert.equal(typeIcon.dataset.webNotificationIcon, "workout");
   assert.match(typeIcon.innerHTML, /<rect x="6" y="4"/);
   assert.equal(typeIcon["aria-hidden"], "true");
+  assert.equal(typeLabel.textContent, "Workout");
+  assert.equal(header.children[1].tag, "time");
+  assert.equal(notificationLink.children.find((child) => child.className === "coach-activity-entry-detail").textContent, "Open the log.");
+  assert.equal(notificationLink.children.some((child) => child.className === "coach-activity-workout-metrics"), false);
   assert.equal(harness.unreadSummary.textContent, "1");
   assert.equal(harness.workoutSummary.textContent, "1");
   assert.equal(harness.checkInSummary.textContent, "0");

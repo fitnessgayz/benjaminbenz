@@ -407,10 +407,12 @@
   align-items: start;
   gap: clamp(18px, 3vw, 34px);
 }
-:root body.coach-admin-page .coach-activity-desk .coach-notification-inbox {
+.coach-activity-feed {
+  --coach-activity-green: #57dca3;
+  display: grid;
+  align-content: start;
+  gap: 14px;
   min-width: 0;
-  padding: 0;
-  border: 0;
 }
 .coach-activity-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 :root body.coach-admin-page .coach-activity-filters button {
@@ -432,23 +434,49 @@
   color: var(--ink);
 }
 :root body.coach-admin-page .coach-activity-filters button:hover { color: var(--ink); }
-:root body.coach-admin-page .coach-activity-desk .web-notification-list {
-  gap: 0;
-  max-height: none;
-  overflow: visible;
-  border-block-start: 1px solid var(--line);
-}
-:root body.coach-admin-page .coach-activity-desk .web-notification-item[hidden],
+.coach-activity-feed .web-notification-list { gap: 10px; }
+.coach-activity-feed .web-notification-item[hidden],
 :root body.coach-admin-page .coach-activity-header .coach-notification-mark-all[hidden] { display: none !important; }
-:root body.coach-admin-page .coach-activity-desk .web-notification-item {
-  border: 0;
+.coach-activity-feed .web-notification-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  padding: 8px 0 10px;
   border-block-end: 1px solid var(--line);
-  border-radius: 0 !important;
-  background: transparent;
-  box-shadow: none;
 }
-:root body.coach-admin-page .coach-activity-desk .web-notification-item.is-unread { background: transparent; }
-:root body.coach-admin-page .coach-activity-desk .web-notification-item.is-unread a > strong::after {
+.coach-activity-feed [data-web-notification-kind="workout_completed"] {
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface);
+}
+:root body.coach-admin-page .coach-activity-feed .web-notification-item a.coach-activity-entry {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px 10px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  background: transparent;
+}
+:root body.coach-admin-page .coach-activity-feed .web-notification-item[data-web-notification-kind="workout_completed"] a.coach-activity-entry {
+  grid-template-columns: minmax(0, 1fr);
+}
+:root body.coach-admin-page .coach-activity-feed :is(.coach-activity-entry, .web-notification-like):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.coach-activity-feed .coach-activity-entry-title {
+  color: var(--ink);
+  font-size: .95rem;
+  font-weight: 760;
+}
+.coach-activity-feed .coach-activity-entry:hover .coach-activity-entry-title { color: var(--secondary-accent); }
+.coach-activity-feed .is-unread .coach-activity-entry-title::after {
   content: "";
   display: inline-block;
   width: 6px;
@@ -458,6 +486,98 @@
   background: var(--secondary-accent);
   vertical-align: middle;
 }
+.coach-activity-feed .coach-activity-unread-label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.coach-activity-feed .coach-activity-event-copy { display: grid; gap: 4px; }
+.coach-activity-feed :is(.coach-activity-event-copy > span, .coach-activity-entry-detail) {
+  color: var(--muted);
+  font-size: .86rem;
+  font-weight: 500;
+}
+.coach-activity-feed .coach-activity-entry time {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 500;
+  text-transform: none;
+  white-space: nowrap;
+}
+.coach-activity-feed .web-notification-type-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--muted);
+  background: var(--surface);
+}
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="checkin"] { color: var(--coach-activity-green); }
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="achievement"] { color: var(--lime); }
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="challenge"] { color: #c7a4ff; }
+.coach-activity-feed .web-notification-type-icon svg { width: 16px; height: 16px; }
+.coach-activity-feed :is(.coach-activity-workout-head, .coach-activity-workout-heading) {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.coach-activity-feed .coach-activity-workout-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+:root body.coach-admin-page .coach-activity-feed .coach-activity-workout-tag > span { color: var(--coach-activity-green); }
+.coach-activity-feed .coach-activity-workout-tag .web-notification-type-icon { width: 16px; height: 16px; background: transparent; }
+.coach-activity-feed .coach-activity-workout-heading .coach-activity-entry-title { font-size: 1.05rem; }
+:root body.coach-admin-page .coach-activity-feed .coach-activity-chevron { color: var(--secondary-accent); font-size: 1.5rem; line-height: 1; }
+.coach-activity-workout-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px clamp(24px, 6vw, 64px);
+  margin: 4px 0 0;
+}
+.coach-activity-workout-metrics > div { display: grid; gap: 2px; }
+.coach-activity-workout-metrics dt { color: var(--muted); font-size: .79rem; }
+.coach-activity-workout-metrics dd { margin: 0; font-size: .91rem; font-weight: 680; font-variant-numeric: tabular-nums; }
+:root body.coach-admin-page .coach-activity-feed .coach-activity-log-link {
+  justify-self: start;
+  color: var(--secondary-accent);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  gap: 6px;
+  inline-size: auto !important;
+  min-inline-size: 0;
+  min-height: 44px;
+  margin: 4px 0 0 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--secondary-accent);
+  background: transparent;
+  box-shadow: none;
+}
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-kind="workout_completed"] .web-notification-like {
+  margin-inline-start: 0;
+}
+:root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like:is(:hover, [aria-pressed="true"]) {
+  border-color: var(--secondary-border);
+  color: var(--secondary-accent);
+  background: var(--secondary-surface);
+}
+:root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like:disabled { color: var(--muted); opacity: .75; }
+.coach-activity-feed .web-notification-like :is(.web-notification-like-icon, .web-notification-like-label) { font-weight: 650; }
 :root body.coach-admin-page .coach-activity-desk .coach-notification-status {
   margin: 0;
   padding: 0;
@@ -491,6 +611,12 @@
 }
 @media (max-width: 900px) {
   .coach-activity-layout { grid-template-columns: minmax(0, 1fr); }
+  .coach-activity-feed [data-web-notification-kind="workout_completed"] {
+    padding-inline: 0;
+    border-block-end: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+  }
   .coach-activity-aside {
     padding: 14px 0 0;
     border: 0;
@@ -499,12 +625,11 @@
   .coach-activity-unread { display: flex; align-items: baseline; gap: 6px; }
   .coach-activity-unread strong { font-size: 1.35rem; }
 }
-:root body.coach-admin-page .coach-notification-inbox .web-notification-item a > .coach-activity-log-link {
-  color: var(--secondary-accent);
-  font-size: .825rem;
-  font-weight: 750;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+@media (max-width: 380px) {
+  :root body.coach-admin-page .coach-activity-feed .web-notification-item a.coach-activity-entry {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .coach-activity-feed .coach-activity-event-copy + time { grid-column: 2; }
 }
 
 .coach-exercise-library-page .coach-library-names { order: 2; }

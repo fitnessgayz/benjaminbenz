@@ -133,9 +133,14 @@
     };
   }
 
-  function coachWorkoutDescription(workout) {
-    const count = workout.exercise_count;
-    return `${workout.workout_title} · ${count} exercise${count === 1 ? "" : "s"}`;
+  function coachWorkoutDetails(workout) {
+    if (!workout) return null;
+    return {
+      title: workout.workout_title,
+      clientName: workout.client_name,
+      exerciseCount: workout.exercise_count,
+      setCount: workout.set_count
+    };
   }
 
   function combineCoachActivity(notifications, workouts, workoutLogsUrl) {
@@ -161,7 +166,7 @@
 
       return {
         ...row,
-        body: workout ? coachWorkoutDescription(workout) : row.body,
+        coach_workout: coachWorkoutDetails(workout),
         action_url: logsUrl,
         coach_workout_email: clientEmail
       };
@@ -174,7 +179,7 @@
       rows.push({
         kind: "workout_completed",
         title: `${workout.client_name} completed a workout`,
-        body: coachWorkoutDescription(workout),
+        coach_workout: coachWorkoutDetails(workout),
         action_url: logsUrl,
         coach_workout_email: workout.client_email,
         created_at: workout.completed_at,
@@ -183,6 +188,55 @@
     });
 
     return rows.sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
+  }
+
+  function renderCoachActivityContent(document, link, row, title, body, date, typeIcon, notificationKind) {
+    const make = (tag, className, value) => {
+      const node = document.createElement(tag);
+      node.className = className;
+      if (value != null) node.textContent = String(value);
+      return node;
+    };
+    link.className = "coach-activity-entry";
+    title.className = "coach-activity-entry-title";
+    if (notificationKind === "workout_completed") {
+      const workout = row.coach_workout;
+      const head = make("span", "coach-activity-workout-head");
+      const tag = make("span", "coach-activity-workout-tag");
+      tag.append(typeIcon, make("span", "", "Workout"));
+      head.append(tag, date);
+      const heading = make("span", "coach-activity-workout-heading");
+      if (workout?.title) title.textContent = workout.title;
+      heading.append(title);
+      if (row.coach_workout_email) {
+        const arrow = make("span", "coach-activity-chevron", "›");
+        arrow.setAttribute("aria-hidden", "true");
+        heading.append(arrow);
+      }
+      link.append(head, heading);
+      if (workout?.clientName) body.textContent = workout.clientName;
+      if (workout?.clientName || row.body) {
+        body.className = "coach-activity-entry-detail";
+        link.append(body);
+      }
+      if (workout) {
+        const metrics = make("dl", "coach-activity-workout-metrics");
+        for (const [label, count] of [["Exercises", workout.exerciseCount], ["Sets", workout.setCount]]) {
+          if (!Number.isInteger(count) || count < 0) continue;
+          const metric = make("div", "");
+          metric.append(make("dt", "", label), make("dd", "", count));
+          metrics.append(metric);
+        }
+        if (metrics.children.length) link.append(metrics);
+      }
+      if (row.coach_workout_email) link.append(make("span", "coach-activity-log-link", "Training logs"));
+    } else {
+      const copy = make("span", "coach-activity-event-copy");
+      copy.append(title);
+      if (row.body) copy.append(body);
+      link.append(typeIcon, copy, date);
+    }
+    if (!row.read_at) link.append(make("span", "coach-activity-unread-label", "Unread"));
   }
 
   function createController(options = {}) {
@@ -619,13 +673,7 @@
         typeIcon.dataset.webNotificationIcon = iconKind;
         typeIcon.setAttribute("aria-hidden", "true");
         typeIcon.innerHTML = notificationIconMarkup[iconKind] || notificationIconMarkup.general;
-        link.append(typeIcon, title, body, date);
-        if (row.coach_workout_email) {
-          const action = global.document.createElement("span");
-          action.className = "coach-activity-log-link";
-          action.textContent = "Training logs";
-          link.append(action);
-        }
+        renderCoachActivityContent(global.document, link, row, title, body, date, typeIcon, notificationKind);
       } else {
         link.append(title, body, date);
         if (isLocal || opensWeekly) {

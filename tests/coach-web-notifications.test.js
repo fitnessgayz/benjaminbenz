@@ -10,7 +10,6 @@ const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"),
 const sharedSource = fs.readFileSync(path.join(projectRoot, "js/web-notifications.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 const workspaceStyles = fs.readFileSync(path.join(projectRoot, "css/coach-workspace.css"), "utf8");
-const darkStyleSource = fs.readFileSync(path.join(projectRoot, "css/fwb-dark-theme.css"), "utf8");
 
 const coachPreferenceKeys = [
   "client_logins",
@@ -56,7 +55,7 @@ test("Activity keeps its feed visible and notification controls together in a di
   assert.match(settingsPanel, /<h2 id="coach-notification-title" tabindex="-1">Activity<\/h2>/);
   assert.match(settingsPanel, /<summary>Notification settings<\/summary>/);
   assert.match(settingsPanel, /data-web-notification-summary="unread"/);
-  assert.match(settingsPanel, /<section class="coach-notification-inbox" aria-label="Recent activity">/);
+  assert.match(settingsPanel, /<section class="coach-activity-feed" aria-label="Recent activity">/);
   assert.match(settingsPanel, /data-coach-activity-filter="all" aria-pressed="true"/);
   assert.match(settingsPanel, /data-coach-activity-filter="workouts" aria-pressed="false"/);
   assert.match(settingsPanel, /data-coach-activity-filter="checkins" aria-pressed="false"/);
@@ -64,7 +63,7 @@ test("Activity keeps its feed visible and notification controls together in a di
   assert.match(settingsPanel, /data-web-notification-enable/);
   assert.match(settingsPanel, /data-web-notification-test[^>]*disabled/);
   assert.match(settingsPanel, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
-  assert.match(settingsPanel, /data-web-notification-list[^>]*aria-live="polite"/);
+  assert.match(settingsPanel, /<ol[^>]*data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(settingsPanel, /data-web-notification-empty/);
   assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
   assert.match(settingsPanel, /data-web-notification-mark-all[\s\S]*?<span>Mark read<\/span>/);
@@ -131,18 +130,16 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(styleSource, /@media \(max-width: 780px\)[\s\S]*?\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
-  assert.match(workspaceStyles, /\.coach-activity-desk \.web-notification-item\s*\{[^}]*border-block-end:[^}]*border-radius:\s*0/s);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{[^}]*\}[^}]*\[data-web-notification-kind="workout_completed"\]\s*\{[^}]*border-block-end:[^}]*border-radius:\s*0/s);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{\s*\.coach-activity-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
-  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*border-radius:\s*999px/s);
-  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*width:\s*auto\s*!important/s);
-  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like-icon\s*\{[^}]*font-size:\s*\.82rem\s*!important/s);
-  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-type-icon svg\s*\{[^}]*width:\s*22px[^}]*height:\s*22px/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item \.web-notification-like\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-type-icon svg\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
   assert.match(sharedSource, /activityDescriptor\.includes\("challenge"\)[\s\S]*?\? "challenge"/);
   assert.match(sharedSource, /notificationKind === "check_in_submitted"[\s\S]*?\? "checkin"/);
   assert.match(sharedSource, /notificationKind === "workout_completed"[\s\S]*?\? "workout"/);
   assert.match(workspaceStyles, /\.coach-activity-header \.coach-notification-mark-all:not\(\[hidden\]\)\s*\{[^}]*display:\s*inline-flex[^}]*min-height:\s*44px/s);
-  assert.match(workspaceStyles, /\.web-notification-item\.is-unread a > strong::after\s*\{[^}]*border-radius:\s*50%/s);
-  assert.match(darkStyleSource, /body\.coach-admin-page \.coach-notification-inbox \.web-notification-type-icon\s*\{[^}]*color:\s*var\(--lime\)/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.is-unread \.coach-activity-entry-title::after\s*\{[^}]*border-radius:\s*50%/s);
+  assert.match(workspaceStyles, /\.coach-activity-feed \.coach-activity-workout-tag > span\s*\{[^}]*color:\s*var\(--coach-activity-green\)/s);
 });
 
 test("mobile Activity stays in the workspace while Settings opens its disclosure", () => {
@@ -161,7 +158,7 @@ test("matches coach activity by workout identity and keeps saved-only workouts r
   vm.runInNewContext(sharedSource.replace("    createController,", "    combineCoachActivity,\n    createController,"), { window });
   const combine = window.FWBWebNotifications.combineCoachActivity;
   const sessions = [
-    { client_email: "a@example.test", client_name: "Alex", session_id: "session-a", workout_title: "Upper Body", exercise_count: 5, completed_at: "2026-11-22T12:00:00Z" },
+    { client_email: "a@example.test", client_name: "Alex", session_id: "session-a", workout_title: "Upper Body", exercise_count: 5, set_count: 12, completed_at: "2026-11-22T12:00:00Z" },
     { client_email: "b@example.test", client_name: "Sam", workout_session_id: "session-b", workout_title: "Lower Body", exercise_count: 1, completed_at: "2026-11-20T12:00:00Z" },
     { client_email: "c@example.test", client_name: "Jamie", entry_date: "2026-11-19", workout_title: "Strength", exercise_count: 2, completed_at: "2026-11-19T12:00:00Z" },
   ];
@@ -173,11 +170,13 @@ test("matches coach activity by workout identity and keeps saved-only workouts r
   const rows = combine(notifications, sessions, (email) => `/coach-admin.html?tab=logs&client=${email[0]}`);
   assert.equal(rows.length, 4);
   assert.equal(rows[1].id, "notice-a");
-  assert.equal(rows[1].body, "Upper Body · 5 exercises");
+  assert.deepEqual({ ...rows[1].coach_workout }, { title: "Upper Body", clientName: "Alex", exerciseCount: 5, setCount: 12 });
   assert.equal(rows[1].can_like, true);
   assert.equal(rows[1].read_at, undefined);
   assert.equal(rows[1].action_url, "/coach-admin.html?tab=logs&client=a");
-  assert.equal(rows[2].body, "Lower Body · 1 exercise");
+  assert.equal(rows[2].coach_workout.title, "Lower Body");
+  assert.equal(rows[2].coach_workout.exerciseCount, 1);
+  assert.equal(rows[2].coach_workout.setCount, undefined);
   assert.equal(rows[2].id, undefined);
   assert.equal(rows[2].read_at, sessions[1].completed_at);
   assert.equal(rows[3].id, "notice-c");
@@ -186,5 +185,6 @@ test("matches coach activity by workout identity and keeps saved-only workouts r
   ], sessions.slice(0, 1), (email) => `/coach-admin.html?tab=logs&client=${email[0]}`);
   assert.equal(scopedRows.length, 2);
   assert.equal(scopedRows.find((row) => row.id === "other").coach_workout_email, "b@example.test");
+  assert.equal(scopedRows.find((row) => row.id === "other").coach_workout, null);
   assert.equal(scopedRows.find((row) => !row.id).coach_workout_email, "a@example.test");
 });
