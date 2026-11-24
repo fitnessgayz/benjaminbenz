@@ -407,7 +407,6 @@
   :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:is(.is-keyboard-open, :has(#custom-workout-picker-search:focus)):not(.is-ready-to-add) .custom-workout-picker-selected {
     display: none;
   }
-  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:has(#custom-workout-picker-search:focus) .custom-workout-picker-browse,
   :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:not(.is-ready-to-add):has(#custom-workout-picker-search:focus) [data-workout-picker-submit],
   :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:has(#custom-workout-picker-search:focus) form > button[type="submit"] {
     display: none;
@@ -444,3 +443,60 @@
   font-size: 15px; white-space: normal; overflow: visible; text-overflow: clip;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-copy small { font-size: 13px; }
+
+@media (max-width: 900px), (max-width: 1024px) and (orientation: landscape) and (pointer: coarse) {
+  :root:has(body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker[open]) {
+    overflow: hidden;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker {
+    inset: var(--picker-viewport-top, 0px) 0 auto !important;
+    width: 100%;
+    max-width: none;
+    height: var(--picker-viewport-height, 100dvh) !important;
+    max-height: none !important;
+    padding: calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+      calc(10px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker.is-keyboard-open {
+    padding-bottom: 10px;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker > header button {
+    min-height: 44px;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker form {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-name-editor {
+    flex-shrink: 0;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-results {
+    /* Keep a usable results area even when the whole form has to scroll. */
+    height: 100px;
+    min-height: 100px;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-suggestion-menu {
+    overscroll-behavior-y: auto;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .client-picker-shortcuts {
+    flex: 0 0 auto;
+  }
+
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .client-picker-shortcuts .custom-workout-picker-browse {
+    flex: 1 1 max-content;
+    display: block;
+    min-height: 44px;
+  }
+}

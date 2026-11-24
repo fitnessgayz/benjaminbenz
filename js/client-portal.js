@@ -14045,6 +14045,9 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   const addConfig = customWorkoutExerciseAddConfig(panel.dataset.customWorkoutFormat);
   const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
   const grouped = !removing && format !== "single";
+  const mobile = !removing && typeof window !== "undefined" && window.matchMedia?.(
+    "(max-width: 900px), (max-width: 1024px) and (orientation: landscape) and (pointer: coarse)"
+  ).matches;
   const sourceCarousel = grouped ? trigger.closest("[data-custom-workout-carousel]") : null;
   const targetGroupIndex = sourceCarousel ? Number(sourceCarousel.dataset.customWorkoutGroup) : undefined;
   const lastCarousel = grouped ? customWorkoutCarousels(panel).at(-1) : null;
@@ -14067,7 +14070,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog._pickerSelectedNames = selectedNames;
   dialog.setAttribute("aria-labelledby", "custom-workout-exercise-dialog-title");
   dialog.innerHTML = `
-    <header><button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">${removing ? "×" : "Cancel"}</button>
+    <header><button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}"${mobile ? " autofocus" : ""}>${removing ? "×" : "Cancel"}</button>
       <h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : grouped ? format === "superset" ? "Superset" : "Circuit" : addConfig.label}</h2></header>
     ${removing ? `<p>Choose the exercise to remove from this workout. Saved logs stay in your history.</p>
       <div class="custom-workout-exercise-options">${cards.map((card, index) => {
@@ -14085,7 +14088,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           </div>
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
-            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus
+            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off"${mobile ? "" : " autofocus"}
               placeholder="Search or type your own…" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
             <button type="button" data-workout-picker-clear aria-label="Clear exercise search">×</button>
           </div>
@@ -14231,7 +14234,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     dialog.remove();
     if (addedCardio?.isConnected) addedCardio.querySelector("[data-cardio-type]")?.focus();
     else if (addedCard?.isConnected) openCustomWorkoutExerciseEditor(addedCard, { focusInput: false });
-    else if (trigger.isConnected && !trigger.disabled) trigger.focus();
+    else if (trigger.isConnected && !trigger.disabled) trigger.focus({ preventScroll: mobile });
     else panel.querySelector("[data-pick-custom-exercise]:not([hidden])")?.focus();
   });
   const add = () => {
