@@ -14,7 +14,7 @@
 .client-workout-schedule-row strong { display: block; }
 .client-workout-schedule-row small { display: block; margin-top: 3px; color: var(--muted); }
 .client-workout-schedule-status { flex: none; font-size: .82rem; font-weight: 700; }
-.client-workout-schedule-status.is-complete { color: var(--accent, #e7ca45); }
+.client-workout-schedule-status.is-complete { color: var(--success); }
 @media (max-width: 600px) {
   .client-workout-schedule-row { align-items: flex-start; }
 }

@@ -53,7 +53,7 @@ test("Activity keeps its feed visible and notification controls together in a di
 
   assert.ok(panelStart >= 0);
   assert.match(settingsPanel, /<h2 id="coach-notification-title" tabindex="-1">Activity<\/h2>/);
-  assert.match(settingsPanel, /<summary>Notification settings<\/summary>/);
+  assert.match(settingsPanel, /<summary>Coach settings<\/summary>[\s\S]*data-coach-theme-toggle/);
   assert.match(settingsPanel, /data-web-notification-summary="unread"/);
   assert.match(settingsPanel, /<section class="coach-activity-feed" aria-label="Recent activity">/);
   assert.match(settingsPanel, /data-coach-activity-filter="all" aria-pressed="true"/);

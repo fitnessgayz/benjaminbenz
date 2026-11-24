@@ -1,25 +1,4 @@
-:root body.coach-admin-page:has(.admin-workspace:not([hidden]):is([data-active-tab="clients"], [data-active-tab="profile"], [data-active-tab="session-counts"])) {
-  min-height: 100dvh;
-  background: #f2f4f6;
-}
-
 :root body.coach-admin-page :is(#clients, .selected-client-panel, [data-admin-panel="profile"], #coach-client-session-counts) {
-  --ink: #1c242d;
-  --text-muted: #4d5b68;
-  --surface: #fff;
-  --surface-soft: #f1f3f5;
-  --border: #d8dee4;
-  --control-border: #8996a3;
-  --selected-surface: #fff5cb;
-  --secondary-accent: #21588a;
-  --secondary-surface: #edf5fc;
-  --lime: #ffd400;
-  --focus: #785b00;
-  --black: var(--ink);
-  --white: var(--surface);
-  --muted: var(--text-muted);
-  --line: var(--border);
-  color-scheme: light;
   min-width: 0;
   color: var(--ink);
   background: var(--surface);
@@ -68,8 +47,8 @@
   text-wrap: balance;
 }
 :root body.coach-admin-page .coach-client-views button[aria-selected="true"] {
-  color: #493600;
-  border-block-end-color: #ad8300;
+  color: var(--coach-gold-ink);
+  border-block-end-color: var(--coach-gold-line);
   background: var(--selected-surface);
 }
 .coach-client-search-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }

@@ -1,36 +1,3 @@
-/* Coach workspace colors match the charcoal, gold, and blue of GRUNTR web. */
-:root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page, .coach-wall-page) {
-  --canvas: #101113;
-  --ink-deep: #101113;
-  --ink: #f5f7fa;
-  --text-muted: #bdc5cc;
-  --surface: #1d2227;
-  --surface-soft: #24282e;
-  --border: #45494d;
-  --control-border: #68737e;
-  --brand-primary: #ffd400;
-  --brand-primary-hover: #ffe257;
-  --brand-primary-ink: #111;
-  --focus: var(--brand-primary);
-  --secondary-accent: #72b8ef;
-  --secondary-surface: #1c2d3b;
-  --secondary-border: #426a89;
-  --selected-surface: #28271d;
-  --nav-surface: var(--canvas);
-  --black: var(--ink-deep);
-  --white: var(--ink);
-  --paper: var(--surface);
-  --muted: var(--text-muted);
-  --line: var(--border);
-  --lime: var(--brand-primary);
-  --blue: var(--secondary-accent);
-  background: var(--canvas);
-  color: var(--ink);
-}
-
-:root:has(> body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page, .coach-wall-page)) {
-  background: #101113;
-}
 :root body:is(.coach-admin-page, .coach-login-page, .coach-workout-log-page, .coach-exercise-library-page) .site-header {
   min-height: calc(64px + env(safe-area-inset-top));
   padding-block-start: env(safe-area-inset-top);
@@ -100,7 +67,7 @@
 :root body.coach-admin-page .admin-tabs .admin-tab.is-active {
   border-color: transparent;
   background: var(--selected-surface);
-  color: var(--lime);
+  color: var(--coach-gold-ink);
 }
 :root body.coach-admin-page .admin-tabs .admin-tab:focus-visible { outline-offset: -2px; }
 
@@ -150,7 +117,7 @@
   font-size: .875rem;
 }
 :root body.coach-login-page #coach-login-form .button-dark {
-  border-color: var(--lime);
+  border-color: var(--coach-gold-line);
   background: var(--lime);
   color: var(--brand-primary-ink);
 }
@@ -162,7 +129,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-color: var(--lime);
+  border-color: var(--coach-gold-line);
   background: var(--lime);
   color: var(--brand-primary-ink);
 }
@@ -215,7 +182,7 @@
 :root body.coach-admin-page .coach-home-shortcut:focus-visible { outline-offset: -2px; }
 :root body.coach-admin-page .coach-home-shortcut span { letter-spacing: 0; text-transform: none; }
 :root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-shortcut strong { color: var(--ink); font-size: 1.4rem; line-height: 1; }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-attention-metric strong { color: var(--lime); }
+:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-attention-metric strong { color: var(--coach-gold-ink); }
 :root body.coach-admin-page .coach-home-shortcut small { grid-column: 1 / -1; color: var(--muted); font-weight: 600; opacity: 1; }
 
 .coach-home-disclosure { border-block-end: 1px solid var(--line); }
@@ -310,10 +277,10 @@
     width: auto;
     min-height: 0;
     padding: 4px 8px;
-    border: 1px solid rgb(255 255 255 / 21%) !important;
+    border: 1px solid var(--coach-dock-border) !important;
     border-radius: 999px !important;
-    background: rgb(36 40 46 / 85%) !important;
-    box-shadow: 0 6px 18px rgb(0 0 0 / 32%) !important;
+    background: var(--coach-dock-surface) !important;
+    box-shadow: var(--coach-dock-shadow) !important;
     backdrop-filter: blur(12px) saturate(125%);
     -webkit-backdrop-filter: blur(12px) saturate(125%);
   }
@@ -324,7 +291,7 @@
   }
   :root body.coach-admin-page .admin-tabs .admin-tab::after { display: none; }
   :root body.coach-admin-page .admin-tabs .admin-nav-label { font-size: .68rem; line-height: 1.15; }
-  :root body.coach-admin-page .admin-tabs .admin-tab.is-active .admin-nav-label { color: var(--lime); }
+  :root body.coach-admin-page .admin-tabs .admin-tab.is-active .admin-nav-label { color: var(--coach-gold-ink); font-weight: 750; }
   :root body.coach-admin-page .admin-tabs .admin-tab.is-active .admin-nav-icon {
     width: 34px;
     height: 34px;
@@ -347,7 +314,7 @@
 }
 
 @media (max-width: 430px) {
-  :root body.coach-admin-page #coach-admin-sidebar-nav .admin-nav-label { font-size: .625rem; }
+  :root body.coach-admin-page #coach-admin-sidebar-nav .admin-nav-label { font-size: .6rem; }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab { padding-inline: 1px !important; }
 }
 
@@ -356,10 +323,10 @@
   :root body.coach-admin-page #coach-admin-sidebar-nav { overflow-x: auto; }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab {
     min-width: 44px !important;
-    padding-inline: 1px !important;
+    padding-inline: 0 !important;
   }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-nav-label {
-    font-size: .585rem;
+    font-size: .56rem;
   }
 }
 
@@ -428,7 +395,6 @@
   gap: clamp(18px, 3vw, 34px);
 }
 .coach-activity-feed {
-  --coach-activity-green: #57dca3;
   display: grid;
   align-content: start;
   gap: 14px;
@@ -541,9 +507,9 @@
   color: var(--muted);
   background: var(--surface);
 }
-:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="checkin"] { color: var(--coach-activity-green); }
-:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="achievement"] { color: var(--lime); }
-:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="challenge"] { color: #c7a4ff; }
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="checkin"] { color: var(--success); }
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="achievement"] { color: var(--coach-gold-ink); }
+:root body.coach-admin-page .coach-activity-feed [data-web-notification-icon="challenge"] { color: var(--coach-violet-ink); }
 .coach-activity-feed .web-notification-type-icon svg { width: 16px; height: 16px; }
 .coach-activity-feed .coach-activity-workout-heading {
   display: flex;
@@ -662,7 +628,7 @@
   font-weight: 700;
   cursor: pointer;
 }
-:root body:is(.coach-admin-page, .coach-wall-page) .coach-comment-actions button[type="submit"] { border-color: var(--lime); }
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-comment-actions button[type="submit"] { border-color: var(--coach-gold-line); }
 :root body.coach-admin-page .coach-activity-desk .coach-notification-status {
   margin: 0;
   padding: 0;
@@ -690,7 +656,7 @@
 .coach-activity-aside h3 { margin: 0; font-size: 1rem; }
 :root body.coach-admin-page .coach-activity-aside .coach-activity-add {
   margin-block-start: 8px;
-  border-color: var(--lime);
+  border-color: var(--coach-gold-line);
   background: var(--lime);
   color: var(--brand-primary-ink);
 }
@@ -719,7 +685,7 @@
 }
 
 :root body.coach-admin-page #save-client-button {
-  border-color: var(--lime);
+  border-color: var(--coach-gold-line);
   background: var(--lime);
   color: var(--brand-primary-ink);
 }

@@ -1,0 +1,202 @@
+/* Coach pages use the same appearance setting in browser and standalone mode. */
+:root[data-coach-theme] {
+  color-scheme: light;
+  --canvas: #f2f4f6;
+  --ink-deep: #1c242d;
+  --ink: #1c242d;
+  --text-muted: #4d5b68;
+  --surface: #fff;
+  --surface-soft: #f1f3f5;
+  --border: #d8dee4;
+  --control-border: #818e9b;
+  --brand-primary: #ffd400;
+  --brand-primary-hover: #ffe257;
+  --brand-primary-ink: #151515;
+  --focus: #755800;
+  --danger: #a82b2b;
+  --warning: #895300;
+  --success: #176848;
+  --secondary-accent: #21588a;
+  --secondary-surface: #edf5fc;
+  --secondary-border: #8ca9c4;
+  --reminder-surface: #fff0ed;
+  --reminder-border: #e1aba3;
+  --selected-surface: #fff5cb;
+  --nav-surface: var(--surface);
+  --black: var(--ink);
+  --white: var(--ink);
+  --paper: var(--surface);
+  --muted: var(--text-muted);
+  --line: var(--border);
+  --lime: var(--brand-primary);
+  --blue: var(--secondary-accent);
+  --red: var(--danger);
+  --card: var(--surface);
+  --coach-gold-ink: #705300;
+  --coach-gold-line: #a37c00;
+  --coach-violet-ink: #6b4592;
+  --coach-on-blue: #fff;
+  --coach-dock-surface: rgb(255 255 255 / 93%);
+  --coach-dock-border: #c9d1d9;
+  --coach-dock-shadow: 0 5px 18px rgb(20 40 61 / 14%);
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+:root[data-coach-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #101113;
+  --ink-deep: #101113;
+  --ink: #f5f7fa;
+  --text-muted: #bdc5cc;
+  --surface: #1d2227;
+  --surface-soft: #24282e;
+  --border: #45494d;
+  --control-border: #75818e;
+  --focus: #ffd400;
+  --danger: #ff9c9c;
+  --warning: #f3c57b;
+  --success: #57dca3;
+  --secondary-accent: #72b8ef;
+  --secondary-surface: #1c2d3b;
+  --secondary-border: #547d9d;
+  --reminder-surface: #342321;
+  --reminder-border: #76534e;
+  --selected-surface: #332d1c;
+  --nav-surface: var(--canvas);
+  --black: var(--ink-deep);
+  --coach-gold-ink: var(--lime);
+  --coach-gold-line: var(--lime);
+  --coach-violet-ink: #c7a4ff;
+  --coach-on-blue: #101113;
+  --coach-dock-surface: rgb(36 40 46 / 85%);
+  --coach-dock-border: rgb(255 255 255 / 21%);
+  --coach-dock-shadow: 0 6px 18px rgb(0 0 0 / 32%);
+}
+
+/* Let Coach-wide tokens override the shared web palette on these pages. */
+:root[data-coach-theme] > body {
+  --brand-primary: inherit;
+  --brand-primary-hover: inherit;
+  --brand-primary-ink: inherit;
+  --ink: inherit;
+  --ink-deep: inherit;
+  --canvas: inherit;
+  --surface: inherit;
+  --surface-soft: inherit;
+  --text-muted: inherit;
+  --border: inherit;
+  --focus: inherit;
+  --success: inherit;
+  --control-border: inherit;
+  --secondary-accent: inherit;
+  --secondary-surface: inherit;
+  --secondary-border: inherit;
+  --selected-surface: inherit;
+  --nav-surface: inherit;
+  color-scheme: inherit;
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+:root[data-coach-theme] > body :is(
+  dialog, input[type="checkbox"], input[type="radio"], .apple-workout-summary, .apple-workout-empty,
+  .apple-workout-dialog, .coach-workout-group-shell, [data-custom-workout-grouped="true"],
+  .coach-workout-group-shell :is(input, select, button),
+  [data-custom-workout-grouped="true"] :is(input, select, button)
+) { color-scheme: inherit; }
+
+:root[data-coach-theme] > body :is(
+  .coach-mobile-more-dialog, .coach-install-dialog, .invite-client-dialog,
+  .coach-admin-sidebar-brand, .coach-mobile-more-menu > :is(a, button)
+) { color: var(--ink); }
+
+:root[data-coach-theme] > body :is(
+  .status-pill, .client-added-exercise-row-heading small.is-shared,
+  .exercise-library-badges .is-approved, .exercise-library-badges .has-demo
+) { color: var(--coach-gold-ink); }
+
+:root[data-coach-theme] > body .admin-tabs .admin-nav-icon { color: inherit; }
+:root[data-coach-theme] > body .admin-tabs .is-active .admin-nav-icon { color: var(--brand-primary-ink); }
+
+:root[data-coach-theme] > body.coach-admin-page .fwb-messages .fwb-message-refresh {
+  background: var(--secondary-surface);
+  border-color: var(--secondary-border);
+  color: var(--secondary-accent);
+}
+
+:root[data-coach-theme] > body.coach-admin-page :is(.fwb-messages, .fwb-message-dialog) :is(
+  .fwb-message-preview, .fwb-message-inbox-item time, .fwb-message-meta, .fwb-message-count, .fwb-message-empty
+) { color: var(--muted); }
+
+:root[data-coach-theme] > body.coach-admin-page :is(.fwb-messages, .fwb-message-dialog) :is(
+  .fwb-message-heading h2, .fwb-message-recipient, .fwb-message-meta strong, .fwb-message-bubble p, .fwb-message-composer label
+) { color: var(--ink); }
+
+:root[data-coach-theme] > body.coach-admin-page :is(.fwb-messages, .fwb-message-dialog) .fwb-message-status {
+  color: var(--warning);
+}
+
+:root[data-coach-theme] > body.coach-admin-page :is(
+  .fwb-message-dialog, .fwb-message-inbox-item, .fwb-message-bubble, .fwb-message-composer textarea, .fwb-message-secondary
+) {
+  background: var(--surface);
+  border-color: var(--control-border);
+  color: var(--ink);
+}
+
+:root[data-coach-theme] > body.coach-admin-page :is(.fwb-message-inbox-item.is-active, .fwb-message-bubble.is-own) {
+  background: var(--secondary-surface);
+  border-color: var(--secondary-border);
+}
+
+.coach-theme-setting {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:root[data-coach-theme] > body .coach-theme-setting [data-coach-theme-toggle] {
+  appearance: none;
+  display: grid;
+  width: 40px;
+  height: 24px;
+  flex: 0 0 40px;
+  place-items: center start;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--control-border);
+  border-radius: 99px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+.coach-theme-setting [data-coach-theme-toggle]::before {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  content: "";
+}
+
+:root[data-coach-theme] > body .coach-theme-setting [data-coach-theme-toggle]:checked {
+  justify-items: end;
+  border-color: var(--coach-gold-line);
+  background: var(--lime);
+}
+
+.coach-theme-setting [data-coach-theme-toggle]:checked::before { background: var(--brand-primary-ink); }
+.coach-theme-setting [data-coach-theme-toggle]:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.coach-theme-setting-login { width: max-content; margin-inline: auto; }
+.coach-alert-settings .coach-theme-setting { margin-block-start: 10px; }

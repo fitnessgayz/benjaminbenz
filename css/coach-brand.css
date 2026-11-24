@@ -33,10 +33,10 @@
   width: min(26rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);
   padding: 1.25rem;
-  border: 1px solid #344968;
+  border: 1px solid var(--line);
   border-radius: 1rem;
-  background: #101e30;
-  color: #f5f8fc;
+  background: var(--surface);
+  color: var(--ink);
   box-sizing: border-box;
 }
 

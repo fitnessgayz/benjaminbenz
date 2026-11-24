@@ -4353,7 +4353,7 @@ function renderClientList() {
 function renderCoachSessionCounts() {
   const counts = document.getElementById("coach-client-session-counts");
   if (!counts || counts.hidden) return;
-  const clients = coachClientRosterPrograms("all", activeClientPrograms());
+  const clients = coachClientRosterPrograms("personal_training", activeClientPrograms());
   const rows = clients.map((program) => {
     const row = document.createElement("tr");
     const nameCell = document.createElement("th");

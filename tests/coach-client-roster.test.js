@@ -5,7 +5,6 @@ const vm = require("node:vm");
 
 const html = fs.readFileSync(require.resolve("../coach-admin.html"), "utf8");
 const script = fs.readFileSync(require.resolve("../js/coach-admin.js"), "utf8");
-const styles = fs.readFileSync(require.resolve("../css/coach-clients.css"), "utf8");
 const source = (name) => script.match(new RegExp(`^(?:async )?function ${name}\\([\\s\\S]*?\\n\\}`, "m"))[0];
 const context = {};
 vm.runInNewContext([
@@ -39,6 +38,43 @@ test("membership tabs separate personal training and app-only accounts without h
   assert.deepEqual(ids("app_access_only"), ["app", "beta", "legacy"]);
   assert.deepEqual(ids("all"), ["personal", "app", "online", "beta", "legacy"]);
   assert.deepEqual(ids("personal_training", true), ["personal", "inactive"]);
+});
+
+test("Sessions shows active personal-training clients, even before their first package", () => {
+  const node = () => ({
+    children: [],
+    dataset: {},
+    append(child) { this.children.push(child); },
+    setAttribute() {},
+    replaceChildren(...children) { this.children = children; }
+  });
+  const rows = node();
+  const empty = node();
+  const counts = { querySelector: (selector) => selector === "[data-coach-client-count-rows]" ? rows : empty };
+  const fixture = {
+    ...context,
+    document: { getElementById: () => counts, createElement: node },
+    activeClientPrograms: () => [
+      { id: "training", membership_type: "personal_training", session_count_used: 3, session_count_total: 4 },
+      { id: "new-training", membership_type: "personal_training" },
+      { id: "app", membership_type: "app_access_only", session_count_total: 8 },
+      { id: "online", membership_type: "online_training", session_count_total: 8 },
+      { id: "beta", account_type: "beta_tester", membership_type: "personal_training", session_count_total: 8 },
+      { id: "legacy", session_count_total: 8 },
+      { id: "inactive", membership_type: "personal_training", active: false }
+    ]
+  };
+  vm.runInNewContext(source("renderCoachSessionCounts"), fixture);
+  fixture.renderCoachSessionCounts();
+
+  assert.deepEqual(rows.children.map((row) => row.children[0].children[0].dataset.coachCountClient), ["training", "new-training"]);
+  assert.deepEqual(rows.children[0].children.slice(1).map((cell) => cell.textContent), [3, 4, 1]);
+  assert.deepEqual(rows.children[1].children.slice(1).map((cell) => cell.textContent), ["—", "—", "—"]);
+  assert.equal(empty.hidden, true);
+  fixture.activeClientPrograms = () => [{ id: "app", membership_type: "app_access_only" }];
+  fixture.renderCoachSessionCounts();
+  assert.equal(rows.children.length, 0);
+  assert.equal(empty.hidden, false);
 });
 
 test("session counts distinguish zero used from no package and clamp sessions left", () => {
@@ -120,7 +156,6 @@ test("Sessions keeps FWB totals and the Alex Fitness history in separate tabs", 
   assert.match(source("refreshSelectedCoachSessions"), /refreshCoachAlexHistory\(\)[\s\S]*refreshCoachFwbMonthlySessions\(\)/);
   assert.match(counts, /aria-live="polite" aria-atomic="true"[^>]*><span data-coach-fwb-month-label>/);
   assert.match(source("handleCoachClientWorkspace"), /openCoachHomeClientSection\(program\.client_email, "sessions"\)/);
-  assert.match(styles, /body\.coach-admin-page :is\(#clients, \.selected-client-panel, \[data-admin-panel="profile"\], #coach-client-session-counts\)[^}]*color-scheme:\s*light/s);
 });
 
 test("Alex Fitness shows the recorded Pacific wall-clock time or an explicit missing time", () => {
