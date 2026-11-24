@@ -23,6 +23,7 @@ for (const modern of [false, true]) {
         create role authenticated nologin;
         create schema auth;
         create schema private;
+        create schema community_private;
         create table auth.users (id uuid primary key, email text, deleted_at timestamptz, is_anonymous boolean);
         create function auth.uid() returns uuid language sql stable as $$
           select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
@@ -34,6 +35,16 @@ for (const modern of [false, true]) {
         create table public.client_programs (id uuid primary key, client_email text, active boolean, client_archived boolean);
         create table public.client_achievement_events (id uuid primary key, client_email text);
         create table public.client_workout_logs (id uuid primary key, client_email text, completed_at timestamptz);
+        create table community_private.wall_events (event_id text primary key, owner_id uuid, event_type text, visible boolean);
+        create function community_private.community_wall_events()
+        returns table(event_id text, owner_id uuid, event_type text) language sql stable as $$
+          select event_id, owner_id, event_type from community_private.wall_events
+        $$;
+        create function community_private.community_wall_feed()
+        returns table(event_id text, event_type text, is_own boolean) language sql stable as $$
+          select event_id, event_type, owner_id = auth.uid()
+          from community_private.wall_events where visible
+        $$;
         create table public.client_notifications (
           id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users,
           kind text, title text, body text,
@@ -60,6 +71,11 @@ for (const modern of [false, true]) {
         insert into auth.users(id,email) values
           ('${uuid(1)}','coach@example.test'), ('${uuid(2)}','client@example.test'), ('${uuid(3)}','other@example.test');
         insert into public.client_programs values ('${uuid(4)}','client@example.test',true,false);
+        insert into community_private.wall_events values
+          ('visible-workout','${uuid(2)}','workout',true),
+          ('withdrawn-post','${uuid(2)}','gym_visit',false),
+          ('my-post','${uuid(1)}','gym_visit',true),
+          ('not-my-client','${uuid(3)}','gym_visit',true);
         insert into public.client_workout_logs values
           ('${uuid(5)}','client@example.test',now()), ('${uuid(10)}','client@example.test',null),
           ('${uuid(11)}','other@example.test',now());
@@ -71,14 +87,15 @@ for (const modern of [false, true]) {
       `);
       await db.exec(emailResolver);
       await db.exec(migration);
-      const send = (notice, log, message, request = uuid(8)) =>
-        db.query("select public.send_coach_activity_comment($1,$2,$3,$4) as sent", [notice, log, message, request]);
+      const send = (notice, log, message, request = uuid(8), wall = null) =>
+        db.query("select public.send_coach_activity_comment($1,$2,$3,$4,$5) as sent", [notice, log, message, request, wall]);
       const address = (who) => db.query("select set_config('request.jwt.claim.sub',$1,false)", [who]);
       await db.exec("set role anon");
       await assert.rejects(send(uuid(6), null, "Hello"), { code: "42501" });
       await db.exec("reset role; set role authenticated");
       await address(uuid(2));
       await assert.rejects(send(uuid(6), null, "Hello"), { code: "42501" });
+      await assert.rejects(send(null, null, "Hello", uuid(12), "visible-workout"), { code: "42501" });
       await address(uuid(1));
       await assert.rejects(send(uuid(7), null, "Another person's notice"), { code: "P0002" });
       await assert.rejects(send(null, uuid(10), "Unfinished workout"), { code: "P0002" });
@@ -98,6 +115,18 @@ for (const modern of [false, true]) {
       if (modern) {
         assert.equal((await db.query("select count(*)::int as n from public.client_notifications where push_suppressed_at is not null")).rows[0].n, 2);
       }
+      await address(uuid(1));
+      await assert.rejects(send(null, null, "Withdrawn", uuid(12), "withdrawn-post"), { code: "P0002" });
+      await assert.rejects(send(null, null, "Own post", uuid(12), "my-post"), { code: "P0002" });
+      await assert.rejects(send(null, null, "Not a client", uuid(12), "not-my-client"), { code: "P0002" });
+      await assert.rejects(send(uuid(6), null, "Two sources", uuid(12), "visible-workout"), { code: "22023" });
+      assert.equal((await send(null, null, "Great Wall workout", uuid(12), "visible-workout")).rows[0].sent, true);
+      assert.equal((await send(null, null, "Retry must not duplicate", uuid(12), "visible-workout")).rows[0].sent, true);
+      await address(uuid(2));
+      assert.deepEqual((await db.query("select title, body from public.client_notifications where body = 'Great Wall workout'")).rows, [
+        { title: "Your coach commented on your workout", body: "Great Wall workout" }
+      ]);
+      assert.equal((await db.query("select count(*)::int as n from public.client_notifications")).rows[0].n, 3);
       await address(uuid(3));
       assert.equal((await db.query("select count(*)::int as n from public.client_notifications where kind='workout_comment'")).rows[0].n, 0);
       await db.exec("reset role");

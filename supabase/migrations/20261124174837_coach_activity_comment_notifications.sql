@@ -1,11 +1,12 @@
 -- Coach comments are in-app notifications only. Resolve the recipient from an
--- owned activity notice or an actual completed workout row, never a caller email.
+-- owned activity notice, completed workout row, or still-visible Wall post.
 create schema if not exists coach_activity_private;
 revoke all on schema coach_activity_private from public, anon, authenticated;
 grant usage on schema coach_activity_private to authenticated;
 
 create function coach_activity_private.send_coach_activity_comment(
-  p_notification_id uuid, p_workout_log_id uuid, p_body text, p_request_id uuid
+  p_notification_id uuid, p_workout_log_id uuid, p_body text, p_request_id uuid,
+  p_wall_event_id text
 ) returns boolean
 language plpgsql security definer set search_path = ''
 as $$
@@ -15,6 +16,7 @@ declare
   source_payload jsonb;
   source_kind text;
   target_email text;
+  wall_owner_id uuid;
   recipient_id uuid;
   notice_id uuid;
   notice_title text;
@@ -26,7 +28,8 @@ begin
      or coalesce(auth.jwt() ->> 'is_anonymous', 'false') = 'true' then
     raise exception 'Coach access required' using errcode = '42501';
   end if;
-  if p_request_id is null or (p_notification_id is null) = (p_workout_log_id is null)
+  if p_request_id is null or num_nonnulls(p_notification_id, p_workout_log_id, p_wall_event_id) <> 1
+     or (p_wall_event_id is not null and char_length(p_wall_event_id) not between 1 and 140)
      or p_body is null or char_length(p_body) > 2000 then
     raise exception 'Invalid comment request' using errcode = '22023';
   end if;
@@ -46,11 +49,25 @@ begin
       raise exception 'Activity is unavailable' using errcode = 'P0002';
     end if;
     target_email := private.fwb_activity_client_email(source_notice);
-  else
+  elsif p_workout_log_id is not null then
     select lower(btrim(log.client_email)) into target_email
       from public.client_workout_logs as log
       where log.id = p_workout_log_id and log.completed_at is not null;
     source_kind := 'workout_completed';
+  else
+    -- Check the current feed projection, so removed or no-longer-shared posts
+    -- cannot be used as private notification targets.
+    select distinct event.owner_id, lower(btrim(member.email)), case visible.event_type
+      when 'workout' then 'workout_completed'
+      when 'gym_visit' then 'check_in_submitted'
+      when 'daily_challenge' then 'achievement'
+      when 'weekly_challenge' then 'achievement'
+      else 'wall_activity'
+    end into strict wall_owner_id, target_email, source_kind
+    from community_private.community_wall_events() as event
+    join community_private.community_wall_feed() as visible on visible.event_id = event.event_id
+    join auth.users as member on member.id = event.owner_id
+    where visible.event_id = p_wall_event_id and not visible.is_own;
   end if;
 
   if coalesce(target_email, '') = '' or not exists (
@@ -64,6 +81,7 @@ begin
   select min(member.id::text)::uuid into recipient_id from auth.users as member
     where lower(btrim(member.email)) = target_email and member.deleted_at is null
       and member.is_anonymous is not true and member.id <> actor_id
+      and (wall_owner_id is null or member.id = wall_owner_id)
     having count(*) = 1;
   if recipient_id is null then
     raise exception 'Client account is unavailable' using errcode = 'P0002';
@@ -72,7 +90,8 @@ begin
   notice_title := case source_kind
     when 'workout_completed' then 'Your coach commented on your workout'
     when 'check_in_submitted' then 'Your coach commented on your check-in'
-    else 'Your coach commented on your achievement'
+    when 'achievement' then 'Your coach commented on your achievement'
+    else 'Your coach commented on a post you shared'
   end;
   notice_url := case source_kind
     when 'workout_completed' then '/client-dashboard.html?tab=logs'
@@ -80,7 +99,7 @@ begin
     else '/client-dashboard.html?tab=home'
   end;
   notice_key := 'coach-activity-comment:' || actor_id::text || ':' ||
-    coalesce(p_notification_id, p_workout_log_id)::text || ':' || p_request_id::text;
+    coalesce(p_notification_id::text, p_workout_log_id::text, md5(p_wall_event_id)) || ':' || p_request_id::text;
 
   if exists (
     select 1 from information_schema.columns
@@ -114,15 +133,16 @@ begin
   return true;
 end;
 $$;
-revoke all on function coach_activity_private.send_coach_activity_comment(uuid, uuid, text, uuid) from public, anon, authenticated;
-grant execute on function coach_activity_private.send_coach_activity_comment(uuid, uuid, text, uuid) to authenticated;
+revoke all on function coach_activity_private.send_coach_activity_comment(uuid, uuid, text, uuid, text) from public, anon, authenticated;
+grant execute on function coach_activity_private.send_coach_activity_comment(uuid, uuid, text, uuid, text) to authenticated;
 
 create function public.send_coach_activity_comment(
-  p_notification_id uuid, p_workout_log_id uuid, p_body text, p_request_id uuid
+  p_notification_id uuid, p_workout_log_id uuid, p_body text, p_request_id uuid,
+  p_wall_event_id text default null
 ) returns boolean
 language sql security invoker set search_path = ''
 as $$
-  select coach_activity_private.send_coach_activity_comment(p_notification_id, p_workout_log_id, p_body, p_request_id);
+  select coach_activity_private.send_coach_activity_comment(p_notification_id, p_workout_log_id, p_body, p_request_id, p_wall_event_id);
 $$;
-revoke all on function public.send_coach_activity_comment(uuid, uuid, text, uuid) from public, anon, authenticated;
-grant execute on function public.send_coach_activity_comment(uuid, uuid, text, uuid) to authenticated;
+revoke all on function public.send_coach_activity_comment(uuid, uuid, text, uuid, text) from public, anon, authenticated;
+grant execute on function public.send_coach_activity_comment(uuid, uuid, text, uuid, text) to authenticated;

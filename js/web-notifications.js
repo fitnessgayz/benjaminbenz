@@ -712,7 +712,7 @@
         likeButton.title = liked ? "Remove props" : "Give props";
         likeIcon.className = "web-notification-like-icon";
         likeIcon.setAttribute("aria-hidden", "true");
-        likeIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M3 17c1-2.8 1.8-6 2.3-9.3.2-1.3 1-2.5 2.1-3.2L10 3a1.5 1.5 0 0 1 1.8.3l1.5 1.5a1.5 1.5 0 0 1 0 2.1l-1.1 1.2a1.5 1.5 0 0 1-2.1 0L9.5 7.5l-.9 6a6.6 6.6 0 0 1 5.2-2.6c3.6 0 6.6 2.7 7.2 6.1.2 1.5-.5 2.2-1.7 2.8-2.4 1.1-5 1.6-7.5 1.6-2.9 0-5.5-.6-7.7-1.6A2 2 0 0 1 3 17Z"/><path d="M8.6 13.5a4.6 4.6 0 0 0-1 2.1"/></svg>';
+        likeIcon.innerHTML = '<svg viewBox="0 0 24 24" focusable="false"><use href="/images/gruntr/coach-feed-actions.svg#props"/></svg>';
         likeButton.append(likeIcon);
         actions.append(likeButton);
       }
@@ -724,7 +724,6 @@
         if (client) {
           const commentButton = global.document.createElement("button");
           const icon = global.document.createElement("span");
-          const label = global.document.createElement("span");
           commentButton.type = "button";
           commentButton.className = "coach-activity-comment";
           commentButton.setAttribute("aria-label", "Comment privately");
@@ -732,9 +731,8 @@
           commentButton.setAttribute("aria-haspopup", "dialog");
           icon.className = "coach-activity-comment-icon";
           icon.setAttribute("aria-hidden", "true");
-          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4v-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>';
-          label.textContent = "Comment";
-          commentButton.append(icon, label);
+          icon.innerHTML = '<svg viewBox="0 0 24 24" focusable="false"><use href="/images/gruntr/coach-feed-actions.svg#comment"/></svg>';
+          commentButton.append(icon);
           commentButton.addEventListener("click", () => {
             const subject = row.coach_workout?.title || String(row.title || "Client activity");
             options.openCoachActivityComment(client, { notificationId, workoutLogId, context: `${subject} · ${date.title}` }, commentButton);

@@ -6073,75 +6073,6 @@ function resolveCoachActivityCommentClient(row, actionUrl) {
   return clientEmail ? activeClientPrograms().find((program) => normalizeEmail(program.client_email) === clientEmail) || null : null;
 }
 
-function createCoachActivityCommentDialog({ dialog, send, requestId = () => crypto.randomUUID() }) {
-  if (!dialog?.showModal) return null;
-  const form = dialog.querySelector("form");
-  const input = form.querySelector("textarea");
-  const recipient = form.querySelector("[data-coach-comment-recipient]");
-  const detail = form.querySelector("[data-coach-comment-detail]");
-  const status = form.querySelector("[data-coach-comment-status]");
-  const cancel = form.querySelector("[data-coach-comment-cancel]");
-  const submit = form.querySelector('[type="submit"]');
-  let source = null;
-  let trigger = null;
-  let sending = false;
-  let lastAttempt = null;
-
-  cancel.addEventListener("click", () => dialog.close());
-  dialog.addEventListener("cancel", (event) => { if (sending) event.preventDefault(); });
-  dialog.addEventListener("close", () => {
-    source = null;
-    lastAttempt = null;
-    const nextFocus = trigger?.isConnected ? trigger : document.getElementById("coach-notification-title");
-    nextFocus?.focus({ preventScroll: true });
-    trigger = null;
-  });
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const body = input.value.trim();
-    if (!source || sending) return;
-    if (!body || Array.from(body).length > 500) {
-      status.textContent = "Enter a comment between 1 and 500 characters.";
-      return;
-    }
-    if (lastAttempt?.body !== body) lastAttempt = { body, id: requestId() };
-    sending = true;
-    input.readOnly = submit.disabled = cancel.disabled = true;
-    status.textContent = "Sending…";
-    try {
-      const { data, error } = await send({
-        p_notification_id: source.notificationId,
-        p_workout_log_id: source.workoutLogId,
-        p_body: body,
-        p_request_id: lastAttempt.id
-      });
-      if (error || data !== true) throw error || new Error("Missing delivery receipt");
-      dialog.close();
-      const feedStatus = document.querySelector(".coach-activity-feed [data-web-notification-status]");
-      if (feedStatus) feedStatus.textContent = "Comment sent to the client’s notifications.";
-    } catch (error) {
-      status.textContent = error?.code === "P0002"
-        ? "This activity or client account is no longer available."
-        : "Could not confirm delivery. Your comment is still here; try Send again.";
-    } finally {
-      sending = false;
-      input.readOnly = submit.disabled = cancel.disabled = false;
-    }
-  });
-  return (program, activity, button) => {
-    const current = activeClientPrograms().find((client) => client.id === program.id && client.client_email === program.client_email);
-    if (!current || dialog.open || sending) return;
-    source = activity;
-    trigger = button;
-    input.value = "";
-    recipient.textContent = `To: ${current.client_name || current.client_email}`;
-    detail.textContent = activity.context;
-    status.textContent = "";
-    dialog.showModal();
-    input.focus();
-  };
-}
-
 async function initializeCoachNotifications(user) {
   const root = document.querySelector("[data-web-notifications]");
   const status = root?.querySelector("[data-web-notification-status]");
@@ -8114,10 +8045,19 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
-  openCoachActivityComment = createCoachActivityCommentDialog({
+  const openFeedComment = window.FWBCoachFeedComment?.create({
     dialog: document.getElementById("coach-activity-comment-dialog"),
-    send: (payload) => coachSupabase.rpc("send_coach_activity_comment", payload)
+    fallbackFocus: document.getElementById("coach-notification-title"),
+    send: (payload) => coachSupabase.rpc("send_coach_activity_comment", payload),
+    onSent() {
+      const status = document.querySelector(".coach-activity-feed [data-web-notification-status]");
+      if (status) status.textContent = "Comment sent to the client’s notifications.";
+    }
   });
+  openCoachActivityComment = openFeedComment ? (program, activity, button) => {
+    const current = activeClientPrograms().find((client) => client.id === program.id && client.client_email === program.client_email);
+    if (current) openFeedComment({ clientName: current.client_name || current.client_email, activity, button });
+  } : null;
   handleCoachActivityDesk();
   handleCoachHomeActions();
   handleCoachMobileNavigation();

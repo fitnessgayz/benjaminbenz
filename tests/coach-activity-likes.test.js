@@ -173,7 +173,7 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.ok(likeButton);
   assert.equal(likeButton.children[0].className, "web-notification-like-icon");
   assert.equal(likeButton.children[0]["aria-hidden"], "true");
-  assert.match(likeButton.children[0].innerHTML, /<svg.*stroke="currentColor".*M3 17/);
+  assert.match(likeButton.children[0].innerHTML, /<svg.*coach-feed-actions\.svg#props/);
   assert.equal(likeButton.children.length, 1);
   assert.equal(likeButton.title, "Give props");
   assert.equal(likeButton["aria-pressed"], "false");
@@ -222,7 +222,8 @@ test("Comment opens a private notification composer only for a resolved client",
   await harness.controller.init();
   const [props, comment] = harness.list.children[0].children[1].children;
   assert.equal(props.title, "Give props");
-  assert.equal(comment.children[1].textContent, "Comment");
+  assert.equal(comment.children.length, 1);
+  assert.match(comment.children[0].innerHTML, /coach-feed-actions\.svg#comment/);
   assert.equal(comment["aria-label"], "Comment privately");
   assert.equal(opened.length, 0);
   comment.click();

@@ -457,7 +457,9 @@
   color: var(--ink);
   background: transparent;
 }
-:root body.coach-admin-page .coach-activity-feed :is(.coach-activity-entry, .web-notification-like, .coach-activity-comment):focus-visible {
+:root body.coach-admin-page .coach-activity-feed .coach-activity-entry:focus-visible,
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-activity-actions button:focus-visible,
+.coach-comment-actions button:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -553,7 +555,7 @@
   align-items: center;
   gap: 4px;
 }
-:root body.coach-admin-page .coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment) {
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-activity-actions :is(.web-notification-like, .coach-activity-comment) {
   position: relative;
   isolation: isolate;
   display: inline-flex;
@@ -569,7 +571,7 @@
   background: transparent;
   box-shadow: none;
 }
-.coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment)::before {
+.coach-activity-actions :is(.web-notification-like, .coach-activity-comment)::before {
   position: absolute;
   z-index: -1;
   inset: 8px 0;
@@ -577,24 +579,23 @@
   border-radius: 999px;
   background: var(--surface-soft);
   content: "";
+  inset-inline: 4px;
 }
-.coach-activity-feed .web-notification-like::before { inset-inline: 4px; }
-:root body.coach-admin-page .coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment):is(:hover, [aria-pressed="true"]) {
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-activity-actions :is(.web-notification-like, .coach-activity-comment):is(:hover, [aria-pressed="true"]) {
   color: var(--secondary-accent);
   background: transparent;
 }
-.coach-activity-feed .coach-activity-actions :is(.web-notification-like, .coach-activity-comment):is(:hover, [aria-pressed="true"])::before {
+.coach-activity-actions :is(.web-notification-like, .coach-activity-comment):is(:hover, [aria-pressed="true"])::before {
   border-color: var(--secondary-border);
   background: var(--secondary-surface);
 }
 :root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like:disabled { color: var(--muted); opacity: .75; }
-.coach-activity-feed :is(.web-notification-like-icon, .coach-activity-comment-icon) { display: grid; flex: none; }
-.coach-activity-feed :is(.web-notification-like-icon, .coach-activity-comment-icon) svg { width: 16px; height: 16px; }
-:root body.coach-admin-page .coach-activity-feed .coach-activity-comment > span {
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-activity-actions :is(.web-notification-like-icon, .coach-activity-comment-icon) {
+  display: grid;
+  flex: none;
   color: inherit;
-  font-size: .75rem;
-  font-weight: 650;
 }
+.coach-activity-actions :is(.web-notification-like-icon, .coach-activity-comment-icon) svg { width: 16px; height: 16px; }
 .coach-activity-comment-dialog {
   width: min(480px, calc(100% - 28px));
   max-height: calc(100dvh - max(28px, env(safe-area-inset-top)) - env(safe-area-inset-bottom));
@@ -616,7 +617,7 @@
 }
 .coach-comment-status:empty { display: none; }
 .coach-activity-comment-dialog label { font-weight: 700; }
-:root body.coach-admin-page .coach-activity-comment-dialog textarea {
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-activity-comment-dialog textarea {
   width: 100%;
   min-width: 0;
   padding: 10px;
@@ -624,11 +625,24 @@
   border-radius: 8px;
   color: var(--ink);
   background: var(--canvas);
+  font: inherit;
   font-size: 1rem;
   resize: vertical;
 }
 .coach-comment-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
-:root body.coach-admin-page .coach-comment-actions button { width: auto !important; min-height: 44px; }
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-comment-actions button {
+  width: auto !important;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+:root body:is(.coach-admin-page, .coach-wall-page) .coach-comment-actions button[type="submit"] { border-color: var(--lime); }
 :root body.coach-admin-page .coach-activity-desk .coach-notification-status {
   margin: 0;
   padding: 0;
