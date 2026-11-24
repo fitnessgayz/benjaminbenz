@@ -75,12 +75,13 @@ function fixture(options = {}) {
     },
     adminStatus: (message) => calls.admin.push(message),
     closeInviteClientModal: () => { calls.closed++; },
+    pendingSignupApproval: null,
     inviteClientSavedProgram: null,
     inviteClientReturnFocus: null
   });
   vm.runInContext([
     "isValidEmail", "readableInviteMessage", "readableClientRequestError", "invitePhoneNumber",
-    "textInviteHref", "inviteStatus", "setClientInviteBusy", "validateClientDetails", "handleSendInvite"
+    "textInviteHref", "inviteStatus", "setClientInviteBusy", "validateClientDetails", "markSignupRequestApproved", "handleSendInvite"
   ].map(functionSource).join("\n"), context);
   context.handleSendInvite();
   return {
@@ -192,10 +193,10 @@ test("failed email delivery exposes the returned link for text or copying", asyn
 test("Escape and backdrop dismissal cannot close a pending invite; saved clients are acknowledged", () => {
   const h = fixture();
   vm.runInContext(functionSource("closeInviteClientModal"), h.context);
-  h.elements["save-client-button"].disabled = true;
+  h.context.setClientInviteBusy(true);
   h.context.closeInviteClientModal();
   assert.equal(h.elements["invite-client-modal"].hidden, false);
-  h.elements["save-client-button"].disabled = false;
+  h.context.setClientInviteBusy(false);
   h.context.inviteClientSavedProgram = { id: "saved" };
   h.context.closeInviteClientModal();
   assert.equal(h.elements["invite-client-modal"].hidden, true);

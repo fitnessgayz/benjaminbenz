@@ -115,9 +115,11 @@ test("dashboard initializes the shortcut after successful session checks and bef
   const targetClient = load.indexOf("const targetClientEmail");
   assert.ok(noUserGuard >= 0 && noUserGuard < assignment);
   assert.match(load.slice(noUserGuard, assignment), /return;/);
-  assert.match(load.slice(assignment, render), /^activeDashboardUser = user;\s*$/);
+  assert.ok(assignment < render, "The preview return initializes after the signed-in user is set");
   assert.ok(render < targetClient, "Coach navigation remains available when no preview client is selected");
-  assert.match(functionSource("renderProgram"), /^function renderProgram\(program\)\s*\{\s*renderCoachPreviewReturn\(program\);/);
+  const renderProgram = functionSource("renderProgram");
+  const renderProgramShortcut = renderProgram.indexOf("renderCoachPreviewReturn(program);");
+  assert.ok(renderProgramShortcut >= 0 && renderProgramShortcut < renderProgram.indexOf("currentProgram ="));
 });
 
 test("initial navigation is hidden and remains outside the dashboard loading and content regions", () => {

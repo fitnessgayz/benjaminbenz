@@ -36,9 +36,9 @@ function fixture() {
     {id:'inactive', client_name:'Sam Inactive', client_email:'inactive@example.com', active:false},
     {id:'archived', client_name:'Sam Archived', client_email:'archived@example.com', client_archived:true},
     {id:'safe', client_name:'<img src=x>', client_email:'safe@example.com', active:true}
-  ], clientSearchTerm:'', clientSuggestionsOpen:false, activeClientSuggestion:-1, showingArchivedClients:false,
+  ], clientSearchTerm:'', clientSuggestionsOpen:false, activeClientSuggestion:-1, showingArchivedClients:false, coachClientsView:'all',
   selectedProgramId:'', fillForm: p => selected.push(p?.id), renderClientList() {}, setAdminTab: tab => { context.tab = tab; }, adminStatus() {}});
-  vm.runInContext(['normalizeEmail','programsForCurrentClientView','matchingClientSuggestions','activeClientPrograms','archivedClientPrograms','renderClientSuggestions','closeClientSuggestions','selectClientSuggestion','handleClientSearch','handleArchivedClientsToggle'].map(fn).join('\n'), context);
+  vm.runInContext(['normalizeEmail','programsForCurrentClientView','coachClientMembership','coachClientRosterPrograms','matchingClientSuggestions','activeClientPrograms','archivedClientPrograms','renderClientSuggestions','closeClientSuggestions','selectCoachRosterProgram','selectClientSuggestion','handleClientSearch','handleArchivedClientsToggle'].map(fn).join('\n'), context);
   context.handleClientSearch();
   const input = nodes['client-search-input'];
   return {context, nodes, input, list:nodes['client-suggestions'], selected, document, search(value) { input.value = value; input.fire('input'); }};

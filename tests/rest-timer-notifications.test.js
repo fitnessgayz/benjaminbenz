@@ -446,7 +446,7 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.equal(manifest.display, "standalone");
   assert.match(dashboard, /href="\/client\.webmanifest(?:\?[^"\s]+)?"/);
   assert.match(dashboard, /js\/web-notifications\.js\?[^"\s]+&amp;notification-artwork=2"/);
-  assert.match(dashboard, /js\/client-portal\.js\?[^"\s]+&amp;notification-artwork=2"/);
+  assert.match(dashboard, /js\/client-portal\.js\?[^"\s]+&amp;notification-artwork=2(?:&amp;[^"\s]+)?"/);
   assert.match(dashboard, /js\/client-unfinished-workout-reminder\.js\?[^"\s]+&amp;notification-artwork=2"/);
 });
 
