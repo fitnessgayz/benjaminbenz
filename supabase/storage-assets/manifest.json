@@ -13116,6 +13116,20 @@
       "objectPath": "anatomy/2026-11-23/wide-grip-assisted-pull-up.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-24/seated-dip-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-24/seated-dip-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-24/motion-webp/seated-dip-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-24/motion-webp/seated-dip-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -13137,9 +13151,9 @@
     },
     {
       "name": "Seated Dip Machine",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-21/motion-webp/seated-dip-machine-anatomy.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-24/motion-webp/seated-dip-machine.webp",
       "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/seated-dip-machine.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-24/seated-dip-machine.webp"
     },
     {
       "name": "Bulgarian Split Squat",
