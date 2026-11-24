@@ -13,6 +13,17 @@ vm.runInNewContext([
   source("normalizeSessionCount"), source("coachClientSessionValues")
 ].join("\n"), context);
 
+test("Clients opens on Personal training, followed by App only and All clients", () => {
+  const tabs = [...html.matchAll(/<button[^>]*data-coach-clients-view="([^"]+)"[^>]*aria-selected="([^"]+)"/g)];
+  assert.deepEqual(tabs.map((tab) => [tab[1], tab[2]]), [
+    ["personal_training", "true"],
+    ["app_access_only", "false"],
+    ["all", "false"]
+  ]);
+  assert.match(script, /let coachClientsView = "personal_training";/);
+  assert.match(source("openCoachHomeShortcut"), /coachClientsView = "personal_training";/);
+});
+
 test("membership tabs separate personal training and app-only accounts without hiding online clients", () => {
   const roster = [
     { id: "personal", membership_type: "personal_training" },
@@ -38,11 +49,12 @@ test("session counts distinguish zero used from no package and clamp sessions le
   assert.deepEqual(counts(0, null), { used: null, total: null, remaining: null });
 });
 
-test("session count is a separate view that keeps the coach's snapshot above the clients", () => {
-  assert.match(html, /data-coach-clients-view="session-counts" aria-controls="coach-client-session-counts"/);
+test("Sessions is a main navigation view with the coach's snapshot above the clients", () => {
+  assert.match(html, /data-admin-tab="session-counts" aria-label="Sessions"/);
+  assert.match(html, /id="coach-client-session-counts" data-admin-panel="session-counts" aria-labelledby="coach-session-count-title"/);
   const counts = html.slice(html.indexOf('id="coach-client-session-counts"'), html.indexOf('data-admin-panel="home"'));
   assert.ok(counts.indexOf("Alex Fitness") < counts.indexOf("Client session counts"));
   assert.match(counts, /Coach’s count · saved summary/);
   assert.match(source("handleCoachClientWorkspace"), /openCoachHomeClientSection\(program\.client_email, "sessions"\)/);
-  assert.match(styles, /body\.coach-admin-page :is\(#clients, \.selected-client-panel, \[data-admin-panel="profile"\]\)[^}]*color-scheme:\s*light/s);
+  assert.match(styles, /body\.coach-admin-page :is\(#clients, \.selected-client-panel, \[data-admin-panel="profile"\], #coach-client-session-counts\)[^}]*color-scheme:\s*light/s);
 });

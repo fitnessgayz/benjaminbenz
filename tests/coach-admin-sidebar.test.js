@@ -60,7 +60,7 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
-  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 7);
+  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 8);
   assert.match(navMarkup, /data-admin-tab="inbox"[^>]*aria-label="Inbox"/);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
@@ -108,8 +108,8 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile dock exposes Activity alongside Home, Clients, Inbox, and More", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
+test("mobile dock exposes Sessions beside Clients and retains the other destinations", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs :is\(\.admin-tab-session-logger, \.admin-tab-exercise-library\)\s*\{[^}]*display: none !important/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
   const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));

@@ -343,6 +343,16 @@
   #coach-admin-workspace .coach-overview-actions .coach-primary-action { grid-column: 1 / -1; }
 }
 
+@media (max-width: 360px) {
+  :root body.coach-admin-page .coach-admin-sidebar { padding-inline: 4px; }
+  :root body.coach-admin-page #coach-admin-sidebar-nav :is(.admin-tab[data-admin-tab], .admin-tab-mobile-more) {
+    padding-inline: 1px !important;
+  }
+  :root body.coach-admin-page #coach-admin-sidebar-nav .admin-nav-label {
+    font-size: .625rem;
+  }
+}
+
 :root body.coach-admin-page .coach-home-destination {
   display: flex;
   align-items: center;
