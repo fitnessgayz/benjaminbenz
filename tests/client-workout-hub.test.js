@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'client-dashboard.html'), 'utf8');
-const source = fs.readFileSync(path.join(root, 'js/client-portal.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'js/gruntr-client-dashboard.js'), 'utf8');
 
 function declaration(name) {
   const match = new RegExp(`function\\s+${name}\\s*\\(`).exec(source);
@@ -48,11 +48,15 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
   const trainer = markup.match(/id="workout-hub-trainer"[\s\S]*?<\/section>/)[0];
   assert(routines.indexOf('Start Workout') < routines.indexOf('Previous Workout'));
   assert.match(markup, /aria-selected="true"[^>]*[\s\S]*?data-client-workout-hub-tab="routines"/);
-  assert.match(routines, /client-workout-hub-start/);
+  assert.match(routines, /client-workout-hub-custom-start/);
+  assert.match(routines, /data-client-workout-picker-choose="0"[\s\S]*workout-shortcuts\/start\.jpg/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym|data-client-saved-workout-plans/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym/);
   assert.doesNotMatch(html, /gym-directory-dialog|client-gym-directory\.js|client-gym-directory\.css/);
-  assert.match(routines, /data-client-workout-calendar-open[\s\S]*workout-shortcuts\/calendar\.jpg/);
+  const personal = markup.match(/id="workout-hub-personal"[\s\S]*?<\/section>/)[0];
+  assert.doesNotMatch(routines, /data-client-workout-calendar-open/);
+  assert.match(personal, /data-client-workout-calendar-open[\s\S]*workout-shortcuts\/calendar\.jpg/);
+  assert.doesNotMatch(trainer, /Build one session|data-generator-preset="today"/);
   assert.match(markup, /data-preview-program="0"[\s\S]*workout-shortcuts\/personal-training\.jpg[\s\S]*Trainer Program/);
   assert.doesNotMatch(markup, /Form Checks/);
   assert.match(markup, /data-preview-program="0"/);
@@ -62,7 +66,6 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
   assert.match(markup, /<dialog[^>]*data-client-workout-choice-dialog[^>]*>\s*<button[^>]*class="lifthardr-profile-return"[^>]*data-client-workout-choice-close="explore"[^>]*>Close<\/button>/);
   assert.match(markup, /<button[^>]*data-client-workout-choice-close="generate"[^>]*>✕<\/button>/);
   assert.match(markup, /data-client-generate-workout-plan/);
-  assert.match(markup, /data-generate-workout data-generator-preset="today"/);
   assert.doesNotMatch(markup, /data-generator-preset="mobility"|data-log-cardio/);
   assert.match(html, /client-workout-hub\.css\?v=8/);
   assert.match(html, /client-workout-hub-parity\.css/);

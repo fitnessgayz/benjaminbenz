@@ -69,6 +69,10 @@
   display: block;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  max-width: none;
+  aspect-ratio: 1;
+  object-fit: contain;
   border-radius: 8px;
 }
 :root body.client-dashboard-page .client-home-bell svg { width: 27px; height: 27px; }

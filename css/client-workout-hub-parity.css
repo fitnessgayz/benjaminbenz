@@ -120,7 +120,7 @@ body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[o
   display: flex;
 }
 
-:root body.client-dashboard-page #client-workouts-panel:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-start:not(.client-workout-hub-resume),
+:root body.client-dashboard-page #client-workouts-panel:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-custom-start,
 :root body.client-dashboard-page #client-workouts-panel:has(#workout-hub-routines:not([hidden])) > .client-workouts-resume-card {
   display: none !important;
 }
