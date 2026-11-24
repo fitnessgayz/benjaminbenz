@@ -1,0 +1,340 @@
+.client-settings-brand {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  html:has(> body.client-dashboard-page) {
+    scroll-padding-block-end: calc(102px + env(safe-area-inset-bottom));
+  }
+
+  :root body.client-dashboard-page {
+    --client-section-gutter: 16px;
+    --client-section-divider: color-mix(in srgb, currentColor 22%, transparent);
+  }
+
+  .client-settings-brand {
+    display: flex;
+    justify-content: center;
+    padding-block: 24px 8px;
+  }
+
+  .client-settings-brand img {
+    display: block;
+    border-radius: 11px;
+  }
+
+  :root body.client-dashboard-page .dashboard-shell {
+    width: 100%;
+    box-sizing: border-box;
+    padding-block-start: calc(10px + env(safe-area-inset-top));
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right) !important;
+  }
+
+  :root body.client-dashboard-page #dashboard-content {
+    padding-inline: 0 !important;
+  }
+
+  :root body.client-dashboard-page .dashboard-grid > [data-client-dashboard-panel] {
+    margin-inline: 0;
+    inline-size: 100%;
+    max-inline-size: none;
+    padding-inline: var(--client-section-gutter) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Keep section wrappers on the page surface and preserve the controls inside them. */
+  :root:root body.client-dashboard-page :is(
+    .client-home-next,
+    .client-home-last-workout,
+    .client-home-planner,
+    .client-home-week-days,
+    .client-home-community,
+    .client-home-coach-note,
+    .client-weekly-activity,
+    .client-community-wall,
+    .client-community-wall-card,
+    .client-community-feed,
+    .client-community-connections,
+    .client-community-challenges,
+    .client-community-consent,
+    .client-social-post,
+    .client-social-sharing,
+    .client-social-board-header,
+    .client-social-ranks,
+    .client-auto-sharing,
+    .client-auto-activity,
+    .lifthardr-profile-card,
+    .lifthardr-profile-insight,
+    .client-explore-program,
+    .client-workout-routines .client-routine,
+    .client-at-home-grid .client-at-home-card,
+    .client-logs-session,
+    .training-log-history-card,
+    .training-log-exercise-group,
+    .client-saved-log-calendar,
+    .client-logs-exercise-row,
+    .client-progress-metrics > div,
+    .client-progress-chart,
+    .client-progress-lift,
+    .client-progress-latest-list > button,
+    .client-exercise-history-metrics > div,
+    .client-exercise-history-gym-list > div,
+    .client-exercise-history-session,
+    .client-exercise-history-session-heading,
+    .client-calendar-workout,
+    .progress-entry-card,
+    .progress-exercise-section,
+    .progress-exercise-card,
+    .client-progress-preview,
+    .progress-current-rmr,
+    .client-stats-panel .progress-actions,
+    .progress-gallery-section,
+    .progress-history-section,
+    .client-progress-history-row,
+    .client-monthly-report-card,
+    .client-settings-panel .client-settings-menu .profile-photo-card,
+    .client-settings-redesign-list,
+    .client-settings-detail .client-bottom-tabs-group,
+    .client-settings-detail .client-auto-rest-setting,
+    .client-settings-detail .web-notification-center,
+    .client-settings-detail .web-notification-settings,
+    .client-settings-detail .rest-timer-notification-setting,
+    .apple-health-card,
+    .google-health-history,
+    .google-health-settings,
+    .nutrition-editor-card,
+    .nutrition-macro-card,
+    .nutrition-calculator-card,
+    .nutrition-client-guide,
+    .nutrition-food-log-card,
+    .food-label-import-card,
+    .session-sheet-count-card,
+    .session-sheet-link-card,
+    .client-questionnaire-group,
+    .client-settings-view .client-account-settings,
+    .saved-plan-day
+  ),
+  :root:root body.client-dashboard-page #client-workouts-panel :is(
+    .client-workout-panel,
+    .workout-choice-card:not(.workout-hub-choice),
+    .client-workouts-resume-card,
+    .client-workout-picker-card,
+    .client-workout-picker-card-top,
+    .client-workout-picker-card-body,
+    .workout-exercise-card,
+    .workout-format-group,
+    .workout-preview-card,
+    .workout-preview-exercise-card,
+    .workout-activity-card,
+    .workout-cardio-card,
+    .workout-warmup-card,
+    .workout-group-progress,
+    .exercise-detail,
+    .custom-workout-saved-plan,
+    .custom-workout-card,
+    .custom-workout-grouped-card,
+    .custom-workout-grouped-card-heading,
+    .ios-log-exercise-card,
+    .ios-log-exercise-header,
+    .set-table
+  ) {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  :root:root body.client-dashboard-page :is(
+    .client-home-next,
+    .client-home-last-workout,
+    .client-home-planner,
+    .client-home-community,
+    .client-community-wall-card,
+    .client-social-post,
+    .client-explore-program,
+    .client-workout-routines .client-routine,
+    .client-logs-session,
+    .training-log-history-card,
+    .training-log-exercise-group,
+    .client-logs-exercise-row,
+    .client-progress-lift,
+    .client-progress-latest-list > button,
+    .client-exercise-history-session,
+    .client-calendar-workout,
+    .progress-entry-card,
+    .progress-exercise-card,
+    .progress-current-rmr,
+    .client-settings-detail .client-auto-rest-setting,
+    .client-settings-redesign-group
+  ),
+  :root:root body.client-dashboard-page #client-workouts-panel :is(
+    .workout-choice-card:not(.workout-hub-choice),
+    .workout-exercise-card,
+    .custom-workout-grouped-card,
+    .ios-log-exercise-header
+  ) {
+    border-block-end: 1px solid var(--client-section-divider) !important;
+  }
+
+  :root body.client-dashboard-page :is(
+    .client-home-next,
+    .client-home-last-workout,
+    .client-home-planner,
+    .client-home-community,
+    .client-community-wall,
+    .client-community-wall-card,
+    .client-community-feed,
+    .client-community-consent,
+    .client-social-post,
+    .client-saved-log-calendar,
+    .client-progress-chart,
+    .client-calendar-workout,
+    .client-progress-lift,
+    .client-exercise-history-session-heading,
+    .client-settings-redesign-list > .client-settings-shortcut
+  ) {
+    padding-inline: 0 !important;
+  }
+
+  :root body.client-dashboard-page :is(.client-home-grid, [data-community-wall-list]) {
+    gap: 0;
+  }
+
+  :root body.client-dashboard-page #client-workouts-panel :is(#workout-hub-routines, .client-at-home-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root body.client-dashboard-page .client-at-home-card .client-explore-routine-summary {
+    display: flex;
+    gap: 12px;
+    min-height: 64px;
+    padding-block: 6px;
+  }
+
+  :root body.client-dashboard-page .client-at-home-card .client-explore-cover {
+    flex: 0 0 clamp(64px, 24vw, 112px);
+    width: clamp(64px, 24vw, 112px);
+    border-radius: 8px;
+  }
+
+  :root body.client-dashboard-page .client-at-home-card-copy {
+    flex: 1;
+    padding-inline: 0;
+  }
+
+  :root body.client-dashboard-page #client-workouts-panel .ios-log-exercise-card {
+    margin-inline: 0;
+  }
+
+  :root body.client-dashboard-page #client-workouts-panel .client-workout-calendar {
+    width: 100%;
+    padding-inline: 0;
+  }
+
+  :root body.client-dashboard-page .client-exercise-history-dialog {
+    position: fixed;
+    inset: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  :root body.client-dashboard-page .client-exercise-history-header {
+    padding-block-start: calc(19px + env(safe-area-inset-top));
+  }
+
+  :root:root body.client-dashboard-page :is(.client-dashboard-tabs, .client-dashboard-mobile-nav-toggle) {
+    --client-glass: rgb(36 40 46 / 85%);
+    background: var(--client-glass);
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+  }
+
+  :root:root body.client-dashboard-page .client-dashboard-tabs.is-mobile-collapsed {
+    display: none !important;
+  }
+
+  :root body.client-dashboard-page .client-dashboard-mobile-nav-toggle:not([hidden]) {
+    display: grid !important;
+    place-items: center;
+    position: fixed;
+    z-index: 1000;
+    inset: auto auto calc(9px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    box-sizing: border-box;
+    inline-size: 54px !important;
+    min-inline-size: 54px !important;
+    max-inline-size: 54px !important;
+    block-size: 54px;
+    margin: 0;
+    padding: 0 !important;
+    border: 1px solid rgb(255 255 255 / 21%);
+    border-radius: 50% !important;
+    color: #f5f7fa;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 32%);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  :root body.client-dashboard-page .client-dashboard-mobile-nav-toggle:focus-visible {
+    outline: 2px solid #ffe455;
+    outline-offset: 2px;
+  }
+
+  .client-dashboard-mobile-nav-toggle .client-dashboard-mobile-nav-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .client-dashboard-mobile-nav-toggle [data-client-settings-avatar-image][hidden],
+  .client-dashboard-mobile-nav-toggle [data-client-settings-avatar-placeholder][hidden] {
+    display: none;
+  }
+
+  :root body.client-dashboard-page:is(.client-dock-keyboard-open, :has(dialog[open]))
+    > :is(.client-dashboard-tabs, .client-dashboard-mobile-nav-toggle:not([hidden])),
+  :root body.client-dashboard-page:has(#client-workouts-panel.is-compact-workout-log:not([hidden]))
+    .client-dashboard-mobile-nav-toggle:not([hidden]),
+  :root body.client-dashboard-page:has(#client-workouts-panel:not([hidden]) .client-workout-panel.is-active .workout-floating-finish:not([hidden]))
+    .client-dashboard-mobile-nav-toggle:not([hidden]),
+  :root body.client-dashboard-page.client-dock-keyboard-open :is([data-workout-elapsed-timer], .workout-floating-finish) {
+    display: none !important;
+  }
+
+  :root body.client-login-page .site-header {
+    min-height: calc(64px + env(safe-area-inset-top));
+    padding-block-start: env(safe-area-inset-top);
+  }
+
+  :root body.client-login-page .client-access {
+    box-sizing: border-box;
+    width: 100%;
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+    padding-block-end: max(24px, env(safe-area-inset-bottom));
+  }
+
+  :root:root body.client-login-page :is(.access-panel, .access-demo) {
+    padding-inline: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (max-width: 900px) and (prefers-reduced-transparency: reduce) {
+  :root:root body.client-dashboard-page :is(.client-dashboard-tabs, .client-dashboard-mobile-nav-toggle) {
+    --client-glass: #24282e;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

@@ -451,13 +451,15 @@ body.client-dashboard-page .lifthardr-profile-metrics button[aria-pressed="true"
 .lifthardr-profile .gruntr-profile-activity > p:empty { display: none; }
 .lifthardr-profile .gruntr-profile-activity > ol {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 .lifthardr-profile .gruntr-profile-activity > ol > li {
   min-width: 0;
-  padding: 4px 0;
+  padding: 10px 12px;
   display: grid;
-  border: 0;
+  border: 1px solid var(--profile-border);
+  border-radius: 14px;
+  background: var(--profile-card);
   align-items: start;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 10px;
@@ -496,9 +498,6 @@ body.client-dashboard-page .lifthardr-profile-metrics button[aria-pressed="true"
 .lifthardr-profile .gruntr-profile-activity > ol > [data-activity-kind="workout"] {
   display: block;
   padding: 12px;
-  border: 1px solid var(--profile-border);
-  border-radius: 14px;
-  background: var(--profile-card);
 }
 .lifthardr-profile .gruntr-profile-activity-workout-head {
   display: flex;
