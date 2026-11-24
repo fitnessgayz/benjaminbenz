@@ -2565,7 +2565,7 @@ async function saveProfileChangesFromForm(form, options = {}) {
   ));
   programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
   selectedProgramId = updatedProgram.id || id;
-  renderRecentClientTrainingLogs();
+  updateCoachActivityWorkouts();
 
   if (shouldRefreshUi) {
     fillForm(updatedProgram);
@@ -3792,6 +3792,8 @@ function summarizeTrainingLogs(logs = []) {
     if (!grouped.has(key)) {
       grouped.set(key, {
         history_key: historyKey,
+        session_id: log.session_id,
+        workout_session_id: log.workout_session_id,
         client_email: clientEmail,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
@@ -3911,8 +3913,6 @@ function renderCoachHome() {
     ["personal_training", "online_training"].includes(program.membership_requested_type) &&
     program.membership_requested_type !== program.membership_type);
   const latestByEmail = latestWorkoutByClient();
-  const recentWorkouts = Array.from(latestByEmail.values())
-    .sort((a, b) => String(b.completed_at || b.last_updated || b.entry_date || "").localeCompare(String(a.completed_at || a.last_updated || a.entry_date || "")));
   const sessionAlerts = coachHomeSessionAlerts();
   const inactiveClients = coachHomeInactiveClients(latestByEmail);
   const alexFitnessUsedSessions = normalizeSessionCount(alexFitnessMasterSessions.used);
@@ -3942,26 +3942,6 @@ function renderCoachHome() {
     `${alexFitnessUsedSessions} used of ${alexFitnessTotalSessions} · Alex Fitness Master`
   );
   setText("coach-home-needs-attention", attentionEmails.size);
-
-  const recentList = document.getElementById("coach-home-recent-list");
-
-  if (recentList) {
-    recentList.innerHTML = recentWorkouts.length > 0
-      ? recentWorkouts.slice(0, 8).map((workout) => `
-          <article class="coach-home-list-row">
-            <div class="coach-home-row-date">
-              <strong>${escapeHtml(formatAdminDate(workout.entry_date))}</strong>
-              <span>${escapeHtml(formatAdminTime(workout.completed_at || workout.last_updated) || "Completed")}</span>
-            </div>
-            <div class="coach-home-row-copy">
-              <strong>${escapeHtml(clientNameForEmail(workout.client_email))}</strong>
-              <span>${escapeHtml(workout.workout_title || "Workout")} · ${workout.exercise_count} exercise${workout.exercise_count === 1 ? "" : "s"}</span>
-            </div>
-            <button class="coach-home-row-action" type="button" data-coach-home-open-logs="${escapeHtml(workout.client_email)}">Training logs</button>
-          </article>
-        `).join("")
-      : '<p class="empty-state">No client workouts have been saved yet.</p>';
-  }
 
   const membershipList = document.getElementById("coach-home-membership-requests");
   if (membershipList) {
@@ -4071,12 +4051,6 @@ function renderTrainingLogSummaryList(targetId, logs = [], options = {}) {
       <em>${escapeHtml(formatAdminTime(entry.last_updated) || "Saved")}</em>
     </article>
   `).join("");
-}
-
-function renderRecentClientTrainingLogs() {
-  renderTrainingLogSummaryList("recent-client-log-history", recentTrainingLogs, {
-    emptyMessage: "No workout logs yet."
-  });
 }
 
 function renderSelectedClientTrainingLogs() {
@@ -4238,14 +4212,14 @@ async function loadFoodLogsForEmail(email) {
 async function loadRecentTrainingLogs() {
   if (!coachSupabase) {
     recentTrainingLogs = [];
-    renderRecentClientTrainingLogs();
     renderCoachHome();
+    updateCoachActivityWorkouts();
     return;
   }
 
   const { data, error } = await coachSupabase
     .from("client_workout_logs")
-    .select("client_email, entry_date, workout_title, exercise_code, exercise_name, set_number, completed_at, updated_at, created_at")
+    .select("client_email, session_id, workout_session_id, entry_date, workout_title, exercise_code, exercise_name, set_number, completed_at, updated_at, created_at")
     .not("completed_at", "is", null)
     .order("completed_at", { ascending: false })
     .order("entry_date", { ascending: false })
@@ -4253,14 +4227,14 @@ async function loadRecentTrainingLogs() {
 
   if (error) {
     recentTrainingLogs = [];
-    renderRecentClientTrainingLogs();
     renderCoachHome();
+    updateCoachActivityWorkouts();
     return;
   }
 
   recentTrainingLogs = data || [];
-  renderRecentClientTrainingLogs();
   renderCoachHome();
+  updateCoachActivityWorkouts();
 }
 
 function programHistoryLabel(program) {
@@ -4968,6 +4942,7 @@ function handleAllClientAddedExercises() {
     exerciseLibraryStatus(group.libraryMatch
       ? `Review ${group.libraryMatch.record.name}, approve it for clients, then save.`
       : `Review the details for ${group.name}. Saving will approve it and add it to the shared library.`);
+    showExerciseLibraryEditor({ focus: false });
     document.querySelector(".exercise-library-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.requestAnimationFrame(() => document.getElementById("exercise-library-primary")?.focus({ preventScroll: true }));
   });
@@ -5531,6 +5506,12 @@ async function saveExerciseLibraryRecord(payload, id, file) {
   return data;
 }
 
+function showExerciseLibraryEditor({ focus = true } = {}) {
+  const editor = document.getElementById("coach-exercise-editor");
+  if (editor) editor.open = true;
+  if (focus) document.getElementById("exercise-library-name")?.focus();
+}
+
 function fillExerciseLibraryEditor(record = null) {
   const values = record || {
     name: "",
@@ -5784,7 +5765,7 @@ function handleExerciseLibraryEditor() {
     if (isExerciseLibrarySaving) return;
     fillExerciseLibraryEditor();
     renderExerciseLibrary();
-    document.getElementById("exercise-library-name").focus();
+    showExerciseLibraryEditor();
   });
 
   searchInput.addEventListener("input", () => {
@@ -5817,6 +5798,7 @@ function handleExerciseLibraryEditor() {
     exerciseLibraryStatus(selectedExerciseLibraryId
       ? "Choose a replacement demo video, then save the exercise."
       : "Choose a demo video, finish the exercise details, then save.");
+    showExerciseLibraryEditor({ focus: false });
     document.getElementById("exercise-library-video").click();
   });
 
@@ -5877,6 +5859,7 @@ function handleExerciseLibraryEditor() {
     if (record) {
       fillExerciseLibraryEditor(record);
       renderExerciseLibrary();
+      showExerciseLibraryEditor();
     }
   });
 
@@ -6060,6 +6043,21 @@ function initializeCoachMessages(user) {
   coachMessagesController.setActive(activeAdminTab === "inbox");
 }
 
+function updateCoachActivityWorkouts() {
+  if (!coachNotificationsController) return;
+
+  const clients = new Map(activeClientPrograms().map((program) => [normalizeEmail(program.client_email), program]));
+  const workouts = [...latestWorkoutByClient().values()]
+    .filter((workout) => clients.has(workout.client_email))
+    .slice(0, 8)
+    .map((workout) => ({
+      ...workout,
+      client_name: clients.get(workout.client_email).client_name || workout.client_email
+    }));
+
+  coachNotificationsController.setCoachWorkouts(workouts);
+}
+
 async function initializeCoachNotifications(user) {
   const root = document.querySelector("[data-web-notifications]");
   const status = root?.querySelector("[data-web-notification-status]");
@@ -6081,8 +6079,16 @@ async function initializeCoachNotifications(user) {
     user,
     role: "coach",
     root,
-    unreadBadges: document.querySelectorAll("[data-web-notification-unread]")
+    unreadBadges: document.querySelectorAll("[data-web-notification-unread]"),
+    coachWorkoutLogsUrl(email) {
+      const program = activeClientPrograms().find((item) => normalizeEmail(item.client_email) === email);
+      return program?.id ? `/coach-admin.html?tab=logs&client=${encodeURIComponent(program.id)}` : "";
+    },
+    openCoachWorkoutLogs(email) {
+      openCoachHomeClientSection(email, "logs");
+    }
   });
+  updateCoachActivityWorkouts();
 
   try {
     await coachNotificationsController.init();
@@ -6129,6 +6135,15 @@ function openCoachHomeClientSection(email, tabName) {
   });
 }
 
+function openCoachActivity({ settings = false } = {}) {
+  setAdminTab("notifications");
+  const disclosure = document.querySelector(".coach-alert-settings");
+  if (settings && disclosure) disclosure.open = true;
+  const target = settings ? disclosure?.querySelector("summary") : document.getElementById("coach-notification-title");
+  target?.focus({ preventScroll: true });
+  target?.scrollIntoView({ block: "start" });
+}
+
 function openCoachHomeShortcut(destination) {
   if (destination === "clients") {
     showingArchivedClients = false;
@@ -6142,8 +6157,12 @@ function openCoachHomeShortcut(destination) {
     return;
   }
 
+  if (destination === "workouts") {
+    openCoachActivity();
+    return;
+  }
+
   const targetIds = {
-    workouts: "coach-home-recent-title",
     sessions: "coach-home-sheets-title",
     attention: document.querySelector?.("#coach-home-membership-requests .coach-home-list-row") ? "coach-home-membership-title" : "coach-home-session-alert-title"
   };
@@ -6232,7 +6251,7 @@ function handleCoachMobileNavigation() {
     });
   });
 
-  settingsButton?.addEventListener("click", () => setAdminTab("notifications"));
+  settingsButton?.addEventListener("click", () => openCoachActivity({ settings: true }));
   notificationClose?.addEventListener("click", () => {
     setAdminTab("home");
     window.requestAnimationFrame(() => settingsButton?.focus({ preventScroll: true }));
@@ -7857,7 +7876,7 @@ function openInviteClientModal(button) {
   form.elements.invite_client_email.value = "";
   form.elements.invite_client_name.value = "";
   form.elements.invite_client_phone.value = "";
-  inviteStatus("Enter the client details, then send their invite.");
+  inviteStatus("Enter the client’s name and email to get started.");
   modal.hidden = false;
   document.body.classList.add("is-invite-client-modal-open");
   adminStatus("New client invite ready.");
@@ -7865,18 +7884,20 @@ function openInviteClientModal(button) {
 }
 
 function handleNewClient() {
-  const button = document.getElementById("new-client-button");
+  const buttons = document.querySelectorAll("[data-open-invite-client]");
   const modal = document.getElementById("invite-client-modal");
   const closeButtons = document.querySelectorAll("[data-close-invite-client]");
 
-  if (!button || !modal) {
+  if (!modal) {
     return;
   }
 
-  button.addEventListener("click", () => {
-    pendingSignupApproval = null;
-    openInviteClientModal(button);
-    setClientInviteBusy(false);
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      pendingSignupApproval = null;
+      openInviteClientModal(button);
+      setClientInviteBusy(false);
+    });
   });
   closeButtons.forEach((closeButton) => {
     closeButton.addEventListener("click", () => closeInviteClientModal());

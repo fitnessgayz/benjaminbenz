@@ -35,14 +35,14 @@ test("opens a top-level accessible invite modal with save and send choices", () 
   const homeEnd = adminHtml.indexOf('data-admin-client-context', homeStart);
   const homePanel = adminHtml.slice(homeStart, homeEnd);
 
-  assert.match(homePanel, /id="new-client-button"[^>]*>Invite new client</);
+  assert.match(homePanel, /id="new-client-button"[^>]*>Add client</);
   assert.match(adminHtml, /id="invite-client-modal"[\s\S]*?role="dialog"[\s\S]*?aria-modal="true"[\s\S]*?aria-labelledby="invite-client-title"/);
   const modalStart = adminHtml.indexOf('id="invite-client-modal"');
   const modalEnd = adminHtml.indexOf("</form>", modalStart);
   const modalMarkup = adminHtml.slice(modalStart, modalEnd);
 
   assert.match(modalMarkup, /name="invite_client_email"[\s\S]*?name="invite_client_name"[\s\S]*?name="invite_client_phone"/);
-  assert.match(adminHtml, /id="save-client-button">Save without invite</);
+  assert.match(adminHtml, /id="save-client-button">Save client</);
   assert.match(adminHtml, /id="send-invite-button">Save &amp; email invite</);
   assert.match(adminHtml, /id="text-invite-button">Save &amp; text invite</);
   assert.ok((adminHtml.match(/data-close-invite-client/g) || []).length >= 2);

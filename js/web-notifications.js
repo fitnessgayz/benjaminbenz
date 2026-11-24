@@ -122,6 +122,69 @@
     }).format(date);
   }
 
+  function coachActivityWorkoutSource(row) {
+    const key = String(row.dedupe_key || "").toLowerCase();
+    const saved = key.match(/^workout:([^:]+):(.+)$/);
+    const trigger = key.match(/^coach-workout-completed:(.+)$/);
+    return {
+      email: String(row.metadata?.client_email || saved?.[1] || "").trim().toLowerCase(),
+      session: String(row.metadata?.session_id || row.metadata?.workout_session_id || saved?.[2] || trigger?.[1] || "")
+        .trim().toLowerCase()
+    };
+  }
+
+  function coachWorkoutDescription(workout) {
+    const count = workout.exercise_count;
+    return `${workout.workout_title} · ${count} exercise${count === 1 ? "" : "s"}`;
+  }
+
+  function combineCoachActivity(notifications, workouts, workoutLogsUrl) {
+    const matched = new Set();
+    const rows = notifications.map((row) => {
+      if (row.kind !== "workout_completed") return row;
+
+      const { email, session } = coachActivityWorkoutSource(row);
+      const candidates = session ? workouts.filter((workout) => {
+        if (email && workout.client_email !== email) return false;
+        const references = [
+          workout.session_id,
+          workout.workout_session_id,
+          email && `${workout.entry_date}:${workout.workout_title}`
+        ].filter(Boolean).map((reference) => String(reference).trim().toLowerCase());
+        return references.includes(session);
+      }) : [];
+      const workout = candidates.length === 1 ? candidates[0] : null;
+      const clientEmail = workout?.client_email || email;
+      const logsUrl = clientEmail && workoutLogsUrl?.(clientEmail);
+      if (workout) matched.add(workout);
+      if (!logsUrl) return row;
+
+      return {
+        ...row,
+        body: workout ? coachWorkoutDescription(workout) : row.body,
+        action_url: logsUrl,
+        coach_workout_email: clientEmail
+      };
+    });
+
+    workouts.forEach((workout) => {
+      if (matched.has(workout)) return;
+      const logsUrl = workoutLogsUrl?.(workout.client_email);
+      if (!logsUrl) return;
+      rows.push({
+        kind: "workout_completed",
+        title: `${workout.client_name} completed a workout`,
+        body: coachWorkoutDescription(workout),
+        action_url: logsUrl,
+        coach_workout_email: workout.client_email,
+        created_at: workout.completed_at,
+        read_at: workout.completed_at
+      });
+    });
+
+    return rows.sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
+  }
+
   function createController(options = {}) {
     const supabaseClient = options.supabaseClient;
     const user = options.user;
@@ -143,6 +206,7 @@
     let busy = false;
     let refreshPromise = null;
     let inboxRows = [];
+    let coachWorkouts = [];
     let localWeeklyReminder = null;
     let likedNotificationIds = new Set();
 
@@ -541,7 +605,8 @@
       item.classList.toggle("is-unread", !row.read_at);
       link.href = actionUrl;
       if (isLocal) link.dataset.webLocalWeekly = "";
-      else link.dataset.webNotificationOpen = row.id;
+      else if (row.id) link.dataset.webNotificationOpen = row.id;
+      if (row.coach_workout_email) link.dataset.webCoachWorkoutEmail = row.coach_workout_email;
       if (isLocal || opensWeekly) link.setAttribute("aria-haspopup", "dialog");
       if (!isLocal && opensWeekly) link.dataset.webWeeklyCheckIn = "";
       title.textContent = String(row.title || "FWB update");
@@ -555,6 +620,12 @@
         typeIcon.setAttribute("aria-hidden", "true");
         typeIcon.innerHTML = notificationIconMarkup[iconKind] || notificationIconMarkup.general;
         link.append(typeIcon, title, body, date);
+        if (row.coach_workout_email) {
+          const action = global.document.createElement("span");
+          action.className = "coach-activity-log-link";
+          action.textContent = "Training logs";
+          link.append(action);
+        }
       } else {
         link.append(title, body, date);
         if (isLocal || opensWeekly) {
@@ -587,9 +658,11 @@
     }
 
     function renderInbox(serverRows) {
-      const rows = localWeeklyReminder
-        ? [localWeeklyReminder, ...serverRows].sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at))
-        : serverRows;
+      const rows = role === "coach" && options.coachWorkoutLogsUrl
+        ? combineCoachActivity(serverRows, coachWorkouts, options.coachWorkoutLogsUrl)
+        : localWeeklyReminder
+          ? [localWeeklyReminder, ...serverRows].sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+          : serverRows;
       const list = element("[data-web-notification-list]");
       const empty = element("[data-web-notification-empty]");
       const unreadBadges = Array.from(new Set([
@@ -646,7 +719,9 @@
             .eq("user_id", user.id);
         } else {
           query = query
-            .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
+            .select(role === "coach" && options.coachWorkoutLogsUrl
+              ? "id,recipient_role,kind,title,body,action_url,metadata,dedupe_key,created_at,read_at"
+              : "id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
             .eq("user_id", user.id)
             .eq("recipient_role", role);
         }
@@ -662,6 +737,24 @@
       }));
       if (role === "coach" && backend === "deployed") {
         likedNotificationIds = new Set(rows.filter((row) => row.liked).map((row) => row.id));
+        // The deployed feed omits the source keys. Read only this coach's
+        // returned workout notifications to match saved workouts precisely.
+        const workouts = options.coachWorkoutLogsUrl ? rows.filter((row) => row.kind === "workout_completed") : [];
+        if (workouts.length) {
+          try {
+            const { data: sources, error: sourceError } = await supabaseClient
+              .from("client_notifications")
+              .select("id,web_dedupe_key")
+              .eq("user_id", user.id)
+              .in("id", workouts.map((row) => row.id));
+            if (!sourceError) {
+              const keys = new Map((sources || []).map((source) => [source.id, source.web_dedupe_key]));
+              workouts.forEach((row) => { row.dedupe_key = keys.get(row.id); });
+            }
+          } catch (_error) {
+            // Activity and unread counts can still render without the optional keys.
+          }
+        }
       } else if (role === "coach") {
         const likeableIds = rows.filter(likeableCoachActivity).map((row) => row.id);
         likedNotificationIds = new Set();
@@ -880,6 +973,9 @@
       const markAllButton = event.target.closest("[data-web-notification-mark-all]");
       const notificationLink = event.target.closest("[data-web-notification-open]");
       const likeButton = event.target.closest("[data-web-notification-like]");
+      const workoutLink = event.target.closest("[data-web-coach-workout-email]");
+      const modifiedClick = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+      const opensWorkout = workoutLink && !modifiedClick && (event.button === 0 || event.button === undefined);
 
       if (event.target.closest("[data-web-local-weekly]")) {
         event.preventDefault();
@@ -904,8 +1000,11 @@
       } else if (markAllButton) {
         event.preventDefault();
         await markAllRead();
+      } else if (opensWorkout && typeof options.openCoachWorkoutLogs === "function") {
+        event.preventDefault();
+        options.openCoachWorkoutLogs(workoutLink.dataset.webCoachWorkoutEmail);
+        if (notificationLink) await markRead(notificationLink.dataset.webNotificationOpen, { updateInbox: true });
       } else if (notificationLink) {
-        const modifiedClick = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
         if (!modifiedClick && (event.button === 0 || event.button === undefined)) {
           event.preventDefault();
           await markRead(notificationLink.dataset.webNotificationOpen);
@@ -1037,6 +1136,11 @@
       setWeeklyReminder(row) {
         if (destroyed || role !== "client") return;
         localWeeklyReminder = row;
+        renderInbox(inboxRows);
+      },
+      setCoachWorkouts(workouts) {
+        if (destroyed || role !== "coach") return;
+        coachWorkouts = workouts;
         renderInbox(inboxRows);
       },
       prepareForSignOut,

@@ -37,7 +37,8 @@ test("Coach Home exposes workouts, session sheets, and follow-up modules", () =>
   const homeEnd = adminHtml.indexOf('data-admin-client-context', homeStart);
   const home = adminHtml.slice(homeStart, homeEnd);
 
-  assert.match(home, /id="coach-home-recent-list"/);
+  assert.match(home, /data-coach-home-shortcut="workouts"/);
+  assert.doesNotMatch(home, /coach-home-recent-list/);
   assert.match(home, /id="coach-home-sheet-list"/);
   assert.match(home, /Alex Fitness, B2 Master Session/);
   assert.match(home, /id="coach-home-session-alert-list"/);
@@ -96,7 +97,7 @@ test("home actions open the selected client's training logs or sessions", () => 
 });
 
 test("mobile Home keeps extra detail in disclosures", () => {
-  for (const label of ["Recent workouts", "Session sheets", "Client follow-ups and requests"]) {
+  for (const label of ["Session sheets", "Client follow-ups and requests"]) {
     assert.ok(adminHtml.includes(`<summary>${label}</summary>`));
   }
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
@@ -114,7 +115,7 @@ test("summary metrics are four keyboard-accessible shortcuts", () => {
 test("summary shortcuts select active clients or open and focus the matching section", () => {
   const calls = [];
   const nodes = {};
-  for (const id of ["client-search-input", "coach-home-recent-title", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
+  for (const id of ["client-search-input", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
     const disclosure = { open: false };
     nodes[id] = {
       value: "Old search",
@@ -124,7 +125,7 @@ test("summary shortcuts select active clients or open and focus the matching sec
     };
   }
   let reducedMotion = false;
-  const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", `
+  const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", "openCoachActivity", `
     let showingArchivedClients = true;
     let clientSearchTerm = "Old search";
     ${javascriptFunction("openCoachHomeShortcut")}
@@ -132,20 +133,23 @@ test("summary shortcuts select active clients or open and focus the matching sec
   `)(
     {getElementById: id => nodes[id]},
     {matchMedia: () => ({matches: reducedMotion})},
-    () => calls.push(["close"]), () => calls.push(["render"]), tab => calls.push(["tab", tab])
+    () => calls.push(["close"]), () => calls.push(["render"]), tab => calls.push(["tab", tab]), () => calls.push(["activity"])
   );
   api.openCoachHomeShortcut("clients");
   assert.deepEqual(api.state(), {showingArchivedClients:false, clientSearchTerm:""});
   assert.equal(nodes["client-search-input"].value, "");
   assert.ok(calls.some(call => call[0] === "tab" && call[1] === "clients"));
-  for (const [destination,id] of [["workouts","coach-home-recent-title"],["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
+  calls.length = 0;
+  api.openCoachHomeShortcut("workouts");
+  assert.deepEqual(calls, [["activity"]]);
+  for (const [destination,id] of [["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
     calls.length = 0;
     api.openCoachHomeShortcut(destination);
     assert.deepEqual(calls, [["focus",id,true],["scroll",id,"smooth"]]);
   }
   reducedMotion = true;
   calls.length = 0;
-  api.openCoachHomeShortcut("workouts");
+  api.openCoachHomeShortcut("sessions");
   assert.equal(calls.at(-1)[2], "auto");
   calls.length = 0;
   api.openCoachHomeShortcut("unknown");

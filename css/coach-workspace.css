@@ -297,6 +297,7 @@
   :root body.coach-admin-page .coach-home-notification-button {
     width: 44px !important;
     min-width: 44px !important;
+    overflow: visible !important;
   }
   :root body.coach-admin-page .coach-admin-sidebar {
     inset: auto max(12px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
@@ -338,3 +339,62 @@
   .coach-overview-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #coach-admin-workspace .coach-overview-actions .coach-primary-action { grid-column: 1 / -1; }
 }
+
+:root body.coach-admin-page .coach-home-destination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 3px;
+  border: 0;
+  border-block-end: 1px solid var(--line);
+  border-radius: 0 !important;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 750;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+:root body.coach-admin-page .coach-home-destination:is(:hover, :focus-visible) { color: var(--secondary-accent); }
+:root body.coach-admin-page .coach-alert-settings { margin-top: 16px; }
+:root body.coach-admin-page .coach-profile-details > :is(.admin-field-grid, .profile-management-row) { padding-block: 6px 18px; }
+:root body.coach-admin-page .coach-profile-details .profile-management-row { margin-block: 0; }
+
+:root body.coach-admin-page .coach-notification-panel .web-notification-item {
+  border-block-start: 0;
+  border-inline-end: 0;
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+}
+:root body.coach-admin-page .coach-notification-inbox .web-notification-item a > .coach-activity-log-link {
+  color: var(--secondary-accent);
+  font-size: .825rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.coach-exercise-library-page .coach-library-names { order: 2; }
+:root body.coach-exercise-library-page #coach-exercise-editor { display: block; }
+.coach-exercise-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  padding-block: 12px 20px;
+}
+:root body.coach-exercise-library-page .exercise-library-browser {
+  margin-top: 10px;
+  gap: 10px;
+}
+
+:root body.coach-admin-page #save-client-button {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--brand-primary-ink);
+}
+:root body.coach-admin-page #save-client-button:hover { background: var(--brand-primary-hover); }
