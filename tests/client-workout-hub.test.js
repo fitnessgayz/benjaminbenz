@@ -49,15 +49,29 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
   assert(routines.indexOf('Start Workout') < routines.indexOf('Previous Workout'));
   assert.match(markup, /aria-selected="true"[^>]*[\s\S]*?data-client-workout-hub-tab="routines"/);
   assert.match(routines, /client-workout-hub-custom-start/);
-  assert.match(routines, /data-client-workout-picker-choose="0"[\s\S]*workout-shortcuts\/start\.jpg/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym|data-client-saved-workout-plans/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym/);
   assert.doesNotMatch(html, /gym-directory-dialog|client-gym-directory\.js|client-gym-directory\.css/);
   const personal = markup.match(/id="workout-hub-personal"[\s\S]*?<\/section>/)[0];
   assert.doesNotMatch(routines, /data-client-workout-calendar-open/);
-  assert.match(personal, /data-client-workout-calendar-open[\s\S]*workout-shortcuts\/calendar\.jpg/);
+  assert.doesNotMatch(markup, /workout-shortcuts|workout-choice-cover|has-shortcut-cover|workout-choice-card-content/);
+  for (const [section, id, action] of [
+    [routines, 'start', 'data-client-workout-picker-choose="0"'],
+    [routines, 'explore', 'data-client-workout-choice-menu="explore"'],
+    [routines, 'previous', 'data-client-workout-copy-history'],
+    [personal, 'personal-0', 'data-preview-program="0"'],
+    [personal, 'calendar', 'data-client-workout-calendar-open'],
+    [trainer, 'fwb-trainer', 'data-client-generate-workout-plan'],
+    [trainer, 'fwb-saved', 'data-client-saved-workout-plans']
+  ]) {
+    const card = section.match(/<button[^>]*workout-hub-choice[^>]*>[\s\S]*?<\/button>/g)
+      .find(button => button.includes('aria-labelledby="workout-' + id + '-title"'));
+    assert.ok(card && card.includes(action), id + ' keeps its action');
+    assert.match(card, /workout-choice-icon/);
+    assert.match(card, /workout-choice-arrow/);
+    assert.ok(card.includes('aria-describedby="workout-' + id + '-description"'), id + ' keeps its accessible description');
+  }
   assert.doesNotMatch(trainer, /Build one session|data-generator-preset="today"/);
-  assert.match(markup, /data-preview-program="0"[\s\S]*workout-shortcuts\/personal-training\.jpg[\s\S]*Trainer Program/);
   assert.doesNotMatch(markup, /Form Checks/);
   assert.match(markup, /data-preview-program="0"/);
   assert.match(trainer, /data-client-saved-workout-plans/);
