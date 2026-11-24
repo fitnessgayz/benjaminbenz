@@ -113,7 +113,10 @@
     "20261123035902_gruntr_chatgpt_workouts.sql",
     "20261123060427_gruntr_oauth_resource_consent.sql",
     "20261123062703_refresh_exercise_library_illustrations.sql",
-    "20261123164824_repair_reused_workout_history_ids.sql"
+    "20261123164824_repair_reused_workout_history_ids.sql",
+    "20261124174837_coach_activity_comment_notifications.sql",
+    "20261124185356_coach_fwb_monthly_session_totals.sql",
+    "20261124185622_coach_alex_fitness_session_history.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
