@@ -6,14 +6,12 @@ const vm = require("node:vm");
 const html = fs.readFileSync(require.resolve("../coach-admin.html"), "utf8");
 const script = fs.readFileSync(require.resolve("../js/coach-admin.js"), "utf8");
 const styles = fs.readFileSync(require.resolve("../css/coach-clients.css"), "utf8");
-const source = (name) => script.match(new RegExp(`^function ${name}\\([\\s\\S]*?\\n\\}`, "m"))[0];
+const source = (name) => script.match(new RegExp(`^(?:async )?function ${name}\\([\\s\\S]*?\\n\\}`, "m"))[0];
 const context = {};
 vm.runInNewContext([
   source("coachClientMembership"), source("coachClientRosterPrograms"),
   source("normalizeSessionCount"), source("coachClientSessionValues"),
-  source("normalizeEmail"), source("normalizeSessionDate"), source("toUtcIsoDateString"),
-  source("sessionDatesFromProgram"), source("sessionPackageHistoryFromProgram"),
-  source("coachSessionToday"), source("moveCoachSessionMonth"), source("countCoachFwbSessions")
+  source("coachSessionToday"), source("moveCoachSessionMonth")
 ].join("\n"), context);
 
 test("Clients opens on Personal training, followed by App only and All clients", () => {
@@ -52,20 +50,57 @@ test("session counts distinguish zero used from no package and clamp sessions le
   assert.deepEqual(counts(0, null), { used: null, total: null, remaining: null });
 });
 
-test("FWB totals use saved dates once per client and include past packages", () => {
-  const clients = [
-    { client_email: " A@example.test ", session_dates: ["11/5/2026", "2026-11-05", "2026-11-24", "2026-11-25"],
-      session_package_history: [{ dates: ["2026-11-04", "2026-11-05", "2026-10-31"], archived_at: "2026-11-06" }] },
-    { client_email: "a@example.test", session_dates: ["2026-11-05", "2026-11-08"] },
-    { client_email: "b@example.test", client_archived: true, session_dates: ["2026-11-05"] },
-    { client_email: "c@example.test", session_count_used: 99 },
-    { client_email: "d@example.test", session_dates: ["2026-02-29", "2026-10-00"] },
-    { session_dates: ["2026-11-07"] }
-  ];
-  const count = (month) => context.countCoachFwbSessions(clients, month, "2026-11-24");
-  assert.equal(count("2026-11"), 4);
-  assert.equal(count("2026-10"), 1);
-  assert.equal(count("2026-02"), 0);
+test("FWB view uses the scheduled snapshot, distinguishes no sync from zero and ignores stale responses", async () => {
+  const selectors = new Map();
+  const pending = new Map();
+  const counts = { querySelector(selector) {
+    if (!selectors.has(selector)) selectors.set(selector, { textContent: "", setAttribute() {} });
+    return selectors.get(selector);
+  } };
+  const fixture = {
+    coachFwbSessionRequest: 0, coachFwbSessionMonth: "",
+    document: { getElementById: (id) => id === "coach-client-session-counts" ? counts : { hidden: false } },
+    coachSupabase: { from(table) {
+      assert.equal(table, "coach_fwb_monthly_session_totals");
+      return { select(fields) {
+        assert.equal(fields, "completed_count,cancelled_count,refreshed_at");
+        return { eq(column, month) {
+          assert.equal(column, "month_start");
+          return { maybeSingle: () => new Promise((resolve) => pending.set(month, resolve)) };
+        } };
+      } };
+    } }
+  };
+  vm.runInNewContext(source("refreshCoachFwbMonthlySessions"), fixture);
+  const refresh = () => fixture.refreshCoachFwbMonthlySessions("2026-11-24");
+  const current = refresh();
+  fixture.coachFwbSessionMonth = "2026-10";
+  const previous = refresh();
+  const total = selectors.get("[data-coach-fwb-total]");
+  const sync = selectors.get("[data-coach-fwb-sync]");
+  const status = selectors.get("[data-coach-fwb-status]");
+  const checked = (completed, cancelled) => ({ data: { completed_count: completed, cancelled_count: cancelled, refreshed_at: "2026-11-25T01:00:00Z" } });
+  pending.get("2026-10-01")(checked(8, 2));
+  await previous;
+  pending.get("2026-11-01")(checked(12, 1));
+  await current;
+  assert.equal(total.textContent, "10 sessions");
+  assert.equal(status.textContent, "8 completed · 2 cancelled");
+  assert.equal(sync.textContent, "Last synced Nov 24, 2026");
+
+  const empty = refresh();
+  pending.get("2026-10-01")({ data: null });
+  await empty;
+  assert.equal(total.textContent, "—");
+  assert.equal(sync.textContent, "No sync for this month yet");
+  const zero = refresh();
+  pending.get("2026-10-01")(checked(0, 0));
+  await zero;
+  assert.equal(total.textContent, "0 sessions");
+  const failure = refresh();
+  pending.get("2026-10-01")({ data: null, error: { message: "Network" } });
+  await failure;
+  assert.equal(sync.textContent, "Could not load the monthly total");
 });
 
 test("FWB month navigation and current day use Pacific calendar dates", () => {

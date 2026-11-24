@@ -144,6 +144,7 @@
 }
 :root body.coach-admin-page .coach-fwb-sessions h3 { margin: 0; color: var(--ink); font-size: 1rem; }
 .coach-fwb-sessions p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
+.coach-fwb-sessions [data-coach-fwb-sync] { font-size: .75rem; }
 .coach-fwb-month-picker { display: flex; align-items: center; gap: 8px; }
 :root body.coach-admin-page .coach-fwb-month-picker button {
   display: grid;

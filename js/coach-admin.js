@@ -60,7 +60,6 @@ function workoutSetLabel(set) {
 }
 
 let programs = [];
-let coachClientProgramsStatus = "loading";
 let selectedProgramId = "";
 let coachAppleHealthController = null;
 let progressEntries = [];
@@ -79,6 +78,7 @@ let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
 let coachClientsView = "personal_training";
 let coachFwbSessionMonth = "";
+let coachFwbSessionRequest = 0;
 let clientSearchTerm = "";
 let clientSuggestionsOpen = false;
 let activeClientSuggestion = -1;
@@ -1020,6 +1020,7 @@ function setAdminTab(tabName) {
   }
   if (nextTab === "session-counts") {
     renderCoachSessionCounts();
+    refreshCoachFwbMonthlySessions();
   }
 
   if (nextTab === "library") {
@@ -1562,27 +1563,6 @@ function moveCoachSessionMonth(month, offset) {
   const date = new Date(`${month}-01T00:00:00Z`);
   date.setUTCMonth(date.getUTCMonth() + offset);
   return date.toISOString().slice(0, 7);
-}
-
-function countCoachFwbSessions(clients, month, today) {
-  const seenClients = new Set();
-  let count = 0;
-  for (const program of clients) {
-    // Client profile data belongs to the primary record, not each copy of a program.
-    const email = normalizeEmail(program.client_email);
-    if (!email || seenClients.has(email)) continue;
-    seenClients.add(email);
-    const dates = new Set([
-      ...sessionDatesFromProgram(program),
-      ...sessionPackageHistoryFromProgram(program).flatMap((item) => item.dates)
-    ]);
-    for (const date of dates) {
-      if (!date.startsWith(`${month}-`) || date > today) continue;
-      const parsed = new Date(`${date}T00:00:00Z`);
-      if (toUtcIsoDateString(parsed) === date) count += 1;
-    }
-  }
-  return count;
 }
 
 function matchingClientSuggestions() {
@@ -4373,7 +4353,6 @@ function renderCoachSessionCounts() {
   for (const node of counts.querySelectorAll("[data-coach-alex-count]")) {
     node.textContent = alex[node.dataset.coachAlexCount] ?? "—";
   }
-  renderCoachFwbMonthlySessions(counts);
 
   const clients = coachClientRosterPrograms("all", activeClientPrograms());
   const rows = clients.map((program) => {
@@ -4399,21 +4378,43 @@ function renderCoachSessionCounts() {
   counts.querySelector("[data-coach-count-empty]").hidden = rows.length > 0;
 }
 
-function renderCoachFwbMonthlySessions(counts, today = coachSessionToday()) {
+async function refreshCoachFwbMonthlySessions(today = coachSessionToday()) {
+  const counts = document.getElementById("coach-client-session-counts");
+  if (!coachSupabase || !counts || counts.hidden || document.getElementById("coach-admin-workspace")?.hidden) return;
+
+  const request = ++coachFwbSessionRequest;
   const currentMonth = today.slice(0, 7);
   const month = coachFwbSessionMonth || currentMonth;
-  const label = new Intl.DateTimeFormat("en-US", {
+  const label = counts.querySelector("[data-coach-fwb-month-label]");
+  const total = counts.querySelector("[data-coach-fwb-total]");
+  const status = counts.querySelector("[data-coach-fwb-status]");
+  const sync = counts.querySelector("[data-coach-fwb-sync]");
+  label.textContent = new Intl.DateTimeFormat("en-US", {
     month: "long", year: "numeric", timeZone: "UTC"
   }).format(new Date(`${month}-01T00:00:00Z`));
-  const ready = coachClientProgramsStatus === "ready";
-  const total = ready ? countCoachFwbSessions([...activeClientPrograms(), ...archivedClientPrograms()], month, today) : null;
-  counts.querySelector("[data-coach-fwb-month-label]").textContent = label;
-  counts.querySelector("[data-coach-fwb-total]").textContent = total === null ? "—" : `${total} ${total === 1 ? "session" : "sessions"}`;
-  counts.querySelector("[data-coach-fwb-status]").textContent = ready
-    ? "From saved coaching session dates"
-    : coachClientProgramsStatus === "error" ? "Could not load session dates" : "Loading session dates…";
+  total.textContent = "—";
+  status.textContent = "Completed + cancelled";
+  sync.textContent = "Loading monthly total…";
   counts.querySelector('[data-coach-fwb-month="1"]').setAttribute("aria-disabled", String(month >= currentMonth));
   counts.querySelector('[data-coach-fwb-month="-1"]').setAttribute("aria-disabled", String(month <= "0001-01"));
+
+  const { data, error } = await coachSupabase.from("coach_fwb_monthly_session_totals")
+    .select("completed_count,cancelled_count,refreshed_at")
+    .eq("month_start", `${month}-01`)
+    .maybeSingle();
+  if (request !== coachFwbSessionRequest || counts.hidden) return;
+  if (error || !data) {
+    sync.textContent = error ? "Could not load the monthly total" : "No sync for this month yet";
+    return;
+  }
+
+  const count = data.completed_count + data.cancelled_count;
+  total.textContent = `${count} ${count === 1 ? "session" : "sessions"}`;
+  status.textContent = `${data.completed_count} completed · ${data.cancelled_count} cancelled`;
+  const syncedOn = new Intl.DateTimeFormat("en-US", {
+    month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles"
+  }).format(new Date(data.refreshed_at));
+  sync.textContent = `Last synced ${syncedOn}`;
 }
 
 function renderCoachClientWorkspace() {
@@ -4495,8 +4496,8 @@ function handleCoachClientWorkspace() {
       if ((offset === 1 && month < currentMonth) || (offset === -1 && month > "0001-01")) {
         const pickedMonth = moveCoachSessionMonth(month, offset);
         coachFwbSessionMonth = pickedMonth === currentMonth ? "" : pickedMonth;
+        refreshCoachFwbMonthlySessions(today);
       }
-      renderCoachFwbMonthlySessions(event.currentTarget, today);
       return;
     }
     const count = event.target.closest("[data-coach-count-client]");
@@ -4504,6 +4505,9 @@ function handleCoachClientWorkspace() {
       const program = activeClientPrograms().find((item) => item.id === count.dataset.coachCountClient && item.active !== false);
       if (program) openCoachHomeClientSection(program.client_email, "sessions");
     }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && activeAdminTab === "session-counts") refreshCoachFwbMonthlySessions();
   });
   renderCoachClientWorkspace();
 }
@@ -4592,14 +4596,11 @@ async function loadPrograms() {
   const { data, error } = programResult;
 
   if (error) {
-    coachClientProgramsStatus = "error";
-    renderCoachSessionCounts();
     adminStatus("Could not load clients. Check the GRUNTR Coach Supabase policy.");
     return;
   }
 
   programs = data || [];
-  coachClientProgramsStatus = "ready";
   clientFitnessQuestionnaires = questionnaireResult.error ? [] : (questionnaireResult.data || []);
   renderCoachWorkoutClientOptions();
 
@@ -6226,6 +6227,7 @@ async function showAdminWorkspace(user) {
   }
 
   initializeCoachMessages(user);
+  if (activeAdminTab === "session-counts") refreshCoachFwbMonthlySessions();
 
   await Promise.all([
     loadPrograms(),
