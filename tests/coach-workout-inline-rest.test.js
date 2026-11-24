@@ -178,7 +178,7 @@ test("rerendered sections recover their owner's countdown without moving input f
 function clickFixture() {
   const h = renderFixture();
   const events = new Map();
-  const eventHost = (name) => ({ addEventListener(type, handler) { events.set(`${name}:${type}`, handler); } });
+  const eventHost = (name) => ({ querySelectorAll: () => [], addEventListener(type, handler) { events.set(`${name}:${type}`, handler); } });
   const form = eventHost("form");
   const list = eventHost("list");
   const stack = eventHost("stack");
@@ -188,7 +188,7 @@ function clickFixture() {
     Event: class { constructor(type, options) { this.type = type; Object.assign(this, options); } },
     finishCoachWorkout() {}, saveCoachWorkout() {},
     coachWorkoutCopyEntries() { return []; },
-    clearCoachWorkoutWeightCopy() {}, refreshCoachWorkoutCopyControls() {},
+    clearCoachWorkoutWeightCopy() {}, refreshCoachWorkoutGroupedProgress() {}, coachWorkoutGroupedExerciseIndexes() { return []; },
     scheduleCoachWorkoutAutosave(options) { calls.push({ action: "save", options: { ...options } }); },
     setCoachWorkoutStatus(message, error) { calls.push({ action: "status", message, error }); }
   });

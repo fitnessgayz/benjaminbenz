@@ -7,6 +7,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "utf8");
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
+const workspaceStyles = fs.readFileSync(path.join(projectRoot, "css/coach-workspace.css"), "utf8");
 
 function javascriptFunction(name) {
   const declaration = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`);
@@ -20,28 +21,25 @@ function javascriptFunction(name) {
   return adminSource.slice(start, end);
 }
 
-test("Coach Home is the first and default sidebar destination", () => {
+test("Coach Home remains first in the sidebar and Activity is the default view", () => {
   const navStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navigation = adminHtml.slice(navStart, navEnd);
 
   assert.ok(navigation.indexOf('data-admin-tab="home"') < navigation.indexOf('href="coach-workout-log.html"'));
-  assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
-  assert.match(adminSource, /get\("tab"\) \|\| "home"/);
+  assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"/);
+  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Activity"[^>]*aria-current="page"/);
+  assert.match(adminSource, /get\("tab"\) \|\| "notifications"/);
   assert.match(adminSource, /coachAdminTabNames\.has\(tabName\) \? tabName : "home"/);
 });
 
-test("Coach Home exposes live workout, schedule, session, sheet, and follow-up modules", () => {
+test("Coach Home exposes workouts, session sheets, and follow-up modules", () => {
   const homeStart = adminHtml.indexOf('data-admin-panel="home"');
   const homeEnd = adminHtml.indexOf('data-admin-client-context', homeStart);
   const home = adminHtml.slice(homeStart, homeEnd);
 
-  assert.match(home, /id="coach-home-recent-list"/);
-  assert.match(home, /id="coach-home-calendar"/);
-  assert.match(home, /id="coach-home-calendar-status"/);
-  assert.match(home, /data-coach-home-refresh-calendar/);
-  assert.match(home, /Open calendar/);
-  assert.match(home, /id="coach-home-schedule-list"/);
+  assert.match(home, /data-coach-home-shortcut="workouts"/);
+  assert.doesNotMatch(home, /coach-home-recent-list/);
   assert.match(home, /id="coach-home-sheet-list"/);
   assert.match(home, /Alex Fitness, B2 Master Session/);
   assert.match(home, /id="coach-home-session-alert-list"/);
@@ -95,33 +93,40 @@ test("home actions open the selected client's training logs or sessions", () => 
   assert.match(handler, /data-coach-home-open-logs/);
   assert.match(handler, /data-coach-home-open-sessions/);
   assert.match(handler, /data-coach-home-tab/);
-  assert.match(handler, /data-coach-home-refresh-calendar/);
   assert.match(opener, /fillForm\(program\)/);
   assert.match(opener, /setAdminTab\(tabName\)/);
 });
 
-test("home dashboard adapts its cards and lists for phone screens", () => {
-  assert.match(styleSource, /\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
-  assert.match(styleSource, /@media \(max-width: 720px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
+test("mobile Home keeps extra detail in disclosures", () => {
+  for (const label of ["Session sheets", "Client follow-ups and requests"]) {
+    assert.ok(adminHtml.includes(`<summary>${label}</summary>`));
+  }
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /@media \(max-width: 480px\)[\s\S]*?\.coach-home-sheet-card\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
 
-test("summary cards are four keyboard-accessible buttons rather than static articles", () => {
-  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('class="coach-home-dashboard-grid"'));
+test("summary metrics are four keyboard-accessible shortcuts", () => {
+  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('class="coach-home-details"'));
   for (const destination of ["clients", "workouts", "sessions", "attention"]) {
     assert.match(metrics, new RegExp(`<button[^>]+type="button"[^>]+data-coach-home-shortcut="${destination}"`));
   }
   assert.doesNotMatch(metrics, /<article/);
 });
 
-test("summary shortcuts select active clients or focus and scroll to the matching section", () => {
+test("summary shortcuts select active clients or open and focus the matching section", () => {
   const calls = [];
   const nodes = {};
-  for (const id of ["client-search-input", "coach-home-recent-title", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
-    nodes[id] = {value: "Old search", focus: () => calls.push(["focus", id]), scrollIntoView: options => calls.push(["scroll", id, options.behavior])};
+  for (const id of ["client-search-input", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
+    const disclosure = { open: false };
+    nodes[id] = {
+      value: "Old search",
+      closest: (selector) => selector === "details" ? disclosure : null,
+      focus: () => calls.push(["focus", id, disclosure.open]),
+      scrollIntoView: options => calls.push(["scroll", id, options.behavior])
+    };
   }
   let reducedMotion = false;
-  const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", `
+  const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", "openCoachActivity", `
     let showingArchivedClients = true;
     let clientSearchTerm = "Old search";
     ${javascriptFunction("openCoachHomeShortcut")}
@@ -129,20 +134,23 @@ test("summary shortcuts select active clients or focus and scroll to the matchin
   `)(
     {getElementById: id => nodes[id]},
     {matchMedia: () => ({matches: reducedMotion})},
-    () => calls.push(["close"]), () => calls.push(["render"]), tab => calls.push(["tab", tab])
+    () => calls.push(["close"]), () => calls.push(["render"]), tab => calls.push(["tab", tab]), () => calls.push(["activity"])
   );
   api.openCoachHomeShortcut("clients");
   assert.deepEqual(api.state(), {showingArchivedClients:false, clientSearchTerm:""});
   assert.equal(nodes["client-search-input"].value, "");
   assert.ok(calls.some(call => call[0] === "tab" && call[1] === "clients"));
-  for (const [destination,id] of [["workouts","coach-home-recent-title"],["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
+  calls.length = 0;
+  api.openCoachHomeShortcut("workouts");
+  assert.deepEqual(calls, [["activity"]]);
+  for (const [destination,id] of [["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
     calls.length = 0;
     api.openCoachHomeShortcut(destination);
-    assert.deepEqual(calls, [["focus",id],["scroll",id,"smooth"]]);
+    assert.deepEqual(calls, [["focus",id,true],["scroll",id,"smooth"]]);
   }
   reducedMotion = true;
   calls.length = 0;
-  api.openCoachHomeShortcut("workouts");
+  api.openCoachHomeShortcut("sessions");
   assert.equal(calls.at(-1)[2], "auto");
   calls.length = 0;
   api.openCoachHomeShortcut("unknown");

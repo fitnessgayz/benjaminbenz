@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>GRUNTR Coach | Fitness with Benjamin</title>
   <meta name="description" content="GRUNTR Coach workspace for managing clients, training, and messages." />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
@@ -22,14 +22,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=11&amp;mobile-client-hub=2&amp;home-settings=1&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1&amp;invite-dialog=1&amp;activity-controls-layout=1&amp;compact-activity-inbox=5&amp;electric-gold=2&amp;likeness-motion=1&amp;anatomy-images=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=11&amp;mobile-client-hub=2&amp;home-settings=1&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1&amp;invite-dialog=1&amp;activity-controls-layout=1&amp;compact-activity-inbox=5&amp;electric-gold=2&amp;likeness-motion=1&amp;anatomy-images=1&amp;activity-desk=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=3&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/workout-progression.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2&amp;electric-gold=2" />
-  <meta name="theme-color" content="#030D1C" />
+  <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1&amp;training-log-contrast=1&amp;compact-activity-inbox=3" />
   <link rel="stylesheet" href="css/coach-workout-corrections.css?v=weight-corrections-1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/coach-workout-schedule.css?v=1" />
@@ -37,15 +37,17 @@
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=2" />
   <script defer src="/js/coach-install.js?v=1"></script>
+  <link rel="stylesheet" href="css/coach-workspace.css?v=2&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=1" />
+  <link rel="stylesheet" href="css/coach-clients.css?v=5" />
 </head>
 <body class="dashboard-page coach-admin-page">
+  <a class="coach-skip" href="#coach-main">Skip to workspace</a>
   <header class="site-header dashboard-header">
     <a class="brand coach-brand-lockup" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
       <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="42" height="42" />
       <strong>GRUNTR Coach</strong>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
-      <a href="#clients">Clients</a>
       <a id="client-view-link" aria-disabled="true" tabindex="-1">Client View</a>
       <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
     </nav>
@@ -54,7 +56,7 @@
     </div>
   </header>
 
-  <main class="admin-shell">
+  <main class="admin-shell" id="coach-main" tabindex="-1">
     <section class="dashboard-hero" aria-label="GRUNTR Coach summary">
       <div>
         <p class="kicker">GRUNTR Coach</p>
@@ -73,7 +75,7 @@
       ></button>
       <aside class="coach-admin-sidebar" aria-label="GRUNTR Coach navigation">
         <div class="coach-admin-sidebar-header">
-          <a class="coach-admin-sidebar-brand" href="coach-admin.html" aria-label="GRUNTR Coach home">
+          <a class="coach-admin-sidebar-brand" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
             <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="38" height="38" />
             <span class="coach-admin-sidebar-title">GRUNTR Coach</span>
           </a>
@@ -90,9 +92,13 @@
         </div>
 
         <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="GRUNTR Coach sections">
-          <button class="admin-tab is-active" type="button" data-admin-tab="home" aria-label="Home" aria-current="page">
+          <button class="admin-tab" type="button" data-admin-tab="home" aria-label="Home">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
             <span class="admin-nav-label">Home</span>
+          </button>
+          <button class="admin-tab is-active" type="button" data-admin-tab="notifications" aria-label="Activity" aria-current="page">
+            <svg class="admin-nav-icon admin-nav-activity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+            <span class="admin-nav-label">Activity</span>
           </button>
           <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Workout logger">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-5"/></svg>
@@ -104,6 +110,10 @@
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="admin-nav-label">Clients</span>
           </button>
+          <button class="admin-tab" type="button" data-admin-tab="session-counts" aria-label="Sessions">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-13 5 2 2 4-4"/></svg>
+            <span class="admin-nav-label">Sessions</span>
+          </button>
           <button class="admin-tab" type="button" data-admin-tab="inbox" aria-label="Inbox" title="Inbox">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 1 1 19 0Z"/><path d="M7 9h9M7 13h6"/></svg>
             <span class="admin-nav-label">Inbox</span>
@@ -111,12 +121,8 @@
           </button>
           <a class="admin-tab admin-tab-link admin-tab-exercise-library" href="coach-exercise-library.html" aria-label="Exercise library">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg>
-            <span class="admin-nav-label">Exercise library</span>
+            <span class="admin-nav-label"><span class="coach-library-nav-full">Exercise Library</span><span class="coach-library-nav-short">Library</span></span>
           </a>
-          <button class="admin-tab" type="button" data-admin-tab="notifications" aria-label="Recent activity">
-            <svg class="admin-nav-icon admin-nav-activity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
-            <span class="admin-nav-label">Activity</span>
-          </button>
           <button class="admin-tab admin-tab-mobile-more" type="button" aria-label="More coach tools" aria-haspopup="dialog" data-coach-mobile-more-open>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
             <span class="admin-nav-label">More</span>
@@ -133,11 +139,10 @@
           <button type="button" aria-label="Close more tools" data-coach-mobile-more-close>×</button>
         </div>
         <nav class="coach-mobile-more-menu" aria-label="Additional coach tools">
-          <button type="button" data-coach-mobile-more-destination="inbox"><strong>Messages</strong><span>Open your client inbox</span><span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span></button>
           <a href="coach-workout-log.html"><strong>Workout logger</strong><span>Record an in-person session</span></a>
-          <a href="coach-exercise-library.html"><strong>Exercise library</strong><span>Manage exercises and media</span></a>
           <button type="button" data-coach-install hidden><strong>Install GRUNTR Coach</strong><span>Add the coach app to your device</span></button>
-          <button type="button" data-coach-mobile-more-destination="notifications"><strong>Settings</strong><span>Notifications, support, and privacy</span></button>
+          <a href="coach-community-wall.html"><strong>GRUNTR FEED</strong></a>
+          <button type="button" data-coach-mobile-settings><strong>Notification settings</strong><span>Browser alerts and notification preferences</span></button>
         </nav>
       </dialog>
 
@@ -146,329 +151,350 @@
         <input type="hidden" name="sheet_url" />
         <input type="hidden" name="session_package_history" />
 
-        <section class="admin-client-list" id="clients" aria-label="Client list">
-          <div class="admin-section-heading">
+        <section class="admin-client-list" id="clients" data-admin-panel="clients" aria-label="Client list">
+          <div class="admin-section-heading coach-clients-heading">
             <div>
-              <p class="kicker">Clients</p>
-              <h2>Choose a client</h2>
+              <h2>Clients</h2>
             </div>
             <div class="client-list-actions">
-              <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
+              <button class="button button-dark" type="button" data-open-invite-client>Add client</button>
             </div>
           </div>
-          <div class="client-autocomplete" id="client-autocomplete">
-            <label class="client-search-control" for="client-search-input">
-              <span id="client-search-label">Client name</span>
-              <input type="text" id="client-search-input" placeholder="Type a client name..." autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
-            </label>
-            <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+          <div class="coach-client-views" role="tablist" aria-label="Client views">
+            <button type="button" role="tab" id="coach-clients-personal" data-coach-clients-view="personal_training" aria-controls="coach-client-roster" aria-selected="true">Personal training</button>
+            <button type="button" role="tab" id="coach-clients-app" data-coach-clients-view="app_access_only" aria-controls="coach-client-roster" aria-selected="false" tabindex="-1">App only</button>
+            <button type="button" role="tab" id="coach-clients-all" data-coach-clients-view="all" aria-controls="coach-client-roster" aria-selected="false" tabindex="-1">All clients</button>
           </div>
-          <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
+          <section class="coach-client-roster" id="coach-client-roster" role="tabpanel" aria-labelledby="coach-clients-personal">
+            <div class="coach-client-search-bar">
+              <div class="client-autocomplete" id="client-autocomplete">
+                <label class="client-search-control" for="client-search-input">
+                  <span id="client-search-label" class="coach-client-visually-hidden">Client name</span>
+                  <input type="text" id="client-search-input" placeholder="Search by name or email" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
+                </label>
+                <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+              </div>
+              <button class="button button-ghost" type="button" id="archived-clients-button" aria-pressed="false">Archived clients</button>
+            </div>
+            <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
+            <ul class="coach-client-rows" data-coach-client-rows aria-label="Clients"></ul>
+            <p class="coach-client-empty" data-coach-client-empty hidden></p>
+          </section>
+        </section>
+        <section class="admin-card coach-client-counts" id="coach-client-session-counts" data-admin-panel="session-counts" aria-labelledby="coach-session-count-title" hidden>
+          <div class="admin-section-heading coach-clients-heading">
+            <div><h2 id="coach-session-count-title" tabindex="-1">Sessions</h2></div>
+          </div>
+          <div class="coach-client-views coach-session-views" role="tablist" aria-label="Session views">
+            <button type="button" role="tab" id="coach-sessions-fwb-tab" data-coach-session-view="fwb" aria-controls="coach-sessions-fwb" aria-selected="true">FWB sessions</button>
+            <button type="button" role="tab" id="coach-sessions-alex-tab" data-coach-session-view="alex" aria-controls="coach-sessions-alex" aria-selected="false" tabindex="-1">Alex Fitness</button>
+          </div>
+          <div id="coach-sessions-fwb" role="tabpanel" aria-labelledby="coach-sessions-fwb-tab">
+            <section class="coach-fwb-sessions" aria-labelledby="coach-fwb-sessions-title">
+              <div>
+                <h3 id="coach-fwb-sessions-title">FWB sessions</h3>
+                <p data-coach-fwb-status>Completed + cancelled</p>
+                <p data-coach-fwb-sync role="status"></p>
+              </div>
+              <div class="coach-fwb-month-picker">
+                <button type="button" data-coach-fwb-month="-1" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+                <p class="coach-fwb-month-total" aria-live="polite" aria-atomic="true"><span data-coach-fwb-month-label></span><strong data-coach-fwb-total>—</strong></p>
+                <button type="button" data-coach-fwb-month="1" aria-label="Next month" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+              </div>
+            </section>
+            <table class="coach-client-count-table">
+              <caption>Client session counts</caption>
+              <thead><tr><th scope="col">Client</th><th scope="col">Used</th><th scope="col">Total</th><th scope="col">Left</th></tr></thead>
+              <tbody data-coach-client-count-rows></tbody>
+            </table>
+            <p class="coach-client-empty" data-coach-count-empty hidden>No active clients to show.</p>
+          </div>
+          <div id="coach-sessions-alex" role="tabpanel" aria-labelledby="coach-sessions-alex-tab" tabindex="0" hidden>
+            <div class="coach-alex-history-heading">
+              <div>
+                <h3>Session history</h3>
+                <p>Completed Alex Fitness sessions · Pacific time</p>
+                <p data-coach-alex-status role="status"></p>
+              </div>
+              <label data-coach-alex-filter hidden>Package<select aria-label="Alex Fitness package" data-coach-alex-package></select></label>
+            </div>
+            <div class="coach-alex-pagination" data-coach-alex-pagination hidden>
+              <button class="button button-ghost" type="button" data-coach-alex-page="-1">Newer</button>
+              <p data-coach-alex-range aria-live="polite"></p>
+              <button class="button button-ghost" type="button" data-coach-alex-page="1">Older</button>
+            </div>
+            <table class="coach-alex-history-table" aria-label="Completed Alex Fitness sessions" hidden>
+              <thead><tr><th scope="col">Date</th><th scope="col">Start time</th><th scope="col">Session</th></tr></thead>
+              <tbody data-coach-alex-rows></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="admin-card coach-home-panel" data-admin-panel="home" aria-labelledby="coach-home-title">
-          <div class="coach-home-mobile-toolbar">
-            <button class="coach-home-notification-button" type="button" aria-label="Open coach settings" aria-haspopup="dialog" data-coach-home-settings>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Settings</span>
-              <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
-            </button>
-          </div>
-          <div class="coach-home-heading">
-            <div>
-              <p class="kicker">Coach home</p>
-              <h2 id="coach-home-title">Today at a glance</h2>
-              <p>Recent training, upcoming sessions, and the clients who may need a check-in.</p>
-              <a class="button button-ghost" href="coach-community-wall.html">Open FWB Wall →</a>
+          <header class="coach-overview">
+            <div class="coach-overview-title">
+              <h2 id="coach-home-title">Coach Home</h2>
             </div>
-            <button class="button button-dark" type="button" id="new-client-button">Invite new client</button>
-          </div>
-
-          <div class="coach-home-metrics" aria-label="Coach summary">
-            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="clients">
-              <span>Active clients</span>
-              <strong id="coach-home-active-clients">0</strong>
-              <small>currently on your roster</small>
-            <em>View clients <span aria-hidden="true">→</span></em>
-            </button>
-            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="workouts">
-              <span>Workouts</span>
-              <strong id="coach-home-recent-workouts">0</strong>
-              <small>completed in the last 7 days</small>
-            <em>View activity <span aria-hidden="true">→</span></em>
-            </button>
-            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="sessions">
-              <span>Sessions left</span>
-              <strong id="coach-home-sessions-left">0</strong>
-              <small id="coach-home-session-total">Alex Fitness Master only</small>
-            <em>View session sheets <span aria-hidden="true">→</span></em>
-            </button>
-            <button class="coach-home-shortcut coach-home-attention-metric" type="button" data-coach-home-shortcut="attention">
-              <span>Needs attention</span>
-              <strong id="coach-home-needs-attention">0</strong>
-              <small>low sessions or training inactivity</small>
-            <em>View follow-ups <span aria-hidden="true">→</span></em>
-            </button>
-          </div>
+            <div class="coach-home-mobile-toolbar">
+              <button class="coach-home-notification-button" type="button" aria-label="Open coach settings" data-coach-home-settings>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Settings</span>
+                <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
+              </button>
+            </div>
+            <nav class="coach-overview-actions" aria-label="Quick actions">
+              <a class="button button-dark coach-primary-action" href="coach-workout-log.html">Log a workout <span aria-hidden="true">→</span></a>
+              <button class="button button-ghost" type="button" data-coach-home-shortcut="clients">Find a client</button>
+              <button class="button button-ghost" type="button" id="new-client-button" data-open-invite-client>Add client</button>
+            </nav>
+          </header>
 
           <div class="coach-home-dashboard-grid">
-            <section class="coach-home-module coach-home-recent" aria-labelledby="coach-home-recent-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Training activity</p>
-                  <h3 id="coach-home-recent-title" tabindex="-1">Last workout by client</h3>
-                </div>
-                <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
-              </div>
-              <div class="coach-home-list" id="coach-home-recent-list">
-                <p class="empty-state">Workout activity will appear here.</p>
-              </div>
-            </section>
+            <div class="coach-home-metrics" aria-label="Coach summary">
+              <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="clients">
+                <span>Active clients</span>
+                <strong id="coach-home-active-clients">0</strong>
+              </button>
+              <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="workouts">
+                <span>Workouts in 7 days</span>
+                <strong id="coach-home-recent-workouts">0</strong>
+              </button>
+              <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="sessions">
+                <span>Sessions left</span>
+                <strong id="coach-home-sessions-left">0</strong>
+                <small id="coach-home-session-total">Alex Fitness Master only</small>
+              </button>
+              <button class="coach-home-shortcut coach-home-attention-metric" type="button" data-coach-home-shortcut="attention">
+                <span>Needs attention</span>
+                <strong id="coach-home-needs-attention">0</strong>
+              </button>
+            </div>
+            <div class="coach-home-details">
+              <button class="coach-home-disclosure coach-home-destination" type="button" data-coach-home-shortcut="workouts">Activity <span aria-hidden="true">→</span></button>
+              <a class="coach-home-disclosure coach-home-destination" href="coach-exercise-library.html">Exercise library <span aria-hidden="true">→</span></a>
+              <details class="coach-home-disclosure">
+                <summary>Session sheets</summary>
+                <section class="coach-home-module" aria-labelledby="coach-home-sheets-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <h3 id="coach-home-sheets-title" tabindex="-1">Session sheets</h3>
+                    </div>
+                  </div>
+                  <p class="coach-home-module-copy">Alex Fitness, B2 Master Session, and other saved client sheets stay one tap away.</p>
+                  <div class="coach-home-sheet-grid" id="coach-home-sheet-list">
+                    <p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>
+                  </div>
+                </section>
+              </details>
+              <details class="coach-home-disclosure">
+                <summary>Client follow-ups and requests</summary>
+                <section class="coach-home-module" aria-labelledby="coach-home-membership-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">Client intake</p>
+                      <h3 id="coach-home-membership-title" tabindex="-1">Membership requests</h3>
+                    </div>
+                  </div>
+                  <div class="coach-home-list" id="coach-home-membership-requests">
+                    <p class="empty-state">No membership requests are waiting.</p>
+                  </div>
+                </section>
 
-            <section class="coach-home-module coach-home-schedule" aria-labelledby="coach-home-schedule-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">FWB Calendar</p>
-                  <h3 id="coach-home-schedule-title">Session schedule</h3>
-                </div>
-                <div class="coach-home-calendar-actions">
-                  <button class="coach-home-text-link" type="button" data-coach-home-refresh-calendar>Refresh</button>
-                  <a class="coach-home-text-link" href="https://calendar.google.com/calendar/u/0/r?cid=ms1pdspk1qona0lr8d8est34ek%40group.calendar.google.com" target="_blank" rel="noopener noreferrer">Open calendar</a>
-                </div>
-              </div>
-              <p class="coach-home-calendar-status" id="coach-home-calendar-status" role="status">Connecting to FWB Calendar…</p>
-              <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
-              <div class="coach-home-list coach-home-schedule-list" id="coach-home-schedule-list">
-                <p class="empty-state">FWB Calendar events will appear here.</p>
-              </div>
-            </section>
+                <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">Session count</p>
+                      <h3 id="coach-home-session-alert-title" tabindex="-1">Low or out of sessions</h3>
+                    </div>
+                  </div>
+                  <div class="coach-home-list" id="coach-home-session-alert-list">
+                    <p class="empty-state">No session packages need attention.</p>
+                  </div>
+                </section>
 
-            <section class="coach-home-module" aria-labelledby="coach-home-sheets-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Master sessions</p>
-                  <h3 id="coach-home-sheets-title" tabindex="-1">Session sheets</h3>
-                </div>
-              </div>
-              <p class="coach-home-module-copy">Alex Fitness, B2 Master Session, and other saved client sheets stay one tap away.</p>
-              <div class="coach-home-sheet-grid" id="coach-home-sheet-list">
-                <p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>
-              </div>
-            </section>
+                <section class="coach-home-module coach-home-inactive" aria-labelledby="coach-home-inactive-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">Follow-up</p>
+                      <h3 id="coach-home-inactive-title">No workout in a while</h3>
+                    </div>
+                  </div>
+                  <p class="coach-home-module-copy">Clients appear here after 14 days without a saved workout.</p>
+                  <div class="coach-home-list" id="coach-home-inactive-list">
+                    <p class="empty-state">Everyone has trained recently.</p>
+                  </div>
+                </section>
 
-            <section class="coach-home-module" aria-labelledby="coach-home-membership-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Client intake</p>
-                  <h3 id="coach-home-membership-title" tabindex="-1">Membership requests</h3>
-                </div>
-              </div>
-              <div class="coach-home-list" id="coach-home-membership-requests">
-                <p class="empty-state">No membership requests are waiting.</p>
-              </div>
-            </section>
-
-            <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Session count</p>
-                  <h3 id="coach-home-session-alert-title" tabindex="-1">Low or out of sessions</h3>
-                </div>
-              </div>
-              <div class="coach-home-list" id="coach-home-session-alert-list">
-                <p class="empty-state">No session packages need attention.</p>
-              </div>
-            </section>
-
-            <section class="coach-home-module coach-home-inactive" aria-labelledby="coach-home-inactive-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Follow-up</p>
-                  <h3 id="coach-home-inactive-title">No workout in a while</h3>
-                </div>
-              </div>
-              <p class="coach-home-module-copy">Clients appear here after 14 days without a saved workout.</p>
-              <div class="coach-home-list" id="coach-home-inactive-list">
-                <p class="empty-state">Everyone has trained recently.</p>
-              </div>
-            </section>
-
-            <section class="coach-home-module coach-access-requests" aria-labelledby="coach-access-requests-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">New clients</p>
-                  <h3 id="coach-access-requests-title">Sign-up requests</h3>
-                </div>
-                <button class="button button-ghost" type="button" id="refresh-access-requests">Refresh</button>
-              </div>
-              <p class="coach-home-module-copy">Review each request before sending an invitation.</p>
-              <div class="coach-home-list" id="coach-access-request-list" aria-live="polite">
-                <p class="empty-state">Loading requests…</p>
-              </div>
-            </section>
+                <section class="coach-home-module coach-access-requests" aria-labelledby="coach-access-requests-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">New clients</p>
+                      <h3 id="coach-access-requests-title">Sign-up requests</h3>
+                    </div>
+                    <button class="button button-ghost" type="button" id="refresh-access-requests">Refresh</button>
+                  </div>
+                  <p class="coach-home-module-copy">Review each request before sending an invitation.</p>
+                  <div class="coach-home-list" id="coach-access-request-list" aria-live="polite">
+                    <p class="empty-state">Loading requests…</p>
+                  </div>
+                </section>
+              </details>
+              <a class="coach-home-text-link coach-home-wall-link" href="coach-community-wall.html">GRUNTR FEED <span aria-hidden="true">↗</span></a>
+            </div>
           </div>
         </section>
 
         <section class="admin-card" data-admin-panel="inbox" data-coach-messages aria-label="Coach inbox" hidden></section>
 
-        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context hidden>
+        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context data-client-in-view="false" hidden>
           <div class="selected-client-copy">
-            <p class="kicker">Selected client</p>
-            <h2 id="selected-client-name">Choose a client</h2>
-            <p id="selected-client-email">Search or create a client to start editing.</p>
+            <div class="coach-client-identity"><h2 id="selected-client-name">Choose a client</h2><span id="selected-client-status"></span></div>
+            <p id="selected-client-email" hidden>Search or create a client to start editing.</p>
           </div>
-          <div class="selected-client-meta" id="selected-client-meta">
-            <span>No client selected</span>
+          <div class="coach-client-summary-line">
+            <div class="selected-client-meta" id="selected-client-meta"></div>
+            <div class="selected-session-count" id="selected-session-count" hidden>
+              <strong id="selected-session-count-value">--</strong>
+              <span>sessions</span>
+            </div>
           </div>
           <nav class="selected-client-mobile-menu" aria-label="Selected client tools">
-            <button type="button" data-client-mobile-destination="profile"><strong>Profile</strong><span>Contact and account details</span></button>
-            <button type="button" data-client-mobile-destination="program"><strong>Program</strong><span>Training plan and goals</span></button>
-            <button type="button" data-client-mobile-destination="workouts"><strong>Workouts</strong><span>Assigned training</span></button>
-            <button type="button" data-client-mobile-destination="nutrition"><strong>Food</strong><span>Nutrition targets and logs</span></button>
-            <button type="button" data-client-mobile-destination="progress"><strong>Progress</strong><span>Stats and check-ins</span></button>
-            <button type="button" data-client-mobile-destination="sessions"><strong>Sessions</strong><span>Package and dates</span></button>
-            <button type="button" data-client-mobile-destination="logs"><strong>Logs</strong><span>Workout history</span></button>
-            <button type="button" data-client-mobile-destination="notes"><strong>Notes</strong><span>Private coaching notes</span></button>
+            <button type="button" data-client-mobile-destination="profile" aria-label="Profile"><strong>Profile</strong></button>
+            <button type="button" data-client-mobile-destination="program" aria-label="Program"><strong>Program</strong></button>
+            <button type="button" data-client-mobile-destination="workouts" aria-label="Workouts"><strong>Workouts</strong></button>
+            <button type="button" data-client-mobile-destination="nutrition" aria-label="Food"><strong>Food</strong></button>
+            <button type="button" data-client-mobile-destination="progress" aria-label="Progress"><strong>Progress</strong></button>
+            <button type="button" data-client-mobile-destination="sessions" aria-label="Sessions"><strong>Sessions</strong></button>
+            <button type="button" data-client-mobile-destination="logs" aria-label="Logs"><strong>Logs</strong></button>
+            <button type="button" data-client-mobile-destination="notes" aria-label="Notes"><strong>Notes</strong></button>
           </nav>
           <div class="selected-client-actions">
-            <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>View messages</button>
-            <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
-            <button class="button button-ghost" type="button" id="selected-client-password-reset-button" hidden>Send password reset link</button>
-            <div class="selected-session-count" id="selected-session-count" hidden>
-              <span>Session count</span>
-              <strong id="selected-session-count-value">--</strong>
-            </div>
-            <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
+            <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>Message</button>
+            <details class="coach-client-more">
+              <summary aria-label="More client actions">⋯</summary>
+              <div class="coach-client-more-actions">
+                <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
+                <button class="button button-ghost" type="button" id="selected-client-password-reset-button" hidden>Send password reset link</button>
+              </div>
+            </details>
           </div>
         </section>
 
         <section
-          class="admin-card coach-notification-panel"
+          class="admin-card coach-notification-panel coach-activity-desk"
           data-admin-panel="notifications"
           aria-labelledby="coach-notification-title"
           hidden
         >
-          <button class="coach-notification-close" type="button" aria-label="Close notifications" data-coach-notification-close>×</button>
-          <div class="admin-section-heading coach-notification-heading">
+          <header class="coach-activity-header">
             <div>
-              <h2 id="coach-notification-title">Coach settings</h2>
-              <p>Alerts and client activity</p>
+              <p class="kicker">Client updates</p>
+              <h2 id="coach-notification-title" tabindex="-1">Activity</h2>
             </div>
-          </div>
+            <button class="button button-ghost coach-notification-mark-all" type="button" aria-label="Mark all notifications read" data-web-notification-mark-all hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
+              <span>Mark read</span>
+            </button>
+          </header>
 
-          <div class="coach-notification-summary" aria-label="Activity summary">
-            <article class="coach-notification-summary-card is-new">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-              <strong data-web-notification-summary="unread">0</strong>
-              <span>new</span>
-            </article>
-            <article class="coach-notification-summary-card">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>
-              <strong data-web-notification-summary="workouts">0</strong>
-              <span>workouts</span>
-            </article>
-            <article class="coach-notification-summary-card">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
-              <strong data-web-notification-summary="checkins">0</strong>
-              <span>check-ins</span>
-            </article>
-          </div>
+          <div class="coach-activity-layout">
+            <section class="coach-activity-feed" aria-label="Recent activity">
+              <div class="coach-activity-filters" role="group" aria-label="Filter activity">
+                <button type="button" data-coach-activity-filter="all" aria-pressed="true">All activity</button>
+                <button type="button" data-coach-activity-filter="workouts" aria-pressed="false">Workouts</button>
+                <button type="button" data-coach-activity-filter="checkins" aria-pressed="false">Check-ins</button>
+              </div>
+              <ol class="web-notification-list" data-web-notification-list aria-live="polite"></ol>
+              <p class="web-notification-empty" data-web-notification-empty>Client workouts, check-ins, gym visits, and badges will appear here.</p>
+              <p class="web-notification-empty" data-coach-activity-filter-empty role="status" hidden></p>
+              <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
+            </section>
 
-          <div class="coach-notification-inbox" aria-labelledby="coach-notification-inbox-title">
-            <div class="coach-notification-section-heading">
-              <div class="coach-notification-inbox-title">
-                <p class="kicker">Activity</p>
-                <div class="coach-notification-inbox-title-row">
-                  <h3 id="coach-notification-inbox-title">Recent activity</h3>
-                  <span class="coach-notification-inbox-count" data-web-notification-unread hidden>0</span>
+            <aside class="coach-activity-aside" aria-label="Activity shortcuts">
+              <div class="coach-activity-unread"><strong data-web-notification-summary="unread">0</strong><span>Unread updates</span></div>
+              <h3>Go to</h3>
+              <button class="coach-home-destination" type="button" data-coach-activity-clients>Client profiles <span aria-hidden="true">↗</span></button>
+              <a class="coach-home-destination" href="coach-exercise-library.html">Exercise library <span aria-hidden="true">↗</span></a>
+              <button class="coach-home-destination" type="button" data-coach-activity-settings>Notification settings <span aria-hidden="true">↓</span></button>
+              <button class="button button-dark coach-activity-add" type="button" data-open-invite-client>Add client</button>
+            </aside>
+          </div>
+          <details class="coach-home-disclosure coach-alert-settings">
+            <summary>Notification settings</summary>
+            <div class="coach-notification-actions">
+              <button class="button button-dark" type="button" data-web-notification-enable>Enable browser alerts</button>
+              <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test</button>
+            </div>
+
+            <div class="coach-notification-settings" aria-labelledby="coach-notification-settings-title">
+              <div class="coach-notification-section-heading">
+                <div>
+                  <p class="kicker">Alert choices</p>
+                  <h3 id="coach-notification-settings-title">Notify me when…</h3>
                 </div>
+                <p>All coach alerts start on. Turn off only the categories you do not want.</p>
               </div>
-              <button class="button button-ghost coach-notification-mark-all" type="button" aria-label="Mark all notifications read" data-web-notification-mark-all hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
-                <span>Mark read</span>
-              </button>
-            </div>
-            <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
-            <p class="web-notification-empty" data-web-notification-empty>Client workouts, check-ins, gym visits, and badges will appear here.</p>
-          </div>
-
-          <div class="coach-notification-actions">
-            <button class="button button-dark" type="button" data-web-notification-enable>Enable browser alerts</button>
-            <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test</button>
-          </div>
-
-          <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite">
-            Choose Enable browser alerts to receive notifications on this device.
-          </p>
-
-          <div class="coach-notification-settings" aria-labelledby="coach-notification-settings-title">
-            <div class="coach-notification-section-heading">
-              <div>
-                <p class="kicker">Alert choices</p>
-                <h3 id="coach-notification-settings-title">Notify me when…</h3>
+              <div class="coach-notification-preference-grid">
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_workout_completed" checked />
+                  <span><strong>A workout is completed</strong><small>Know when a client finishes and saves a workout.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_logins" checked />
+                  <span><strong>A client signs in</strong><small>Receive an alert when a client intentionally logs in to the website.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_achievements" checked />
+                  <span><strong>A badge is earned</strong><small>Celebrate a client’s latest training milestone.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_check_ins" checked />
+                  <span><strong>A check-in is submitted</strong><small>See new weekly check-ins and client updates.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_workout_comments" checked />
+                  <span><strong>A workout comment is added</strong><small>Follow up on notes a client leaves with a workout.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_form_checks" checked />
+                  <span><strong>A form check is submitted</strong><small>Review a client’s new form-check request.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_progress_updates" checked />
+                  <span><strong>Progress is updated</strong><small>Receive an alert for a new progress entry.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_dexa_uploads" checked />
+                  <span><strong>A DEXA report is uploaded</strong><small>Review a newly uploaded scan when you are ready.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_questionnaires" checked />
+                  <span><strong>A questionnaire arrives</strong><small>See when a client fitness questionnaire is available.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_coach_requests" checked />
+                  <span><strong>A client asks for help</strong><small>Respond to direct coach requests more quickly.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_session_balance" checked />
+                  <span><strong>Sessions are running low</strong><small>Get a reminder when a package needs attention.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_nutrition_activity" checked />
+                  <span><strong>Nutrition activity needs review</strong><small>Receive a concise digest of client food-log activity.</small></span>
+                </label>
+                <label class="coach-notification-preference">
+                  <input type="checkbox" data-web-notification-preference="client_inactivity" checked />
+                  <span><strong>A client becomes inactive</strong><small>Follow up when a client has not logged training.</small></span>
+                </label>
               </div>
-              <p>All coach alerts start on. Turn off only the categories you do not want.</p>
             </div>
-            <div class="coach-notification-preference-grid">
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_workout_completed" checked />
-                <span><strong>A workout is completed</strong><small>Know when a client finishes and saves a workout.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_logins" checked />
-                <span><strong>A client signs in</strong><small>Receive an alert when a client intentionally logs in to the website.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_achievements" checked />
-                <span><strong>A badge is earned</strong><small>Celebrate a client’s latest training milestone.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_check_ins" checked />
-                <span><strong>A check-in is submitted</strong><small>See new weekly check-ins and client updates.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_workout_comments" checked />
-                <span><strong>A workout comment is added</strong><small>Follow up on notes a client leaves with a workout.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_form_checks" checked />
-                <span><strong>A form check is submitted</strong><small>Review a client’s new form-check request.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_progress_updates" checked />
-                <span><strong>Progress is updated</strong><small>Receive an alert for a new progress entry.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_dexa_uploads" checked />
-                <span><strong>A DEXA report is uploaded</strong><small>Review a newly uploaded scan when you are ready.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_questionnaires" checked />
-                <span><strong>A questionnaire arrives</strong><small>See when a client fitness questionnaire is available.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_coach_requests" checked />
-                <span><strong>A client asks for help</strong><small>Respond to direct coach requests more quickly.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_session_balance" checked />
-                <span><strong>Sessions are running low</strong><small>Get a reminder when a package needs attention.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_nutrition_activity" checked />
-                <span><strong>Nutrition activity needs review</strong><small>Receive a concise digest of client food-log activity.</small></span>
-              </label>
-              <label class="coach-notification-preference">
-                <input type="checkbox" data-web-notification-preference="client_inactivity" checked />
-                <span><strong>A client becomes inactive</strong><small>Follow up when a client has not logged training.</small></span>
-              </label>
-            </div>
-          </div>
 
-          <nav class="coach-support-links" aria-label="GRUNTR Coach help and policies">
-            <a href="fwb-coach-support.html"><strong>Help &amp; support</strong><span>Get sign-in, client-data, or workspace help</span></a>
-            <a href="fwb-coach-privacy.html"><strong>Privacy</strong><span>How GRUNTR Coach handles coaching information</span></a>
-          </nav>
+            <nav class="coach-support-links" aria-label="GRUNTR Coach help and policies">
+              <a href="fwb-coach-support.html"><strong>Help &amp; support</strong><span>Get sign-in, client-data, or workspace help</span></a>
+              <a href="fwb-coach-privacy.html"><strong>Privacy</strong><span>How GRUNTR Coach handles coaching information</span></a>
+            </nav>
+          </details>
         </section>
 
         <section class="admin-card programming-heading-card" data-admin-panel="profile" hidden>
@@ -481,23 +507,10 @@
           <p>Build the client profile, progress check-ins, notes, and workouts here.</p>
         </section>
 
-        <section class="admin-card recent-client-logs-panel" data-admin-panel="clients" aria-label="Recent workout logs" hidden>
-          <div class="admin-section-heading compact-heading">
-            <div>
-              <p class="kicker">Recent workout logs</p>
-              <h2>Latest client workouts</h2>
-            </div>
-          </div>
-          <div class="training-log-summary-list" id="recent-client-log-history">
-            <p class="empty-state">No workout logs yet.</p>
-          </div>
-        </section>
-
         <section class="admin-card" data-admin-panel="profile" hidden>
           <div class="admin-section-heading">
             <div>
-              <p class="kicker">Profile</p>
-              <h2>Client</h2>
+              <h2>Client profile</h2>
             </div>
             <label class="toggle-label">
               <input type="checkbox" name="active" checked />
@@ -526,39 +539,49 @@
               Client phone number
               <input type="tel" name="client_phone" placeholder="(555) 555-5555" autocomplete="tel" />
             </label>
-            <label>
-              Initials
-              <input type="text" name="initials" placeholder="BG" maxlength="4" />
-            </label>
-            <label>
-              Height
-              <input type="text" name="height" placeholder="5 ft 10 in" />
-            </label>
-            <label>
-              Starting weight
-              <input type="text" name="starting_weight" placeholder="180 lb" />
-            </label>
-            <label>
-              Starting bodyfat
-              <input type="text" name="starting_bodyfat" placeholder="Not set" />
-            </label>
-            <label>
-              Sessions used
-              <input type="number" name="session_count_used" min="0" inputmode="numeric" placeholder="18" />
-            </label>
-            <label>
-              Total sessions
-              <input type="number" name="session_count_total" min="0" inputmode="numeric" placeholder="20" />
-            </label>
-            <label class="admin-field-full">
-              Session dates
-              <textarea name="session_dates" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
-            </label>
-            <label class="readonly-output-field">
-              Session log count
-              <output id="program-session-count">Add sessions used and total sessions.</output>
-            </label>
           </div>
+          <details class="coach-home-disclosure coach-profile-details">
+            <summary>Starting measurements</summary>
+            <div class="admin-field-grid">
+                <label>
+                  Initials
+                  <input type="text" name="initials" placeholder="BG" maxlength="4" />
+                </label>
+                <label>
+                  Height
+                  <input type="text" name="height" placeholder="5 ft 10 in" />
+                </label>
+                <label>
+                  Starting weight
+                  <input type="text" name="starting_weight" placeholder="180 lb" />
+                </label>
+                <label>
+                  Starting bodyfat
+                  <input type="text" name="starting_bodyfat" placeholder="Not set" />
+                </label>
+            </div>
+          </details>
+          <details class="coach-home-disclosure coach-profile-details">
+            <summary>Session package</summary>
+            <div class="admin-field-grid">
+                <label>
+                  Sessions used
+                  <input type="number" name="session_count_used" min="0" inputmode="numeric" placeholder="18" />
+                </label>
+                <label>
+                  Total sessions
+                  <input type="number" name="session_count_total" min="0" inputmode="numeric" placeholder="20" />
+                </label>
+                <label class="admin-field-full">
+                  Session dates
+                  <textarea name="session_dates" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
+                </label>
+                <label class="readonly-output-field">
+                  Session log count
+                  <output id="program-session-count">Add sessions used and total sessions.</output>
+                </label>
+            </div>
+          </details>
           <section class="client-onboarding-summary" id="client-onboarding-summary" hidden>
             <div>
               <p class="kicker">Client onboarding</p>
@@ -570,16 +593,19 @@
             <p class="profile-save-status" id="admin-save-status" role="status">Ready.</p>
             <button class="button button-ghost" type="button" id="save-profile-changes-button">Save changes</button>
           </div>
-          <div class="profile-management-row">
-            <div>
-              <strong>Client status</strong>
-              <p id="profile-management-status">Archive or delete the selected client from this profile.</p>
+          <details class="coach-home-disclosure coach-profile-details">
+            <summary>Manage account</summary>
+            <div class="profile-management-row">
+              <div>
+                <strong>Client status</strong>
+                <p id="profile-management-status">Archive or delete the selected client from this profile.</p>
+              </div>
+              <div class="profile-management-actions">
+                <button class="button button-ghost danger-button" type="button" id="profile-archive-client-button">Archive client</button>
+                <button class="button button-ghost danger-button" type="button" id="profile-delete-client-button">Delete client</button>
+              </div>
             </div>
-            <div class="profile-management-actions">
-              <button class="button button-ghost danger-button" type="button" id="profile-archive-client-button">Archive client</button>
-              <button class="button button-ghost danger-button" type="button" id="profile-delete-client-button">Delete client</button>
-            </div>
-          </div>
+          </details>
         </section>
 
         <section class="admin-card" data-admin-panel="program" hidden>
@@ -1165,11 +1191,10 @@
           <section class="invite-client-dialog admin-card">
             <div class="invite-client-heading">
               <div>
-                <p class="kicker">New client</p>
-                <h2 id="invite-client-title">Invite a client</h2>
-                <p id="invite-client-description">Create their client profile and invite them by email or text. Text opens your messaging app to review and send.</p>
+                <h2 id="invite-client-title">Add client</h2>
+                <p id="invite-client-description">Save their profile now, or send an invitation by email or text.</p>
               </div>
-              <button class="invite-client-close" type="button" aria-label="Close invite client" data-close-invite-client>×</button>
+              <button class="invite-client-close" type="button" aria-label="Close add client" data-close-invite-client>×</button>
             </div>
             <div class="admin-field-grid invite-client-fields">
               <label>
@@ -1188,14 +1213,13 @@
             </div>
             <div class="invite-row">
               <div>
-                <strong>Client login</strong>
-                <p id="invite-status" role="status" aria-live="polite">Enter the client details, then send their invite.</p>
+                <p id="invite-status" role="status" aria-live="polite">Enter the client’s name and email to get started.</p>
               </div>
               <div class="client-contact-actions">
                 <button class="button button-ghost" type="button" data-close-invite-client>Cancel</button>
-                <button class="button button-ghost" type="button" id="save-client-button">Save without invite</button>
+                <button class="button button-dark" type="button" id="save-client-button">Save client</button>
                 <button class="button button-ghost" type="button" id="text-invite-button">Save &amp; text invite</button>
-                <button class="button button-dark" type="button" id="send-invite-button">Save &amp; email invite</button>
+                <button class="button button-ghost" type="button" id="send-invite-button">Save &amp; email invite</button>
               </div>
             </div>
           </section>
@@ -1223,18 +1247,20 @@
       </div>
     </section>
   </main>
+  <dialog id="coach-activity-comment-dialog" class="coach-activity-comment-dialog" aria-labelledby="coach-comment-title" aria-describedby="coach-comment-delivery"></dialog>
 
   <script src="js/script.js?v=client-session-link-1&amp;remember-login=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/auth-session.js?v=remember-login-2"></script>
   <script src="js/coach-messages.js?v=2"></script>
-  <script src="js/web-notifications.js?v=coach-activity-likes-5&amp;client-login-alert=1&amp;compact-activity-inbox=4&amp;notification-artwork=2"></script>
+  <script src="js/coach-feed-comment.js?v=1"></script>
+  <script src="js/web-notifications.js?v=coach-activity-likes-5&amp;client-login-alert=1&amp;compact-activity-inbox=4&amp;notification-artwork=2&amp;unified-activity=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3"></script>
   <script src="js/workout-layout.js?v=workout-preview-2"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1"></script>
 </body>
 </html>

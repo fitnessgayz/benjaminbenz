@@ -26,6 +26,7 @@ function element(tag = "div") {
     textContent: "",
     className: "",
     classList: { toggle(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); } },
+    addEventListener(name, callback) { this[name] = callback; },
     append(...children) { this.children.push(...children); },
     replaceChildren(...children) { this.children = children; },
     setAttribute(name, value) { this[name] = value; },
@@ -33,8 +34,8 @@ function element(tag = "div") {
   };
 }
 
-function coachHarness({ deployedBackend = false, noticeOverrides = {} } = {}) {
-  const list = element("ul");
+function coachHarness({ deployedBackend = false, noticeOverrides = {}, controllerOptions = {} } = {}) {
+  const list = element("ol");
   const empty = element("p");
   const badge = element("span");
   const markAll = element("button");
@@ -121,7 +122,7 @@ function coachHarness({ deployedBackend = false, noticeOverrides = {} } = {}) {
   URL, Intl, Uint8Array, Buffer };
   vm.runInNewContext(notificationsSource, sandbox);
   const controller = sandbox.window.FWBWebNotifications.createController({
-    supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement
+    supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement, ...controllerOptions
   });
   return { controller, list, status, listeners, rpcCalls, selectCalls, unreadSummary, workoutSummary, checkInSummary };
 }
@@ -154,19 +155,27 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(await harness.controller.init(), true);
   const firstItem = harness.list.children[0];
   const notificationLink = firstItem.children[0];
-  const typeIcon = notificationLink.children.find((child) => child.className === "web-notification-type-icon");
-  const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
+  const header = notificationLink.children.find((child) => child.className === "coach-activity-entry-head");
+  const [typeIcon, author, date] = header.children;
+  const likeButton = firstItem.children[1].children.find((child) => child.dataset.webNotificationLike);
   assert.equal(firstItem.dataset.webNotificationKind, "workout_completed");
   assert.equal(typeIcon.dataset.webNotificationIcon, "workout");
   assert.match(typeIcon.innerHTML, /<rect x="6" y="4"/);
   assert.equal(typeIcon["aria-hidden"], "true");
+  assert.equal(author.textContent, "A client");
+  assert.equal(date.tag, "time");
+  assert.notEqual(date["aria-label"], date.textContent);
+  assert.equal(notificationLink.children.find((child) => child.className === "coach-activity-entry-detail").textContent, "Open the log.");
+  assert.equal(notificationLink.children.some((child) => child.className === "coach-activity-workout-metrics"), false);
   assert.equal(harness.unreadSummary.textContent, "1");
   assert.equal(harness.workoutSummary.textContent, "1");
   assert.equal(harness.checkInSummary.textContent, "0");
   assert.ok(likeButton);
   assert.equal(likeButton.children[0].className, "web-notification-like-icon");
-  assert.equal(likeButton.children[0].textContent, "💪🏽");
-  assert.equal(likeButton.children[1].textContent, "Give props");
+  assert.equal(likeButton.children[0]["aria-hidden"], "true");
+  assert.match(likeButton.children[0].innerHTML, /<svg.*coach-feed-actions\.svg#props/);
+  assert.equal(likeButton.children.length, 1);
+  assert.equal(likeButton.title, "Give props");
   assert.equal(likeButton["aria-pressed"], "false");
   assert.equal(likeButton["aria-label"], "Give props for this client update");
 
@@ -178,9 +187,9 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(harness.rpcCalls.length, 1);
   assert.equal(harness.rpcCalls[0].name, "toggle_client_activity_like");
   assert.equal(harness.rpcCalls[0].args.p_notification_id, "notice-1");
-  const updatedButton = harness.list.children[0].children.find((child) => child.dataset.webNotificationLike);
+  const updatedButton = harness.list.children[0].children[1].children.find((child) => child.dataset.webNotificationLike);
   assert.equal(updatedButton["aria-pressed"], "true");
-  assert.equal(updatedButton.children[1].textContent, "Props sent");
+  assert.equal(updatedButton.title, "Remove props");
   assert.match(harness.status.textContent, /Client notified/);
 });
 
@@ -192,10 +201,40 @@ test("deployed notification fallback keeps activity metadata and like controls",
   assert.equal(harness.selectCalls.some(({ table }) => table === "client_notifications"), false);
 
   const firstItem = harness.list.children[0];
-  const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
+  const likeButton = firstItem.children[1].children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
-  assert.equal(likeButton.children[0].textContent, "💪🏽");
-  assert.equal(likeButton.children[1].textContent, "Give props");
+  assert.match(likeButton.children[0].innerHTML, /<svg/);
+  assert.equal(likeButton.title, "Give props");
+});
+
+test("Comment opens a private notification composer only for a resolved client", async () => {
+  const client = { id: "program-1", client_email: "client@example.com" };
+  const opened = [];
+  let eligible = true;
+  const harness = coachHarness({ controllerOptions: {
+    coachActivityCommentClient: (notice, url) => {
+      assert.equal(notice.id, "notice-1");
+      assert.equal(url, "/coach-admin.html?tab=logs");
+      return eligible ? client : null;
+    },
+    openCoachActivityComment: (...args) => opened.push(args)
+  } });
+  await harness.controller.init();
+  const [props, comment] = harness.list.children[0].children[1].children;
+  assert.equal(props.title, "Give props");
+  assert.equal(comment.children.length, 1);
+  assert.match(comment.children[0].innerHTML, /coach-feed-actions\.svg#comment/);
+  assert.equal(comment["aria-label"], "Comment privately");
+  assert.equal(opened.length, 0);
+  comment.click();
+  assert.equal(opened[0][0], client);
+  assert.equal(opened[0][1].notificationId, "notice-1");
+  assert.equal(opened[0][1].workoutLogId, null);
+  assert.match(opened[0][1].context, /^A client completed a workout · /);
+  assert.equal(opened[0][2], comment);
+  eligible = false;
+  await harness.controller.refresh();
+  assert.equal(harness.list.children[0].children[1].children.length, 1);
 });
 
 test("coach activity cards distinguish challenges from workouts and check-ins", async () => {
@@ -207,7 +246,7 @@ test("coach activity cards distinguish challenges from workouts and check-ins", 
     }
   });
   assert.equal(await challengeHarness.controller.init(), true);
-  const challengeIcon = challengeHarness.list.children[0].children[0].children[0];
+  const challengeIcon = challengeHarness.list.children[0].children[0].children[0].children[0];
   assert.equal(challengeIcon.dataset.webNotificationIcon, "challenge");
   assert.match(challengeIcon.innerHTML, /M8 4h8/);
 
@@ -219,9 +258,13 @@ test("coach activity cards distinguish challenges from workouts and check-ins", 
     }
   });
   assert.equal(await checkInHarness.controller.init(), true);
-  const checkInIcon = checkInHarness.list.children[0].children[0].children[0];
+  const checkInLink = checkInHarness.list.children[0].children[0];
+  const [checkInHeader, checkInSummary] = checkInLink.children;
+  const [checkInIcon, checkInAuthor] = checkInHeader.children;
   assert.equal(checkInIcon.dataset.webNotificationIcon, "checkin");
   assert.match(checkInIcon.innerHTML, /M6 7v10/);
+  assert.equal(checkInAuthor.textContent, "A client");
+  assert.equal(checkInSummary.textContent, "Checked in at the gym");
 });
 
 test("production compatibility feed resolves legacy activity without exposing arbitrary recipients", () => {
@@ -239,8 +282,8 @@ test("production compatibility feed resolves legacy activity without exposing ar
 test("customer-facing reaction copy uses props without renaming stable database identifiers", () => {
   assert.match(propsMigration, /Benjamin gave you props for your workout/);
   assert.match(notificationsSource, /Give props for this client update/);
-  assert.match(notificationsSource, /likeIcon\.textContent = "💪🏽"/);
-  assert.match(notificationsSource, /likeLabel\.textContent = liked \? "Props sent" : "Give props"/);
+  assert.match(notificationsSource, /likeIcon\.innerHTML = '<svg/);
+  assert.match(notificationsSource, /likeButton\.title = liked \? "Remove props" : "Give props"/);
   assert.doesNotMatch(notificationsSource, /Like this client update|♥ Liked|Client notified that you liked/);
   assert.match(client, /Coach replies, props \+ form reviews/);
 });

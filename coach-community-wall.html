@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="robots" content="noindex, nofollow, noarchive" />
-  <meta name="theme-color" content="#030D1C" />
-  <title>FWB Wall | GRUNTR Coach</title>
+  <meta name="theme-color" content="#101113" />
+  <title>GRUNTR FEED | GRUNTR Coach</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/images/gruntr/client-22e30eae/icon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/images/gruntr/client-22e30eae/icon-16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/images/gruntr/client-22e30eae/icon-180.png" />
@@ -13,20 +13,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="GRUNTR Coach" />
   <meta name="application-name" content="GRUNTR Coach" />
-  <link rel="stylesheet" href="css/coach-community-wall.css?v=1" />
+  <link rel="stylesheet" href="css/coach-community-wall.css?v=3" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=2&amp;compact-wall=1&amp;feed-action-icons=1" />
 </head>
-<body>
+<body class="coach-wall-page">
   <header class="wall-header">
     <a class="wall-back coach-brand-lockup" href="coach-admin.html" aria-label="Back to GRUNTR Coach">← <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="30" height="30" /> <span>GRUNTR Coach</span></a>
-    <strong>FWB Wall</strong>
+    <strong>GRUNTR FEED</strong>
     <button type="button" id="wall-sign-out" hidden>Sign out</button>
   </header>
   <main class="wall-shell">
     <div class="wall-heading">
       <p class="eyebrow">Community</p>
-      <h1>FWB Wall</h1>
-      <p>Celebrate the workouts, gym visits, and challenge wins clients choose to share.</p>
+      <h1>GRUNTR FEED</h1>
     </div>
     <section class="wall-panel" aria-labelledby="wall-posts-title">
       <div class="wall-panel-heading">
@@ -36,11 +36,12 @@
       <p id="wall-status" role="status" aria-live="polite">Loading shared wins…</p>
       <div id="wall-posts"></div>
     </section>
-    <p class="wall-note">A client’s progress sharing choice does not automatically post individual activity. They can enable Wall posts in Community → FWB Wall → Sharing choices.</p>
   </main>
+  <dialog id="coach-activity-comment-dialog" class="coach-activity-comment-dialog" aria-labelledby="coach-comment-title" aria-describedby="coach-comment-delivery"></dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/auth-session.js"></script>
-  <script src="js/coach-community-wall.js?v=2"></script>
+  <script src="js/coach-feed-comment.js?v=1"></script>
+  <script src="js/coach-community-wall.js?v=6"></script>
 </body>
 </html>

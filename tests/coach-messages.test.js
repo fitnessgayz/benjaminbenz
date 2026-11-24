@@ -215,7 +215,7 @@ test("client and coach entry points load the shared controller before their appl
   const messageCss = fs.readFileSync(path.join(root, "css/coach-messages.css"), "utf8");
   assert.match(messageCss, /:root body \.admin-card\.fwb-messages\s*\{[^}]*background: #f8f9f5;[^}]*border-color: #d8dcd3;/s);
   assert.match(messageCss, /\.fwb-message-inbox-item\s*\{[^}]*color: #171b16;[^}]*background: #fff;/s);
-  assert.match(messageCss, /\.fwb-message-inbox-item\.is-active\s*\{[^}]*background: #f2f8df;/s);
+  assert.match(messageCss, /\.fwb-message-inbox-item\.is-active\s*\{[^}]*background: #fff7dc;/s);
   assert.match(messageCss, /\.fwb-message-dialog\s*\{[^}]*background: #f8f9f5;[^}]*color: #171b16;/s);
   assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-bubble\.is-own\s*\{[^}]*background: #eaf3d5;/s);
   assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-composer textarea\s*\{[^}]*background: #fff;[^}]*color: #171b16;/s);

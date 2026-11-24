@@ -4,13 +4,16 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(require.resolve('../js/coach-community-wall.js'), 'utf8');
+const pageHtml = fs.readFileSync(require.resolve('../coach-community-wall.html'), 'utf8');
+const coachHtml = fs.readFileSync(require.resolve('../coach-admin.html'), 'utf8');
 
 function node() {
   return {
     children: [], textContent: '', hidden: false, disabled: false, listeners: {},
     append(...items) { this.children.push(...items); },
     replaceChildren(...items) { this.children = items; },
-    addEventListener(event, callback) { this.listeners[event] = callback; }
+    addEventListener(event, callback) { this.listeners[event] = callback; },
+    setAttribute(name, value) { this[name] = value; }
   };
 }
 
@@ -42,7 +45,8 @@ function run(email) {
     FWB_SUPABASE_CONFIG: { url: 'https://example.test', anonKey: 'test-key' },
     FWB_AUTH_SESSION: { storage: {} },
     supabase: { createClient: () => client },
-    location: { replace() { throw new Error('unexpected redirect'); } }
+    location: { replace() { throw new Error('unexpected redirect'); } },
+    FWBCoachFeedComment: { create: () => (args) => calls.push({ name: 'open_private_comment', args }) }
   };
   const document = {
     getElementById: id => elements[id],
@@ -57,20 +61,41 @@ async function settle() {
   await new Promise(resolve => setImmediate(resolve));
 }
 
+test('the Coach feed and both navigation links use the GRUNTR FEED name', () => {
+  assert.match(pageHtml, /<title>GRUNTR FEED \| GRUNTR Coach<\/title>/);
+  assert.match(pageHtml, /<h1>GRUNTR FEED<\/h1>/);
+  assert.equal((coachHtml.match(/href="coach-community-wall\.html">(?:<strong>)?GRUNTR FEED/g) || []).length, 2);
+  assert.doesNotMatch(pageHtml + source, /FWB Wall/);
+  assert.doesNotMatch(pageHtml + coachHtml, /wall-note|See the wins clients choose to share|Celebrate the workouts/);
+});
+
 test('coach sees opted-in Wall events and can give props once', async () => {
   const { elements, calls } = run('benjaminbenz.fit@gmail.com');
   await settle();
   assert.equal(elements['wall-posts'].children.length, 1);
   const card = elements['wall-posts'].children[0];
+  const time = card.children[0].children[2];
+  assert.equal(time.dateTime, '2026-10-06T12:00:00.000Z');
+  assert.match(time.textContent, /Oct.*6/);
+  assert.match(time.title, /Oct.*6.*2026/);
+  assert.match(time.textContent, /\d{1,2}:\d{2}/);
   assert.equal(card.children[1].textContent, 'Completed a workout');
   const button = card.children[2].children[0];
-  assert.equal(button.textContent, 'Give props 👏');
+  const comment = card.children[2].children[1];
+  assert.equal(button['aria-label'], 'Give props');
+  assert.equal(button.textContent, '');
+  assert.match(button.children[0].innerHTML, /coach-feed-actions\.svg#props/);
+  assert.equal(comment['aria-label'], 'Comment privately');
+  assert.equal(comment.textContent, '');
+  assert.match(comment.children[0].innerHTML, /coach-feed-actions\.svg#comment/);
+  comment.listeners.click();
+  assert.equal(calls[1].args.activity.wallEventId, 'workout:client:1');
   await button.listeners.click();
   await settle();
   assert.deepEqual(calls.map(call => call.name), [
-    'community_wall_feed', 'community_give_wall_props', 'community_wall_feed'
+    'community_wall_feed', 'open_private_comment', 'community_give_wall_props', 'community_wall_feed'
   ]);
-  assert.equal(elements['wall-posts'].children[0].children[2].children[0].textContent, 'Props given');
+  assert.equal(elements['wall-posts'].children[0].children[2].children[0]['aria-label'], 'Props given');
 });
 
 test('another signed-in account cannot load the coach Wall', async () => {

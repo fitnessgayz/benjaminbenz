@@ -30,6 +30,7 @@ const coachAdminTabNames = new Set([
   "home",
   "inbox",
   "clients",
+  "session-counts",
   "profile",
   "program",
   "workouts",
@@ -43,7 +44,7 @@ const coachAdminTabNames = new Set([
 ]);
 
 function requestedCoachAdminTab() {
-  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "home";
+  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "notifications";
   return coachAdminTabNames.has(requestedTab) ? requestedTab : "home";
 }
 
@@ -75,6 +76,13 @@ let workoutAnalysis = null;
 let workoutAnalysisStatusText = "Choose a client to analyze workout logs.";
 let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
+let coachClientsView = "personal_training";
+let coachFwbSessionMonth = "";
+let coachFwbSessionRequest = 0;
+let coachAlexHistory = [];
+let coachAlexPage = 0;
+let coachAlexHistoryRequest = 0;
+const coachAlexHistoryPageSize = 25;
 let clientSearchTerm = "";
 let clientSuggestionsOpen = false;
 let activeClientSuggestion = -1;
@@ -103,16 +111,11 @@ let editingClientAddedExerciseKey = "";
 let isClientAddedExerciseMutating = false;
 let coachNotificationsController = null;
 let coachMessagesController = null;
+let openCoachActivityComment = null;
 let inviteClientReturnFocus = null;
 let inviteClientSavedProgram = null;
 let pendingSignupApproval = null;
-let coachCalendarEvents = [];
-let coachCalendarLoaded = false;
-let coachCalendarLoading = false;
-let coachCalendarError = "";
-let coachCalendarSyncedAt = "";
 let clientWorkoutScheduleLoadToken = 0;
-const coachCalendarTimeZone = "America/Los_Angeles";
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -968,11 +971,14 @@ function updateClientViewLink(program = selectedProgram()) {
 function setAdminTab(tabName) {
   const nextTab = coachAdminTabNames.has(tabName) ? tabName : "home";
   const workspace = document.getElementById("coach-admin-workspace");
+  const isClientTool = ["profile", "program", "workouts", "nutrition", "progress", "logs", "notes"].includes(nextTab);
 
   activeAdminTab = nextTab;
   if (workspace) workspace.dataset.activeTab = nextTab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => {
-    const isActive = button.dataset.adminTab === nextTab;
+    const isActive = button.dataset.adminTab === nextTab ||
+      (button.dataset.adminTab === "clients" && isClientTool) ||
+      (button.dataset.adminTab === "session-counts" && nextTab === "sessions");
 
     button.classList.toggle("is-active", isActive);
     if (isActive) {
@@ -998,7 +1004,7 @@ function setAdminTab(tabName) {
   });
 
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
-    panel.hidden = nextTab === "notifications" || nextTab === "home" || nextTab === "inbox";
+    panel.hidden = nextTab === "notifications" || nextTab === "home" || nextTab === "inbox" || nextTab === "session-counts";
   });
 
   coachMessagesController?.setActive(nextTab === "inbox");
@@ -1015,6 +1021,10 @@ function setAdminTab(tabName) {
 
   if (nextTab === "clients") {
     loadRecentTrainingLogs();
+  }
+  if (nextTab === "session-counts") {
+    renderCoachSessionCounts();
+    refreshSelectedCoachSessions();
   }
 
   if (nextTab === "library") {
@@ -1449,14 +1459,13 @@ function updateSelectedClientSummary(program = selectedProgram()) {
 
   const form = document.getElementById("program-editor");
   const name = document.getElementById("selected-client-name");
+  const clientStatus = document.getElementById("selected-client-status");
   const email = document.getElementById("selected-client-email");
   const meta = document.getElementById("selected-client-meta");
-  const saveButton = document.getElementById("selected-save-profile-button");
   const profileArchiveButton = document.getElementById("profile-archive-client-button");
   const profileDeleteButton = document.getElementById("profile-delete-client-button");
   const clientName = formValue(form, "client_name") || program?.client_name || "Choose a client";
   const clientEmail = formValue(form, "client_email") || program?.client_email || "Search or create a client to start editing.";
-  const clientPhone = formValue(form, "client_phone") || program?.client_phone || "";
   const sessionProgram = {
     ...program,
     session_count_used: form?.elements.session_count_used?.value ?? program?.session_count_used,
@@ -1485,31 +1494,17 @@ function updateSelectedClientSummary(program = selectedProgram()) {
   if (name) {
     name.textContent = clientName;
   }
+  if (clientStatus) clientStatus.textContent = isExistingClient ? status : "";
 
   if (email) {
     email.textContent = clientEmail;
   }
 
   if (meta) {
-    const statusNode = document.createElement("span");
-    const titleNode = document.createElement("span");
-
-    statusNode.textContent = status;
-    titleNode.textContent = programTitle;
-
-    if (clientPhone) {
-      const phoneNode = document.createElement("span");
-
-      phoneNode.textContent = clientPhone;
-      meta.replaceChildren(statusNode, titleNode, phoneNode);
-    } else {
-      meta.replaceChildren(statusNode, titleNode);
-    }
+    meta.textContent = isExistingClient ? programTitle : "";
   }
-
-  if (saveButton) {
-    saveButton.disabled = !isExistingClient;
-  }
+  const clientPanel = document.querySelector("[data-admin-client-context]");
+  if (clientPanel) clientPanel.dataset.clientInView = String(isExistingClient);
 
   document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
     button.disabled = !isExistingClient;
@@ -1539,10 +1534,44 @@ function programsForCurrentClientView() {
   return showingArchivedClients ? archivedClientPrograms() : activeClientPrograms();
 }
 
+function coachClientMembership(program) {
+  return program.account_type === "beta_tester" ? "app_access_only" : program.membership_type || "app_access_only";
+}
+
+function coachClientRosterPrograms(view, candidates, archived = false) {
+  return candidates.filter((program) =>
+    (archived || program.active !== false) &&
+    (view === "all" || coachClientMembership(program) === view)
+  );
+}
+
+function coachClientSessionValues(usedCount, totalCount) {
+  const used = normalizeSessionCount(usedCount);
+  const total = normalizeSessionCount(totalCount);
+  return {
+    used: total > 0 || used > 0 ? used : null,
+    total: total > 0 ? total : null,
+    remaining: total > 0 ? Math.max(0, total - used) : null
+  };
+}
+
+function coachSessionToday(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(now);
+  const part = (type) => parts.find((item) => item.type === type).value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function moveCoachSessionMonth(month, offset) {
+  const date = new Date(`${month}-01T00:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + offset);
+  return date.toISOString().slice(0, 7);
+}
+
 function matchingClientSuggestions() {
   if (!clientSearchTerm) return [];
-  return programsForCurrentClientView().filter((program) =>
-    (showingArchivedClients || program.active !== false) &&
+  return coachClientRosterPrograms(coachClientsView, programsForCurrentClientView(), showingArchivedClients).filter((program) =>
     [program.client_name, program.client_email].join(" ").toLowerCase().includes(clientSearchTerm)
   );
 }
@@ -2571,7 +2600,7 @@ async function saveProfileChangesFromForm(form, options = {}) {
   ));
   programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
   selectedProgramId = updatedProgram.id || id;
-  renderRecentClientTrainingLogs();
+  updateCoachActivityWorkouts();
 
   if (shouldRefreshUi) {
     fillForm(updatedProgram);
@@ -3798,6 +3827,9 @@ function summarizeTrainingLogs(logs = []) {
     if (!grouped.has(key)) {
       grouped.set(key, {
         history_key: historyKey,
+        source_log_id: log.id,
+        session_id: log.session_id,
+        workout_session_id: log.workout_session_id,
         client_email: clientEmail,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
@@ -3877,163 +3909,6 @@ function latestWorkoutByClient(logs = recentTrainingLogs) {
   return latestByEmail;
 }
 
-function coachHomeSavedSessionEntries() {
-  const seen = new Set();
-
-  return activeClientPrograms()
-    .flatMap((program) => sessionDatesFromProgram(program).map((date) => ({
-      date,
-      client_email: normalizeEmail(program.client_email),
-      client_name: program.client_name || program.client_email || "Client"
-    })))
-    .filter((entry) => {
-      const key = `${entry.client_email}:${entry.date}`;
-
-      if (!entry.date || seen.has(key)) {
-        return false;
-      }
-
-      seen.add(key);
-      return true;
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function dateInCoachCalendarTimeZone(value) {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: coachCalendarTimeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-  const valueFor = (type) => parts.find((part) => part.type === type)?.value || "";
-
-  return `${valueFor("year")}-${valueFor("month")}-${valueFor("day")}`;
-}
-
-function coachCalendarClientForTitle(title) {
-  const normalizedTitle = String(title || "")
-    .toLowerCase()
-    .replace(/\b(cancelled|canceled|training|session|workout)\b/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-  if (!normalizedTitle) {
-    return null;
-  }
-
-  const matches = activeClientPrograms().filter((program) => {
-    const normalizedName = String(program.client_name || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-
-    return normalizedName && normalizedName === normalizedTitle;
-  });
-
-  return matches.length === 1 ? matches[0] : null;
-}
-
-function coachHomeScheduleEntries() {
-  if (!coachCalendarLoaded) {
-    return coachHomeSavedSessionEntries().map((entry) => ({
-      ...entry,
-      source: "saved",
-      title: entry.client_name,
-      canceled: false,
-      start_at: `${entry.date}T12:00:00`
-    }));
-  }
-
-  return coachCalendarEvents
-    .map((event) => {
-      const program = coachCalendarClientForTitle(event.title);
-      const date = dateInCoachCalendarTimeZone(event.start);
-
-      return {
-        date,
-        title: event.title || "Training session",
-        client_name: program?.client_name || event.title || "Training session",
-        client_email: normalizeEmail(program?.client_email),
-        start_at: event.start,
-        end_at: event.end,
-        all_day: event.all_day === true,
-        canceled: event.canceled === true,
-        source: "fwb"
-      };
-    })
-    .filter((entry) => entry.date)
-    .sort((a, b) => String(a.start_at).localeCompare(String(b.start_at)));
-}
-
-function formatCoachCalendarEventTime(entry) {
-  if (entry.source !== "fwb" || entry.all_day) {
-    return entry.all_day ? "All day" : "Session date";
-  }
-
-  const start = new Date(entry.start_at);
-  const end = new Date(entry.end_at);
-
-  if (Number.isNaN(start.getTime())) {
-    return "Time unavailable";
-  }
-
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: coachCalendarTimeZone,
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  const startLabel = formatter.format(start);
-
-  return Number.isNaN(end.getTime()) ? startLabel : `${startLabel}–${formatter.format(end)}`;
-}
-
-async function loadCoachCalendarEvents({ force = false } = {}) {
-  if (!coachSupabase || coachCalendarLoading || (coachCalendarLoaded && !force)) {
-    return;
-  }
-
-  coachCalendarLoading = true;
-  coachCalendarError = "";
-  renderCoachHome();
-
-  const from = new Date();
-  const to = new Date();
-  from.setDate(from.getDate() - 35);
-  to.setDate(to.getDate() + 150);
-
-  try {
-    const { data, error } = await withRequestTimeout(
-      coachSupabase.functions.invoke("coach-calendar-events", {
-        body: { from: from.toISOString(), to: to.toISOString() }
-      }),
-      "FWB Calendar took too long to respond.",
-      15000
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    coachCalendarEvents = Array.isArray(data?.events) ? data.events.filter((event) => (
-      event && typeof event.start === "string" && typeof event.title === "string"
-    )) : [];
-    coachCalendarSyncedAt = typeof data?.synced_at === "string" ? data.synced_at : new Date().toISOString();
-    coachCalendarLoaded = true;
-  } catch (error) {
-    coachCalendarError = error?.message || "FWB Calendar could not be loaded.";
-  } finally {
-    coachCalendarLoading = false;
-    renderCoachHome();
-  }
-}
-
 function coachHomeSessionAlerts() {
   return activeClientPrograms()
     .map((program) => {
@@ -4067,58 +3942,6 @@ function coachHomeInactiveClients(latestByEmail = latestWorkoutByClient()) {
     });
 }
 
-function renderCoachHomeCalendar(entries = coachHomeScheduleEntries()) {
-  const calendar = document.getElementById("coach-home-calendar");
-
-  if (!calendar) {
-    return;
-  }
-
-  const today = isoDateFromLocalDate();
-  const upcoming = entries.find((entry) => entry.date >= today && !entry.canceled);
-  const target = dateFromIsoDate(upcoming?.date || today) || new Date();
-  const year = target.getUTCFullYear();
-  const month = target.getUTCMonth();
-  const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay();
-  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  const countsByDate = entries.filter((entry) => !entry.canceled).reduce((counts, entry) => {
-    counts.set(entry.date, (counts.get(entry.date) || 0) + 1);
-    return counts;
-  }, new Map());
-  const cells = [];
-
-  for (let index = 0; index < firstWeekday; index += 1) {
-    cells.push('<span class="coach-home-calendar-day is-empty" aria-hidden="true"></span>');
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const count = countsByDate.get(date) || 0;
-    const classes = [
-      "coach-home-calendar-day",
-      date === today ? "is-today" : "",
-      count > 0 ? "has-session" : ""
-    ].filter(Boolean).join(" ");
-    const label = count > 0 ? `${day}, ${count} session${count === 1 ? "" : "s"}` : String(day);
-
-    cells.push(`<span class="${classes}" aria-label="${escapeHtml(label)}"><b>${day}</b>${count > 0 ? `<i>${count}</i>` : ""}</span>`);
-  }
-
-  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
-  const monthCount = entries.filter((entry) => entry.date.startsWith(monthPrefix) && !entry.canceled).length;
-
-  calendar.innerHTML = `
-    <div class="coach-home-calendar-heading">
-      <strong>${target.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}</strong>
-      <span>${monthCount} session${monthCount === 1 ? "" : "s"}</span>
-    </div>
-    <div class="coach-home-calendar-weekdays" aria-hidden="true">
-      ${["S", "M", "T", "W", "T", "F", "S"].map((day) => `<span>${day}</span>`).join("")}
-    </div>
-    <div class="coach-home-calendar-grid">${cells.join("")}</div>
-  `;
-}
-
 function renderCoachHome() {
   const activeClients = activeClientPrograms();
   const pendingMembershipRequests = activeClients.filter((program) =>
@@ -4126,11 +3949,8 @@ function renderCoachHome() {
     ["personal_training", "online_training"].includes(program.membership_requested_type) &&
     program.membership_requested_type !== program.membership_type);
   const latestByEmail = latestWorkoutByClient();
-  const recentWorkouts = Array.from(latestByEmail.values())
-    .sort((a, b) => String(b.completed_at || b.last_updated || b.entry_date || "").localeCompare(String(a.completed_at || a.last_updated || a.entry_date || "")));
   const sessionAlerts = coachHomeSessionAlerts();
   const inactiveClients = coachHomeInactiveClients(latestByEmail);
-  const scheduledSessions = coachHomeScheduleEntries();
   const alexFitnessUsedSessions = normalizeSessionCount(alexFitnessMasterSessions.used);
   const alexFitnessTotalSessions = normalizeSessionCount(alexFitnessMasterSessions.total);
   const alexFitnessRemainingSessions = Math.max(0, alexFitnessTotalSessions - alexFitnessUsedSessions);
@@ -4159,26 +3979,6 @@ function renderCoachHome() {
   );
   setText("coach-home-needs-attention", attentionEmails.size);
 
-  const recentList = document.getElementById("coach-home-recent-list");
-
-  if (recentList) {
-    recentList.innerHTML = recentWorkouts.length > 0
-      ? recentWorkouts.slice(0, 8).map((workout) => `
-          <article class="coach-home-list-row">
-            <div class="coach-home-row-date">
-              <strong>${escapeHtml(formatAdminDate(workout.entry_date))}</strong>
-              <span>${escapeHtml(formatAdminTime(workout.completed_at || workout.last_updated) || "Completed")}</span>
-            </div>
-            <div class="coach-home-row-copy">
-              <strong>${escapeHtml(clientNameForEmail(workout.client_email))}</strong>
-              <span>${escapeHtml(workout.workout_title || "Workout")} · ${workout.exercise_count} exercise${workout.exercise_count === 1 ? "" : "s"}</span>
-            </div>
-            <button class="coach-home-row-action" type="button" data-coach-home-open-logs="${escapeHtml(workout.client_email)}">Training logs</button>
-          </article>
-        `).join("")
-      : '<p class="empty-state">No client workouts have been saved yet.</p>';
-  }
-
   const membershipList = document.getElementById("coach-home-membership-requests");
   if (membershipList) {
     membershipList.innerHTML = pendingMembershipRequests.length
@@ -4192,57 +3992,6 @@ function renderCoachHome() {
           </article>
         `).join("")
       : '<p class="empty-state">No membership requests are waiting.</p>';
-  }
-
-  renderCoachHomeCalendar(scheduledSessions);
-  const calendarStatus = document.getElementById("coach-home-calendar-status");
-
-  if (calendarStatus) {
-    if (coachCalendarLoading) {
-      calendarStatus.textContent = "Syncing with FWB Calendar…";
-      calendarStatus.className = "coach-home-calendar-status is-loading";
-    } else if (coachCalendarLoaded) {
-      const syncedAt = new Date(coachCalendarSyncedAt);
-      const syncedLabel = Number.isNaN(syncedAt.getTime())
-        ? "just now"
-        : syncedAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-      calendarStatus.textContent = `Synced with FWB Calendar at ${syncedLabel}.`;
-      calendarStatus.className = "coach-home-calendar-status is-synced";
-    } else if (coachCalendarError) {
-      calendarStatus.textContent = "FWB Calendar is temporarily unavailable. Showing saved session dates instead.";
-      calendarStatus.className = "coach-home-calendar-status is-error";
-    } else {
-      calendarStatus.textContent = "Connecting to FWB Calendar…";
-      calendarStatus.className = "coach-home-calendar-status";
-    }
-  }
-
-  const scheduleList = document.getElementById("coach-home-schedule-list");
-
-  if (scheduleList) {
-    const today = dateInCoachCalendarTimeZone(new Date());
-    const futureDates = scheduledSessions.filter((entry) => entry.date >= today).slice(0, 6);
-    const displayedDates = futureDates.length > 0
-      ? futureDates
-      : scheduledSessions.slice(-6).reverse();
-
-    scheduleList.innerHTML = displayedDates.length > 0
-      ? displayedDates.map((entry) => {
-          const tagName = entry.client_email ? "button" : "article";
-          const buttonAttributes = entry.client_email
-            ? ` type="button" data-coach-home-open-sessions="${escapeHtml(entry.client_email)}"`
-            : "";
-          const status = entry.canceled ? "Canceled" : (entry.date >= today ? "Upcoming" : "Completed");
-
-          return `
-            <${tagName} class="coach-home-list-row coach-home-session-row${entry.canceled ? " is-canceled" : ""}"${buttonAttributes}>
-              <span class="coach-home-session-date">${escapeHtml(formatSessionDate(entry.date))}<small>${escapeHtml(formatCoachCalendarEventTime(entry))}</small></span>
-              <strong>${escapeHtml(entry.title || entry.client_name)}</strong>
-              <em>${status}</em>
-            </${tagName}>
-          `;
-        }).join("")
-      : `<p class="empty-state">${coachCalendarLoading ? "Loading FWB Calendar…" : "No FWB training sessions are scheduled in this date range."}</p>`;
   }
 
   const sheetList = document.getElementById("coach-home-sheet-list");
@@ -4338,12 +4087,6 @@ function renderTrainingLogSummaryList(targetId, logs = [], options = {}) {
       <em>${escapeHtml(formatAdminTime(entry.last_updated) || "Saved")}</em>
     </article>
   `).join("");
-}
-
-function renderRecentClientTrainingLogs() {
-  renderTrainingLogSummaryList("recent-client-log-history", recentTrainingLogs, {
-    emptyMessage: "No workout logs yet."
-  });
 }
 
 function renderSelectedClientTrainingLogs() {
@@ -4505,14 +4248,14 @@ async function loadFoodLogsForEmail(email) {
 async function loadRecentTrainingLogs() {
   if (!coachSupabase) {
     recentTrainingLogs = [];
-    renderRecentClientTrainingLogs();
     renderCoachHome();
+    updateCoachActivityWorkouts();
     return;
   }
 
   const { data, error } = await coachSupabase
     .from("client_workout_logs")
-    .select("client_email, entry_date, workout_title, exercise_code, exercise_name, set_number, completed_at, updated_at, created_at")
+    .select("id, client_email, session_id, workout_session_id, entry_date, workout_title, exercise_code, exercise_name, set_number, completed_at, updated_at, created_at")
     .not("completed_at", "is", null)
     .order("completed_at", { ascending: false })
     .order("entry_date", { ascending: false })
@@ -4520,14 +4263,14 @@ async function loadRecentTrainingLogs() {
 
   if (error) {
     recentTrainingLogs = [];
-    renderRecentClientTrainingLogs();
     renderCoachHome();
+    updateCoachActivityWorkouts();
     return;
   }
 
   recentTrainingLogs = data || [];
-  renderRecentClientTrainingLogs();
   renderCoachHome();
+  updateCoachActivityWorkouts();
 }
 
 function programHistoryLabel(program) {
@@ -4592,6 +4335,7 @@ function renderClientList() {
   if (archivedButton) {
     archivedButton.textContent = showingArchivedClients ? "Active clients" : "Archived clients";
     archivedButton.classList.toggle("is-selected", showingArchivedClients);
+    archivedButton.setAttribute("aria-pressed", String(showingArchivedClients));
   }
 
   if (deleteArchivedButton) {
@@ -4600,8 +4344,287 @@ function renderClientList() {
   }
 
   document.getElementById("client-search-label").textContent = showingArchivedClients ? "Archived client name" : "Client name";
-  input.placeholder = showingArchivedClients ? "Type an archived client name..." : "Type a client name...";
+  input.placeholder = showingArchivedClients ? "Search archived clients" : "Search by name or email";
+  renderCoachClientWorkspace();
+  renderCoachSessionCounts();
   renderClientSuggestions();
+}
+
+function renderCoachSessionCounts() {
+  const counts = document.getElementById("coach-client-session-counts");
+  if (!counts || counts.hidden) return;
+  const clients = coachClientRosterPrograms("all", activeClientPrograms());
+  const rows = clients.map((program) => {
+    const row = document.createElement("tr");
+    const nameCell = document.createElement("th");
+    nameCell.scope = "row";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.coachCountClient = program.id;
+    button.textContent = program.client_name || program.client_email || "Client";
+    button.setAttribute("aria-label", `Edit session count for ${button.textContent}`);
+    nameCell.append(button);
+    row.append(nameCell);
+    const values = coachClientSessionValues(program.session_count_used, program.session_count_total);
+    for (const value of [values.used, values.total, values.remaining]) {
+      const cell = document.createElement("td");
+      cell.textContent = value ?? "—";
+      row.append(cell);
+    }
+    return row;
+  });
+  counts.querySelector("[data-coach-client-count-rows]").replaceChildren(...rows);
+  counts.querySelector("[data-coach-count-empty]").hidden = rows.length > 0;
+}
+
+async function refreshCoachFwbMonthlySessions(today = coachSessionToday()) {
+  const counts = document.getElementById("coach-client-session-counts");
+  if (!coachSupabase || !counts || counts.hidden || document.getElementById("coach-admin-workspace")?.hidden) return;
+
+  const request = ++coachFwbSessionRequest;
+  const currentMonth = today.slice(0, 7);
+  const month = coachFwbSessionMonth || currentMonth;
+  const label = counts.querySelector("[data-coach-fwb-month-label]");
+  const total = counts.querySelector("[data-coach-fwb-total]");
+  const status = counts.querySelector("[data-coach-fwb-status]");
+  const sync = counts.querySelector("[data-coach-fwb-sync]");
+  label.textContent = new Intl.DateTimeFormat("en-US", {
+    month: "long", year: "numeric", timeZone: "UTC"
+  }).format(new Date(`${month}-01T00:00:00Z`));
+  total.textContent = "—";
+  status.textContent = "Completed + cancelled";
+  sync.textContent = "Loading monthly total…";
+  counts.querySelector('[data-coach-fwb-month="1"]').setAttribute("aria-disabled", String(month >= currentMonth));
+  counts.querySelector('[data-coach-fwb-month="-1"]').setAttribute("aria-disabled", String(month <= "0001-01"));
+
+  const { data, error } = await coachSupabase.from("coach_fwb_monthly_session_totals")
+    .select("completed_count,cancelled_count,refreshed_at")
+    .eq("month_start", `${month}-01`)
+    .maybeSingle();
+  if (request !== coachFwbSessionRequest || counts.hidden) return;
+  if (error || !data) {
+    sync.textContent = error ? "Could not load the monthly total" : "No sync for this month yet";
+    return;
+  }
+
+  const count = data.completed_count + data.cancelled_count;
+  total.textContent = `${count} ${count === 1 ? "session" : "sessions"}`;
+  status.textContent = `${data.completed_count} completed · ${data.cancelled_count} cancelled`;
+  const syncedOn = new Intl.DateTimeFormat("en-US", {
+    month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles"
+  }).format(new Date(data.refreshed_at));
+  sync.textContent = `Last synced ${syncedOn}`;
+}
+
+function refreshSelectedCoachSessions() {
+  if (document.getElementById("coach-sessions-alex")?.hidden === false) {
+    refreshCoachAlexHistory();
+  } else {
+    refreshCoachFwbMonthlySessions();
+  }
+}
+
+function formatCoachAlexStartTime(value) {
+  const match = /^(\d{2}):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/.exec(value || "");
+  if (!match || Number(match[1]) >= 24) return "Time not recorded";
+  const hour = Number(match[1]);
+  return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? "AM" : "PM"}`;
+}
+
+function renderCoachAlexHistory(panel) {
+  const packageValue = panel.querySelector("[data-coach-alex-package]").value;
+  const entries = packageValue ? coachAlexHistory.filter((entry) => String(entry.package_number) === packageValue) : coachAlexHistory;
+  const lastPage = Math.max(0, Math.ceil(entries.length / coachAlexHistoryPageSize) - 1);
+  coachAlexPage = Math.min(lastPage, Math.max(0, coachAlexPage));
+  const start = coachAlexPage * coachAlexHistoryPageSize;
+  const page = entries.slice(start, start + coachAlexHistoryPageSize);
+  const table = panel.querySelector(".coach-alex-history-table");
+  const rows = page.map((entry) => {
+    const row = document.createElement("tr");
+    const date = document.createElement("td");
+    const dateValue = document.createElement("time");
+    dateValue.dateTime = entry.session_date;
+    dateValue.textContent = formatSessionDate(entry.session_date);
+    date.append(dateValue);
+    const startTime = document.createElement("td");
+    startTime.textContent = formatCoachAlexStartTime(entry.start_time);
+    startTime.classList.toggle("coach-alex-unrecorded", !entry.start_time);
+    const number = document.createElement("td");
+    number.textContent = `P${entry.package_number} · #${entry.session_number}`;
+    number.setAttribute("aria-label", `Package ${entry.package_number}, session ${entry.session_number}`);
+    row.append(date, startTime, number);
+    return row;
+  });
+  table.querySelector("[data-coach-alex-rows]").replaceChildren(...rows);
+  table.hidden = rows.length === 0;
+  panel.querySelector("[data-coach-alex-pagination]").hidden = lastPage === 0;
+  panel.querySelector("[data-coach-alex-range]").textContent = rows.length ? `${start + 1}–${start + rows.length} of ${entries.length}` : "";
+  panel.querySelector('[data-coach-alex-page="-1"]').setAttribute("aria-disabled", String(coachAlexPage === 0));
+  panel.querySelector('[data-coach-alex-page="1"]').setAttribute("aria-disabled", String(coachAlexPage === lastPage));
+}
+
+async function refreshCoachAlexHistory() {
+  const panel = document.getElementById("coach-sessions-alex");
+  if (!coachSupabase || !panel || panel.hidden || document.getElementById("coach-client-session-counts")?.hidden
+      || document.getElementById("coach-admin-workspace")?.hidden) return;
+
+  const request = ++coachAlexHistoryRequest;
+  const status = panel.querySelector("[data-coach-alex-status]");
+  if (!coachAlexHistory.length) status.textContent = "Loading Alex Fitness history…";
+
+  const { data, error } = await coachSupabase.from("coach_alex_fitness_history")
+    .select("source_read_at,sessions").eq("singleton", true).maybeSingle();
+  if (request !== coachAlexHistoryRequest) return;
+  if (error) {
+    status.textContent = coachAlexHistory.length ? "Could not refresh. Showing last loaded history." : "Could not load Alex Fitness history";
+    return;
+  }
+
+  coachAlexHistory = Array.isArray(data?.sessions) ? data.sessions : [];
+  const picker = panel.querySelector("[data-coach-alex-package]");
+  const selectedPackage = picker.value;
+  const packages = [...new Set(coachAlexHistory.map((entry) => entry.package_number))].sort((a, b) => b - a);
+  picker.replaceChildren(new Option("All packages", ""), ...packages.map((number) => new Option(`Package ${number}`, String(number))));
+  if (packages.includes(Number(selectedPackage))) picker.value = selectedPackage;
+  panel.querySelector("[data-coach-alex-filter]").hidden = packages.length < 2;
+  if (coachAlexHistory.length) {
+    const syncedOn = coachSessionToday(new Date(data.source_read_at));
+    status.textContent = `${coachAlexHistory.length} recorded · Last synced ${formatSessionDate(syncedOn)}`;
+  } else {
+    status.textContent = "Alex Fitness history has not been imported yet";
+  }
+  renderCoachAlexHistory(panel);
+}
+
+function renderCoachClientWorkspace() {
+  const panel = document.getElementById("clients");
+  const roster = document.getElementById("coach-client-roster");
+  if (!panel || !roster) return;
+  for (const tab of panel.querySelectorAll("[data-coach-clients-view]")) {
+    const selected = tab.dataset.coachClientsView === coachClientsView;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected) roster.setAttribute("aria-labelledby", tab.id);
+  }
+
+  const names = (program) => program.client_name || program.client_email || "Client";
+  const clients = coachClientRosterPrograms(coachClientsView, programsForCurrentClientView(), showingArchivedClients);
+  const labels = { personal_training: "Personal training", online_training: "Online training", app_access_only: "App only" };
+  const rows = clients.map((program) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.coachRosterClient = program.id;
+    if (program.id === selectedProgramId) button.setAttribute("aria-current", "true");
+    const name = document.createElement("strong");
+    name.textContent = names(program);
+    const membership = document.createElement("span");
+    membership.textContent = labels[coachClientMembership(program)] || "Membership not set";
+    button.append(name, membership);
+    item.append(button);
+    return item;
+  });
+  roster.querySelector("[data-coach-client-rows]").replaceChildren(...rows);
+  const empty = roster.querySelector("[data-coach-client-empty]");
+  empty.hidden = rows.length > 0;
+  empty.textContent = showingArchivedClients ? "No archived clients in this view." : "No active clients in this view.";
+  const clientPanel = document.querySelector("[data-admin-client-context]");
+  if (clientPanel) clientPanel.dataset.clientInView = String(clients.some((program) => program.id === selectedProgramId));
+}
+
+function handleCoachClientWorkspace() {
+  const panel = document.getElementById("clients");
+  if (!panel) return;
+  const tabs = [...panel.querySelectorAll("[data-coach-clients-view]")];
+  const select = (tab) => {
+    if (coachClientsView === tab.dataset.coachClientsView) return;
+    coachClientsView = tab.dataset.coachClientsView;
+    clientSearchTerm = "";
+    document.getElementById("client-search-input").value = "";
+    closeClientSuggestions();
+    renderCoachClientWorkspace();
+  };
+  for (const tab of tabs) tab.addEventListener("click", () => select(tab));
+  panel.querySelector(".coach-client-views").addEventListener("keydown", (event) => {
+    const index = tabs.indexOf(event.target);
+    if (index < 0) return;
+    let next;
+    if (event.key === "Home") next = tabs[0];
+    if (event.key === "End") next = tabs.at(-1);
+    if (event.key === "ArrowRight") next = tabs[(index + 1) % tabs.length];
+    if (event.key === "ArrowLeft") next = tabs[(index + tabs.length - 1) % tabs.length];
+    if (!next) return;
+    event.preventDefault();
+    select(next);
+    next.focus();
+  });
+  panel.addEventListener("click", (event) => {
+    const roster = event.target.closest("[data-coach-roster-client]");
+    if (roster) {
+      const clients = coachClientRosterPrograms(coachClientsView, programsForCurrentClientView(), showingArchivedClients);
+      selectCoachRosterProgram(clients.find((program) => program.id === roster.dataset.coachRosterClient));
+    }
+  });
+  const sessions = document.getElementById("coach-client-session-counts");
+  const sessionTabs = [...sessions.querySelectorAll("[data-coach-session-view]")];
+  const selectSessionTab = (selected) => {
+    if (selected.getAttribute("aria-selected") === "true") return;
+    for (const tab of sessionTabs) {
+      const active = tab === selected;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      document.getElementById(tab.getAttribute("aria-controls")).hidden = !active;
+    }
+    refreshSelectedCoachSessions();
+  };
+  sessions.querySelector(".coach-session-views").addEventListener("keydown", (event) => {
+    const index = sessionTabs.indexOf(event.target);
+    if (index < 0) return;
+    const next = { Home: sessionTabs[0], End: sessionTabs.at(-1), ArrowLeft: sessionTabs[1 - index], ArrowRight: sessionTabs[1 - index] }[event.key];
+    if (!next) return;
+    event.preventDefault();
+    selectSessionTab(next);
+    next.focus();
+  });
+  sessions.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-coach-session-view]");
+    if (tab) {
+      selectSessionTab(tab);
+      return;
+    }
+    const page = event.target.closest("[data-coach-alex-page]");
+    if (page && page.getAttribute("aria-disabled") !== "true") {
+      coachAlexPage += Number(page.dataset.coachAlexPage);
+      renderCoachAlexHistory(document.getElementById("coach-sessions-alex"));
+      return;
+    }
+    const step = event.target.closest("[data-coach-fwb-month]");
+    if (step) {
+      const today = coachSessionToday();
+      const currentMonth = today.slice(0, 7);
+      const month = coachFwbSessionMonth || currentMonth;
+      const offset = Number(step.dataset.coachFwbMonth);
+      if ((offset === 1 && month < currentMonth) || (offset === -1 && month > "0001-01")) {
+        const pickedMonth = moveCoachSessionMonth(month, offset);
+        coachFwbSessionMonth = pickedMonth === currentMonth ? "" : pickedMonth;
+        refreshCoachFwbMonthlySessions(today);
+      }
+      return;
+    }
+    const count = event.target.closest("[data-coach-count-client]");
+    if (count) {
+      const program = activeClientPrograms().find((item) => item.id === count.dataset.coachCountClient && item.active !== false);
+      if (program) openCoachHomeClientSection(program.client_email, "sessions");
+    }
+  });
+  sessions.querySelector("[data-coach-alex-package]").addEventListener("change", (event) => {
+    coachAlexPage = 0;
+    renderCoachAlexHistory(event.target.closest('[role="tabpanel"]'));
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && activeAdminTab === "session-counts") refreshSelectedCoachSessions();
+  });
+  renderCoachClientWorkspace();
 }
 
 function closeClientSuggestions() {
@@ -4650,13 +4673,16 @@ function renderClientSuggestions() {
 }
 
 function selectClientSuggestion(programId) {
-  const program = matchingClientSuggestions().find((item) => item.id === programId);
+  selectCoachRosterProgram(matchingClientSuggestions().find((program) => program.id === programId));
+}
+
+function selectCoachRosterProgram(program) {
   const useMobileClientHub = globalThis.matchMedia?.("(max-width: 900px)")?.matches === true;
   if (!program) return;
   document.getElementById("client-search-input").value = program.client_name || program.client_email;
   clientSearchTerm = "";
   closeClientSuggestions();
-  fillForm(program);
+  if (selectedProgramId !== program.id) fillForm(program);
   renderClientList();
   setAdminTab(useMobileClientHub ? "clients" : "profile");
   adminStatus("Ready.");
@@ -5235,6 +5261,7 @@ function handleAllClientAddedExercises() {
     exerciseLibraryStatus(group.libraryMatch
       ? `Review ${group.libraryMatch.record.name}, approve it for clients, then save.`
       : `Review the details for ${group.name}. Saving will approve it and add it to the shared library.`);
+    showExerciseLibraryEditor({ focus: false });
     document.querySelector(".exercise-library-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.requestAnimationFrame(() => document.getElementById("exercise-library-primary")?.focus({ preventScroll: true }));
   });
@@ -5798,6 +5825,12 @@ async function saveExerciseLibraryRecord(payload, id, file) {
   return data;
 }
 
+function showExerciseLibraryEditor({ focus = true } = {}) {
+  const editor = document.getElementById("coach-exercise-editor");
+  if (editor) editor.open = true;
+  if (focus) document.getElementById("exercise-library-name")?.focus();
+}
+
 function fillExerciseLibraryEditor(record = null) {
   const values = record || {
     name: "",
@@ -6051,7 +6084,7 @@ function handleExerciseLibraryEditor() {
     if (isExerciseLibrarySaving) return;
     fillExerciseLibraryEditor();
     renderExerciseLibrary();
-    document.getElementById("exercise-library-name").focus();
+    showExerciseLibraryEditor();
   });
 
   searchInput.addEventListener("input", () => {
@@ -6084,6 +6117,7 @@ function handleExerciseLibraryEditor() {
     exerciseLibraryStatus(selectedExerciseLibraryId
       ? "Choose a replacement demo video, then save the exercise."
       : "Choose a demo video, finish the exercise details, then save.");
+    showExerciseLibraryEditor({ focus: false });
     document.getElementById("exercise-library-video").click();
   });
 
@@ -6144,6 +6178,7 @@ function handleExerciseLibraryEditor() {
     if (record) {
       fillExerciseLibraryEditor(record);
       renderExerciseLibrary();
+      showExerciseLibraryEditor();
     }
   });
 
@@ -6307,12 +6342,12 @@ async function showAdminWorkspace(user) {
   }
 
   initializeCoachMessages(user);
+  if (activeAdminTab === "session-counts") refreshSelectedCoachSessions();
 
   await Promise.all([
     loadPrograms(),
     loadClientAccessRequests(),
     loadExerciseLibrary(),
-    loadCoachCalendarEvents(),
     initializeCoachNotifications(user)
   ]);
 }
@@ -6326,6 +6361,34 @@ function initializeCoachMessages(user) {
     unreadBadges: document.querySelectorAll("[data-coach-message-unread]")
   });
   coachMessagesController.setActive(activeAdminTab === "inbox");
+}
+
+function updateCoachActivityWorkouts() {
+  if (!coachNotificationsController) return;
+
+  const clients = new Map(activeClientPrograms().map((program) => [normalizeEmail(program.client_email), program]));
+  const workouts = [...latestWorkoutByClient().values()]
+    .filter((workout) => clients.has(workout.client_email))
+    .slice(0, 8)
+    .map((workout) => ({
+      ...workout,
+      client_name: clients.get(workout.client_email).client_name || workout.client_email
+    }));
+
+  coachNotificationsController.setCoachWorkouts(workouts);
+}
+
+function resolveCoachActivityCommentClient(row, actionUrl) {
+  const email = normalizeEmail(row.coach_workout_email || row.metadata?.client_email);
+  const destination = new URL(actionUrl, window.location.origin);
+  const id = destination.origin === window.location.origin && destination.pathname === "/coach-admin.html"
+    ? destination.searchParams.get("client")
+    : null;
+  const linked = id ? programs.find((program) => String(program.id) === id) : null;
+  const linkedEmail = normalizeEmail(linked?.client_email);
+  if (id && (!linkedEmail || (email && linkedEmail !== email))) return null;
+  const clientEmail = email || linkedEmail;
+  return clientEmail ? activeClientPrograms().find((program) => normalizeEmail(program.client_email) === clientEmail) || null : null;
 }
 
 async function initializeCoachNotifications(user) {
@@ -6349,8 +6412,18 @@ async function initializeCoachNotifications(user) {
     user,
     role: "coach",
     root,
-    unreadBadges: document.querySelectorAll("[data-web-notification-unread]")
+    unreadBadges: document.querySelectorAll("[data-web-notification-unread]"),
+    coachWorkoutLogsUrl(email) {
+      const program = activeClientPrograms().find((item) => normalizeEmail(item.client_email) === email);
+      return program?.id ? `/coach-admin.html?tab=logs&client=${encodeURIComponent(program.id)}` : "";
+    },
+    openCoachWorkoutLogs(email) {
+      openCoachHomeClientSection(email, "logs");
+    },
+    coachActivityCommentClient: openCoachActivityComment ? resolveCoachActivityCommentClient : null,
+    openCoachActivityComment
   });
+  updateCoachActivityWorkouts();
 
   try {
     await coachNotificationsController.init();
@@ -6370,8 +6443,15 @@ function handleAdminTabs() {
 
   tabs.forEach((button) => {
     button.addEventListener("click", () => {
-      setAdminTab(button.dataset.adminTab);
       closeCoachAdminSidebarDrawer({ restoreFocus: true });
+      if (button.dataset.adminTab === "notifications") openCoachActivity();
+      else if (button.dataset.adminTab === "session-counts") {
+        setAdminTab("session-counts");
+        const heading = document.getElementById("coach-session-count-title");
+        heading?.focus({ preventScroll: true });
+        heading?.scrollIntoView({ block: "start" });
+      }
+      else setAdminTab(button.dataset.adminTab);
     });
   });
 
@@ -6397,9 +6477,60 @@ function openCoachHomeClientSection(email, tabName) {
   });
 }
 
+function openCoachActivity({ settings = false } = {}) {
+  if (activeAdminTab !== "notifications") setAdminTab("notifications");
+  const disclosure = document.querySelector(".coach-alert-settings");
+  if (settings && disclosure) disclosure.open = true;
+  const target = settings ? disclosure?.querySelector("summary") : document.getElementById("coach-notification-title");
+  target?.focus({ preventScroll: true });
+  target?.scrollIntoView({ block: "start" });
+}
+
+function handleCoachActivityDesk() {
+  const desk = document.querySelector(".coach-activity-desk");
+  const list = desk?.querySelector("[data-web-notification-list]");
+  if (!list) return;
+
+  const filters = desk.querySelectorAll("[data-coach-activity-filter]");
+  const empty = desk.querySelector("[data-coach-activity-filter-empty]");
+  let selected = "all";
+
+  const applyFilter = () => {
+    let visible = 0;
+    for (const item of list.children) {
+      const kind = item.dataset.webNotificationKind;
+      const matches = selected === "all"
+        || (selected === "workouts" && kind === "workout_completed")
+        || (selected === "checkins" && (
+          kind === "weekly_check_in"
+          || kind === "check_in_submitted"
+          || item.querySelector('[data-web-notification-icon="checkin"]')
+        ));
+      item.hidden = !matches;
+      if (!item.hidden) visible++;
+    }
+    empty.hidden = selected === "all" || !list.childElementCount || visible > 0;
+  };
+
+  filters.forEach((button) => {
+    button.addEventListener("click", () => {
+      selected = button.dataset.coachActivityFilter;
+      filters.forEach((filter) => filter.setAttribute("aria-pressed", String(filter === button)));
+      empty.textContent = selected === "workouts"
+        ? "No workouts in recent activity."
+        : "No check-ins in recent activity.";
+      applyFilter();
+    });
+  });
+  new MutationObserver(applyFilter).observe(list, { childList: true });
+  desk.querySelector("[data-coach-activity-clients]")?.addEventListener("click", () => openCoachHomeShortcut("clients"));
+  desk.querySelector("[data-coach-activity-settings]")?.addEventListener("click", () => openCoachActivity({ settings: true }));
+}
+
 function openCoachHomeShortcut(destination) {
   if (destination === "clients") {
     showingArchivedClients = false;
+    coachClientsView = "personal_training";
     clientSearchTerm = "";
     const input = document.getElementById("client-search-input");
     if (input) input.value = "";
@@ -6410,13 +6541,19 @@ function openCoachHomeShortcut(destination) {
     return;
   }
 
+  if (destination === "workouts") {
+    openCoachActivity();
+    return;
+  }
+
   const targetIds = {
-    workouts: "coach-home-recent-title",
     sessions: "coach-home-sheets-title",
     attention: document.querySelector?.("#coach-home-membership-requests .coach-home-list-row") ? "coach-home-membership-title" : "coach-home-session-alert-title"
   };
   const target = document.getElementById(targetIds[destination]);
   if (!target) return;
+  const disclosure = target.closest("details");
+  if (disclosure) disclosure.open = true;
   target.focus({ preventScroll: true });
   target.scrollIntoView({
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
@@ -6441,15 +6578,6 @@ function handleCoachHomeActions() {
     const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
     const membershipButton = event.target.closest("[data-coach-home-open-membership]");
     const tabButton = event.target.closest("[data-coach-home-tab]");
-    const refreshCalendarButton = event.target.closest("[data-coach-home-refresh-calendar]");
-
-    if (refreshCalendarButton) {
-      refreshCalendarButton.disabled = true;
-      loadCoachCalendarEvents({ force: true }).finally(() => {
-        refreshCalendarButton.disabled = false;
-      });
-      return;
-    }
 
     if (logsButton) {
       openCoachHomeClientSection(logsButton.dataset.coachHomeOpenLogs, "logs");
@@ -6475,7 +6603,6 @@ function handleCoachMobileNavigation() {
   const moreButton = document.querySelector("[data-coach-mobile-more-open]");
   const moreDialog = document.querySelector("[data-coach-mobile-more-dialog]");
   const settingsButton = document.querySelector("[data-coach-home-settings]");
-  const notificationClose = document.querySelector("[data-coach-notification-close]");
   let moreReturnFocus = null;
 
   const closeMoreDialog = ({ restoreFocus = true } = {}) => {
@@ -6500,18 +6627,12 @@ function handleCoachMobileNavigation() {
   moreDialog?.addEventListener("click", (event) => {
     if (event.target === moreDialog) closeMoreDialog();
   });
-  moreDialog?.querySelectorAll("[data-coach-mobile-more-destination]").forEach((button) => {
-    button.addEventListener("click", () => {
-      closeMoreDialog({ restoreFocus: false });
-      setAdminTab(button.dataset.coachMobileMoreDestination);
-    });
+  moreDialog?.querySelector("[data-coach-mobile-settings]")?.addEventListener("click", () => {
+    closeMoreDialog({ restoreFocus: false });
+    openCoachActivity({ settings: true });
   });
 
-  settingsButton?.addEventListener("click", () => setAdminTab("notifications"));
-  notificationClose?.addEventListener("click", () => {
-    setAdminTab("home");
-    window.requestAnimationFrame(() => settingsButton?.focus({ preventScroll: true }));
-  });
+  settingsButton?.addEventListener("click", () => openCoachActivity({ settings: true }));
 
   document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -8132,7 +8253,7 @@ function openInviteClientModal(button) {
   form.elements.invite_client_email.value = "";
   form.elements.invite_client_name.value = "";
   form.elements.invite_client_phone.value = "";
-  inviteStatus("Enter the client details, then send their invite.");
+  inviteStatus("Enter the client’s name and email to get started.");
   modal.hidden = false;
   document.body.classList.add("is-invite-client-modal-open");
   adminStatus("New client invite ready.");
@@ -8140,18 +8261,20 @@ function openInviteClientModal(button) {
 }
 
 function handleNewClient() {
-  const button = document.getElementById("new-client-button");
+  const buttons = document.querySelectorAll("[data-open-invite-client]");
   const modal = document.getElementById("invite-client-modal");
   const closeButtons = document.querySelectorAll("[data-close-invite-client]");
 
-  if (!button || !modal) {
+  if (!modal) {
     return;
   }
 
-  button.addEventListener("click", () => {
-    pendingSignupApproval = null;
-    openInviteClientModal(button);
-    setClientInviteBusy(false);
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      pendingSignupApproval = null;
+      openInviteClientModal(button);
+      setClientInviteBusy(false);
+    });
   });
   closeButtons.forEach((closeButton) => {
     closeButton.addEventListener("click", () => closeInviteClientModal());
@@ -8247,6 +8370,20 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
+  const openFeedComment = window.FWBCoachFeedComment?.create({
+    dialog: document.getElementById("coach-activity-comment-dialog"),
+    fallbackFocus: document.getElementById("coach-notification-title"),
+    send: (payload) => coachSupabase.rpc("send_coach_activity_comment", payload),
+    onSent() {
+      const status = document.querySelector(".coach-activity-feed [data-web-notification-status]");
+      if (status) status.textContent = "Comment sent to the client’s notifications.";
+    }
+  });
+  openCoachActivityComment = openFeedComment ? (program, activity, button) => {
+    const current = activeClientPrograms().find((client) => client.id === program.id && client.client_email === program.client_email);
+    if (current) openFeedComment({ clientName: current.client_name || current.client_email, activity, button });
+  } : null;
+  handleCoachActivityDesk();
   handleCoachHomeActions();
   handleCoachMobileNavigation();
   handleCoachAdminSidebar();
@@ -8270,6 +8407,7 @@ async function bootCoachAdmin() {
   handleArchiveClient();
   handleArchivedClientsToggle();
   handleClientSearch();
+  handleCoachClientWorkspace();
   handleDeleteArchivedClient();
   handleCopyClientDialog();
   handleProgramHistoryActions();

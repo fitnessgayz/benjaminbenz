@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Exercise Library | GRUNTR Coach</title>
   <meta name="description" content="Manage the shared GRUNTR exercise catalog, videos, and client-added exercises." />
   <meta name="robots" content="noindex, nofollow, noarchive" />
@@ -18,19 +18,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=exercise-library-page-4&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;catalog-first=1&amp;body-parts=2&amp;client-added-edit=1&amp;electric-gold=2&amp;likeness-motion=1&amp;anatomy-images=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2&amp;electric-gold=2" />
-  <meta name="theme-color" content="#030D1C" />
+  <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=2&amp;compact-catalog=1" />
 </head>
 <body class="dashboard-page coach-exercise-library-page">
   <header class="site-header dashboard-header">
-    <a class="brand coach-brand-lockup" href="coach-admin.html" aria-label="GRUNTR Coach home">
+    <a class="brand coach-brand-lockup" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
       <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="42" height="42" />
       <strong>GRUNTR Coach</strong>
     </a>
     <div class="header-actions">
-      <a class="login-link" href="coach-admin.html">Coach Home</a>
+      <a class="login-link" href="coach-admin.html?tab=home">Coach Home</a>
       <button class="login-link is-current sign-out-button" type="button" data-coach-sign-out hidden>Sign Out</button>
     </div>
   </header>
@@ -38,9 +39,7 @@
   <main class="admin-shell coach-exercise-library-shell">
     <section class="dashboard-hero coach-exercise-library-hero" aria-labelledby="exercise-library-page-title">
       <div>
-        <p class="kicker">Shared catalog</p>
         <h1 id="exercise-library-page-title">Exercise library</h1>
-        <p>Manage branded exercise cards, demonstration videos, and client-added exercises in one focused workspace.</p>
       </div>
       <a class="button button-ghost" href="coach-admin.html">Back to GRUNTR Coach</a>
     </section>
@@ -52,87 +51,14 @@
     <section class="admin-card exercise-library-panel" id="coach-exercise-library-workspace" hidden>
       <div class="admin-section-heading exercise-library-heading">
         <div>
-          <p class="kicker">Visual catalog</p>
-          <h2>Cards and videos</h2>
-          <p>Exercise cards with photos, muscles, equipment, coaching cues, and video demonstrations.</p>
+          <h2>Catalog</h2>
         </div>
         <button class="button button-ghost" type="button" id="clear-exercise-library">New exercise</button>
       </div>
 
-      <section class="client-exercise-name-manager" aria-labelledby="client-exercise-name-manager-title">
-        <div class="client-exercise-name-manager-heading">
-          <div>
-            <p class="kicker">Selected client</p>
-            <h3 id="client-exercise-name-manager-title">Client custom exercise names</h3>
-            <p id="client-exercise-name-manager-summary">Choose a client to review names saved from their custom workouts.</p>
-          </div>
-          <span class="status-pill" id="client-exercise-name-manager-pill">No client selected</span>
-        </div>
-        <div class="client-exercise-name-manager-layout">
-          <div class="client-exercise-name-browser">
-            <p class="exercise-library-count" id="client-exercise-name-count" role="status">Choose a client first.</p>
-            <div class="client-exercise-name-list" id="client-exercise-name-list" aria-live="polite">
-              <p class="exercise-library-empty">Custom workout names will appear here.</p>
-            </div>
-          </div>
-
-          <div class="client-exercise-name-editor" id="client-exercise-name-editor">
-            <div>
-              <small>Selected exercise</small>
-              <h4 id="client-exercise-name-selected">Choose a name to manage</h4>
-            </div>
-            <p id="client-exercise-name-impact">You can correct a typo without losing weights, reps, dates, or notes.</p>
-            <label>
-              Corrected exercise name
-              <input type="text" id="client-exercise-name-correction" list="client-exercise-name-correction-options" placeholder="Choose or type the correct name" autocomplete="off" disabled />
-            </label>
-            <datalist id="client-exercise-name-correction-options"></datalist>
-            <p class="client-exercise-name-guidance" id="client-exercise-name-guidance">Select a client exercise name to see its source and usage.</p>
-            <div class="client-exercise-name-actions">
-              <button class="button button-dark" type="button" id="correct-client-exercise-name" disabled>Fix spelling</button>
-              <button class="button button-ghost danger-button" type="button" id="delete-client-exercise-name" disabled>Delete saved sets permanently</button>
-            </div>
-            <p class="client-exercise-name-status" id="client-exercise-name-status" role="status" aria-live="polite">No changes made.</p>
-          </div>
-        </div>
-      </section>
-
       <div class="exercise-library-layout">
-        <div class="exercise-library-editor">
-          <label class="exercise-library-name-field">Exercise name<input type="text" id="exercise-library-name" placeholder="Dumbbell bench press" autocomplete="off" /></label>
-          <label>Primary muscle<select id="exercise-library-primary"><option value="chest">Chest</option><option value="back">Back</option><option value="lats">Lats</option><option value="shoulders">Shoulders</option><option value="biceps">Biceps</option><option value="triceps">Triceps</option><option value="quads">Quads</option><option value="hamstrings">Hamstrings</option><option value="glutes">Glutes</option><option value="calves">Calves</option><option value="core">Core</option><option value="adductors">Adductors</option><option value="full_body">Full body</option></select></label>
-          <label>Equipment<select id="exercise-library-equipment"><option value="bodyweight">Bodyweight</option><option value="dumbbell">Dumbbell</option><option value="barbell">Barbell</option><option value="cable">Cable</option><option value="machine">Machine</option><option value="smith_machine">Smith machine</option><option value="bench">Bench</option><option value="suspension_trainer">Suspension trainer</option><option value="other">Other</option></select></label>
-          <label>Difficulty<select id="exercise-library-difficulty"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label>
-          <label>Secondary muscles<input type="text" id="exercise-library-secondary" placeholder="triceps, shoulders" autocomplete="off" /></label>
-          <label>Search aliases<input type="text" id="exercise-library-aliases" placeholder="DB bench, flat dumbbell press" autocomplete="off" /></label>
-          <label>Movement pattern<input type="text" id="exercise-library-pattern" placeholder="horizontal_push" autocomplete="off" /></label>
-          <label>Substitution group<input type="text" id="exercise-library-substitution" placeholder="horizontal_press" autocomplete="off" /></label>
-          <label>Default sets<input type="number" id="exercise-library-sets" min="1" max="10" value="3" inputmode="numeric" /></label>
-          <label>Default reps<input type="text" id="exercise-library-reps" value="8–12" autocomplete="off" /></label>
-          <label>Rest (seconds)<input type="number" id="exercise-library-rest" min="0" max="600" value="90" inputmode="numeric" /></label>
-          <label class="exercise-library-demo-field">Demo video link<input type="url" id="exercise-library-demo" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url" /></label>
-          <div class="exercise-library-video-field">
-            <label for="exercise-library-video">Upload video</label>
-            <input type="file" id="exercise-library-video" accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mp4,.mov,.m4v,.webm" aria-describedby="exercise-library-video-help exercise-library-video-status" />
-            <p id="exercise-library-video-help">MP4, MOV, M4V, or WebM, up to 50 MB. MP4 works best across devices.</p>
-            <input type="hidden" id="exercise-library-image" />
-            <p id="exercise-library-video-status" role="status"></p>
-            <video id="exercise-library-video-preview" controls playsinline preload="metadata" aria-label="Exercise demo preview" hidden></video>
-            <img id="exercise-library-image-preview" alt="Exercise demo preview" hidden />
-            <button class="button button-ghost" type="button" id="clear-exercise-library-video" hidden>Cancel video selection</button>
-          </div>
-          <label class="exercise-library-instructions-field">Coaching instructions<textarea id="exercise-library-instructions" maxlength="2000" placeholder="Add the cues clients should see."></textarea></label>
-          <div class="exercise-library-toggles">
-            <label><input type="checkbox" id="exercise-library-approved" checked /> Approved for clients</label>
-            <label><input type="checkbox" id="exercise-library-active" checked /> Active</label>
-          </div>
-          <div class="exercise-library-actions">
-            <p id="exercise-library-status" role="status">Choose an exercise to edit or add a new one.</p>
-            <button class="button button-dark" type="button" id="save-exercise-library">Save exercise</button>
-          </div>
-        </div>
-
         <div class="exercise-library-browser">
+          <label class="exercise-library-search-field"><span>Search library</span><input type="search" id="exercise-library-search" placeholder="Name, muscle, equipment..." autocomplete="off" /></label>
           <button class="client-added-exercises-link" type="button" id="client-added-exercises-link" aria-expanded="false" aria-controls="client-added-exercise-review">
             <span><small>Coach review</small><strong>Client-added exercises</strong></span>
             <span class="client-added-exercises-link-count" id="client-added-exercise-pending-count">—</span>
@@ -150,7 +76,6 @@
             <button class="is-selected" type="button" role="tab" aria-selected="true" aria-controls="exercise-library-list" data-exercise-library-view="cards">Exercise cards</button>
             <button type="button" role="tab" aria-selected="false" aria-controls="exercise-library-list" data-exercise-library-view="videos">Videos <span id="exercise-library-video-count">0</span></button>
           </div>
-          <label class="exercise-library-search-field"><span>Search library</span><input type="search" id="exercise-library-search" placeholder="Name, muscle, equipment..." autocomplete="off" /></label>
           <p id="exercise-library-count" class="exercise-library-count">Loading exercises…</p>
           <div class="exercise-library-view-heading">
             <h3 class="exercise-library-view-title" id="exercise-library-view-title">Exercise cards</h3>
@@ -158,6 +83,85 @@
           </div>
           <div id="exercise-library-list" class="exercise-library-list" role="tabpanel" aria-live="polite"></div>
         </div>
+
+        <details class="coach-home-disclosure coach-library-names">
+          <summary>Client exercise names</summary>
+          <section class="client-exercise-name-manager" aria-labelledby="client-exercise-name-manager-title">
+            <div class="client-exercise-name-manager-heading">
+              <div>
+                <p class="kicker">Selected client</p>
+                <h3 id="client-exercise-name-manager-title">Client custom exercise names</h3>
+                <p id="client-exercise-name-manager-summary">Choose a client to review names saved from their custom workouts.</p>
+              </div>
+              <span class="status-pill" id="client-exercise-name-manager-pill">No client selected</span>
+            </div>
+            <div class="client-exercise-name-manager-layout">
+              <div class="client-exercise-name-browser">
+                <p class="exercise-library-count" id="client-exercise-name-count" role="status">Choose a client first.</p>
+                <div class="client-exercise-name-list" id="client-exercise-name-list" aria-live="polite">
+                  <p class="exercise-library-empty">Custom workout names will appear here.</p>
+                </div>
+              </div>
+
+              <div class="client-exercise-name-editor" id="client-exercise-name-editor">
+                <div>
+                  <small>Selected exercise</small>
+                  <h4 id="client-exercise-name-selected">Choose a name to manage</h4>
+                </div>
+                <p id="client-exercise-name-impact">You can correct a typo without losing weights, reps, dates, or notes.</p>
+                <label>
+                  Corrected exercise name
+                  <input type="text" id="client-exercise-name-correction" list="client-exercise-name-correction-options" placeholder="Choose or type the correct name" autocomplete="off" disabled />
+                </label>
+                <datalist id="client-exercise-name-correction-options"></datalist>
+                <p class="client-exercise-name-guidance" id="client-exercise-name-guidance">Select a client exercise name to see its source and usage.</p>
+                <div class="client-exercise-name-actions">
+                  <button class="button button-dark" type="button" id="correct-client-exercise-name" disabled>Fix spelling</button>
+                  <button class="button button-ghost danger-button" type="button" id="delete-client-exercise-name" disabled>Delete saved sets permanently</button>
+                </div>
+                <p class="client-exercise-name-status" id="client-exercise-name-status" role="status" aria-live="polite">No changes made.</p>
+              </div>
+            </div>
+          </section>
+        </details>
+
+        <details class="exercise-library-editor coach-home-disclosure" id="coach-exercise-editor">
+          <summary>Exercise details</summary>
+          <div class="coach-exercise-fields">
+            <label class="exercise-library-name-field">Exercise name<input type="text" id="exercise-library-name" placeholder="Dumbbell bench press" autocomplete="off" /></label>
+            <label>Primary muscle<select id="exercise-library-primary"><option value="chest">Chest</option><option value="back">Back</option><option value="lats">Lats</option><option value="shoulders">Shoulders</option><option value="biceps">Biceps</option><option value="triceps">Triceps</option><option value="quads">Quads</option><option value="hamstrings">Hamstrings</option><option value="glutes">Glutes</option><option value="calves">Calves</option><option value="core">Core</option><option value="adductors">Adductors</option><option value="full_body">Full body</option></select></label>
+            <label>Equipment<select id="exercise-library-equipment"><option value="bodyweight">Bodyweight</option><option value="dumbbell">Dumbbell</option><option value="barbell">Barbell</option><option value="cable">Cable</option><option value="machine">Machine</option><option value="smith_machine">Smith machine</option><option value="bench">Bench</option><option value="suspension_trainer">Suspension trainer</option><option value="other">Other</option></select></label>
+            <label>Difficulty<select id="exercise-library-difficulty"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label>
+            <label>Secondary muscles<input type="text" id="exercise-library-secondary" placeholder="triceps, shoulders" autocomplete="off" /></label>
+            <label>Search aliases<input type="text" id="exercise-library-aliases" placeholder="DB bench, flat dumbbell press" autocomplete="off" /></label>
+            <label>Movement pattern<input type="text" id="exercise-library-pattern" placeholder="horizontal_push" autocomplete="off" /></label>
+            <label>Substitution group<input type="text" id="exercise-library-substitution" placeholder="horizontal_press" autocomplete="off" /></label>
+            <label>Default sets<input type="number" id="exercise-library-sets" min="1" max="10" value="3" inputmode="numeric" /></label>
+            <label>Default reps<input type="text" id="exercise-library-reps" value="8–12" autocomplete="off" /></label>
+            <label>Rest (seconds)<input type="number" id="exercise-library-rest" min="0" max="600" value="90" inputmode="numeric" /></label>
+            <label class="exercise-library-demo-field">Demo video link<input type="url" id="exercise-library-demo" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url" /></label>
+            <div class="exercise-library-video-field">
+              <label for="exercise-library-video">Upload video</label>
+              <input type="file" id="exercise-library-video" accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mp4,.mov,.m4v,.webm" aria-describedby="exercise-library-video-help exercise-library-video-status" />
+              <p id="exercise-library-video-help">MP4, MOV, M4V, or WebM, up to 50 MB. MP4 works best across devices.</p>
+              <input type="hidden" id="exercise-library-image" />
+              <p id="exercise-library-video-status" role="status"></p>
+              <video id="exercise-library-video-preview" controls playsinline preload="metadata" aria-label="Exercise demo preview" hidden></video>
+              <img id="exercise-library-image-preview" alt="Exercise demo preview" hidden />
+              <button class="button button-ghost" type="button" id="clear-exercise-library-video" hidden>Cancel video selection</button>
+            </div>
+            <label class="exercise-library-instructions-field">Coaching instructions<textarea id="exercise-library-instructions" maxlength="2000" placeholder="Add the cues clients should see."></textarea></label>
+            <div class="exercise-library-toggles">
+              <label><input type="checkbox" id="exercise-library-approved" checked /> Approved for clients</label>
+              <label><input type="checkbox" id="exercise-library-active" checked /> Active</label>
+            </div>
+            <div class="exercise-library-actions">
+              <p id="exercise-library-status" role="status">Choose an exercise to edit or add a new one.</p>
+              <button class="button button-dark" type="button" id="save-exercise-library">Save exercise</button>
+            </div>
+          </div>
+        </details>
+
       </div>
     </section>
   </main>
@@ -165,6 +169,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/auth-session.js?v=remember-login-2"></script>
-  <script src="js/coach-admin.js?v=exercise-library-page-3&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=2&amp;client-name-list=2&amp;body-parts=2&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1"></script>
+  <script src="js/coach-admin.js?v=exercise-library-page-3&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=2&amp;client-name-list=2&amp;body-parts=2&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;compact-catalog=1"></script>
 </body>
 </html>

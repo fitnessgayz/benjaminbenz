@@ -341,3 +341,174 @@
   .coach-workout-log-page .coach-workout-client-search .coach-client-view-link:not([hidden]) span { font-size: 18px; }
   .coach-workout-log-page .coach-workout-group-name-toggle strong { font-size: 16px; }
 }
+
+/* The scroll area and finish controls occupy separate rows, so neither can cover the other. */
+:root body.coach-workout-log-page {
+  --cw-bg: #111214; --cw-blue: #69afe1; color-scheme: dark;
+  --cw-left: max(12px, env(safe-area-inset-left)); --cw-right: max(12px, env(safe-area-inset-right));
+  box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0; height: 100vh; height: var(--cw-visible-height, 100dvh); margin: 0; overflow: hidden;
+}
+.coach-workout-log-page [hidden] { display: none !important; }
+.coach-gcoach-header {
+  display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center;
+  width: min(100%, 680px); margin: 0 auto;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) var(--cw-right) 6px var(--cw-left);
+}
+:root body.coach-workout-log-page .coach-gcoach-header h1 { margin: 0; font-size: 1.1rem; line-height: 1.2; font-weight: 800; color: var(--cw-text); text-align: center; }
+:root body.coach-workout-log-page .coach-gcoach-icon {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; color: var(--cw-text);
+  border: 1px solid #34363b; background: #222428; border-radius: 50%;
+}
+:root body.coach-workout-log-page #coach-workout-save { display: grid; justify-self: end; color: var(--cw-blue); }
+.coach-gcoach-icon svg, #coach-workout-reset svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+:root body.coach-workout-log-page .coach-workout-log-shell {
+  width: min(100%, 680px); min-height: 0; min-width: 0; margin: 0 auto; padding: 0;
+  display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden;
+}
+:root body.coach-workout-log-page .coach-workout-logger {
+  min-height: 0; min-width: 0; height: 100%; margin: 0; gap: 0; display: grid; grid-template-rows: minmax(0, 1fr);
+}
+.coach-gcoach-workout { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; min-width: 0; }
+.coach-gcoach-workout-scroll, .coach-gcoach-library { min-height: 0; min-width: 0; overflow: auto; overscroll-behavior-y: contain; }
+.coach-gcoach-workout-scroll { display: block; padding: 0 var(--cw-right) 24px var(--cw-left); scroll-padding-block: 10px 16px; }
+.coach-gcoach-workout-scroll > * + * { margin-block-start: 6px; }
+.coach-gcoach-workout-scroll:focus-visible { outline: 2px solid var(--cw-blue); outline-offset: -2px; }
+.coach-gcoach-library { display: grid; align-content: start; gap: 8px; padding: 0 var(--cw-right) calc(12px + env(safe-area-inset-bottom)) var(--cw-left); }
+.coach-gcoach-picker-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+:root body.coach-workout-log-page .coach-gcoach-picker-heading h2 { margin: 0; color: var(--cw-text); font-size: 1.1rem; }
+:root body.coach-workout-log-page #coach-workout-library-close {
+  width: auto !important; min-height: 44px; padding-inline: 10px; color: var(--cw-blue); background: transparent; font-size: .8rem;
+}
+.coach-gcoach-library label { color: var(--cw-text); font-size: .85rem; font-weight: 750; }
+:root body.coach-workout-log-page .coach-gcoach-library input { width: 100%; min-height: 46px; background: #23252a; color: var(--cw-text); border: 1px solid var(--cw-line); font-size: 1rem; }
+.coach-gcoach-library-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 8px; }
+.coach-gcoach-library-tools p { margin: 0; color: var(--cw-muted); font-size: .8rem; }
+:root body.coach-workout-log-page .coach-gcoach-library-tools button { min-height: 44px; padding: 3px 0; border: 0; background: none; color: var(--cw-blue); font-size: .85rem; }
+.coach-gcoach-library ul { list-style: none; padding: 0; margin: 0; }
+:root body.coach-workout-log-page .coach-gcoach-library li button {
+  width: 100%; min-height: 56px; padding: 6px 7px; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; gap: 8px; text-align: start; color: var(--cw-text); background: transparent; border: 0; border-bottom: 1px solid #373940;
+}
+.coach-gcoach-library li button > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.coach-gcoach-library li button > span:last-child { color: var(--cw-blue); font-size: 1.2rem; }
+.coach-gcoach-library li small { display: block; color: var(--cw-muted); margin-top: 2px; }
+.coach-gcoach-library li button:hover { background: #22252a; }
+.coach-workout-log-page .coach-workout-client-search { gap: 3px; padding-inline: 0; }
+.coach-workout-log-page .coach-workout-client-search > label { font-size: .72rem; }
+.coach-workout-log-page .coach-workout-client-search input { min-height: 44px; padding-block: 6px; border-radius: 12px; }
+:root body.coach-workout-log-page .coach-workout-client-search #coach-workout-client-view {
+  display: inline-flex; justify-content: center; align-items: center; width: auto !important; min-width: 44px;
+  padding-inline: 8px; border: 1px solid #41464d; background: #22252a; color: var(--cw-blue);
+}
+.coach-gcoach-tools { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) 44px; gap: 7px; }
+.coach-gcoach-tool summary, .coach-gcoach-set-options summary, .coach-gcoach-guide summary { list-style: none; cursor: pointer; }
+.coach-gcoach-tool summary::-webkit-details-marker, .coach-gcoach-set-options summary::-webkit-details-marker, .coach-gcoach-guide summary::-webkit-details-marker { display: none; }
+.coach-gcoach-tool > summary {
+  display: flex; justify-content: center; align-items: center; gap: 6px; min-height: 44px;
+  padding-inline: 8px; border-radius: 999px; background: #282a2f; color: #ffdb32; font-size: .82rem; font-weight: 800;
+}
+.coach-gcoach-settings > summary { color: var(--cw-text); font-size: 1.1rem; }
+.coach-gcoach-tool > summary > span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.coach-gcoach-popover {
+  position: absolute; inset: calc(100% + 5px) 0 auto; z-index: 8; display: grid; gap: 5px; padding: 12px;
+  border: 1px solid #55575e; border-radius: 12px; background: #222428; color: var(--cw-text);
+}
+.coach-gcoach-popover input:not([type="radio"]) { width: 100%; min-height: 44px; font-size: 1rem; }
+.coach-gcoach-settings-brand { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: .8rem; }
+.coach-workout-log-page .coach-gcoach-popover .coach-workout-session-grid { grid-template-columns: minmax(0, 1fr); }
+.coach-workout-log-page :is(.coach-gcoach-rest, .coach-gcoach-add-set) {
+  justify-self: start; min-height: 44px; padding: 5px 4px; border: 0; background: none; color: var(--cw-blue); font: inherit; font-weight: 750;
+}
+:root body.coach-workout-log-page .coach-gcoach-rest { width: auto !important; text-align: start; color: var(--cw-blue); }
+.coach-gcoach-set-actions, .coach-gcoach-exercise-tools { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; }
+.coach-gcoach-set-actions > details { margin-inline-start: auto; }
+.coach-gcoach-exercise-tools > details[open], .coach-gcoach-set-actions > details[open] { flex: 1 0 100%; }
+.coach-workout-log-page .coach-workout-exercise-section > .admin-section-heading { display: none; }
+:root body.coach-workout-log-page #coach-workout-main-panel .coach-workout-exercise-section {
+  overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent;
+}
+.coach-workout-log-page .coach-workout-group-stack { gap: 14px; }
+:root body.coach-workout-log-page .coach-workout-group-shell { overflow: visible; border: 0; border-radius: 0; }
+.coach-gcoach-art { display: flex; height: clamp(132px, 44vw, 238px); margin: 0; border-radius: 0; overflow: hidden; background: #fbfbfb; }
+:root body.coach-workout-log-page #coach-workout-main-panel .coach-gcoach-art img {
+  display: block; flex: 1 1 0%; min-width: 0; height: 100%; width: 0; aspect-ratio: auto; border-radius: 0; object-fit: contain; color: #222;
+}
+:root body.coach-workout-log-page #coach-workout-main-panel :is(.coach-workout-group-name-section, .coach-workout-grouped-card, .coach-workout-grouped-card-heading, .coach-workout-group-name-toggle) {
+  border-radius: 0; border: 0; background: var(--cw-bg); box-shadow: none;
+}
+.coach-workout-log-page .coach-workout-group-name-toggle { min-height: 44px; padding: 2px 0; }
+.coach-workout-log-page .coach-workout-group-name-toggle > span { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.coach-workout-log-page .coach-workout-group-name-toggle strong { color: var(--cw-blue); text-transform: uppercase; overflow-wrap: anywhere; }
+.coach-workout-log-page .coach-workout-group-name-toggle small { order: -1; flex-shrink: 0; }
+.coach-workout-log-page .coach-workout-group-name-toggle i { color: var(--cw-blue); background: transparent; }
+.coach-workout-log-page .coach-workout-grouped-card-heading { min-height: 26px; padding: 0; }
+.coach-workout-log-page .coach-workout-grouped-card-heading [data-coach-grouped-progress] { margin: 0; color: var(--cw-blue); }
+.coach-workout-log-page .coach-workout-group-name-fields { padding-block: 4px; }
+.coach-workout-log-page [data-coach-workout-format="single"] .coach-workout-round-stepper { display: none; }
+.coach-workout-log-page .coach-workout-card-format { padding-block: 3px; }
+.coach-workout-log-page .coach-workout-card-format button { min-height: 40px; }
+.coach-gcoach-warmup > summary { min-height: 44px; padding: 10px 0; color: var(--cw-blue); font-weight: 750; font-size: .8rem; cursor: pointer; }
+.coach-gcoach-guide { color: var(--cw-text); }
+.coach-gcoach-guide summary { display: flex; align-items: center; min-height: 44px; font-weight: 750; }
+.coach-gcoach-guide p { margin: 4px 0; white-space: pre-line; }
+.coach-gcoach-guide a { color: var(--cw-blue); }
+.coach-gcoach-columns, .coach-gcoach-set { --cw-log-grid: 30px minmax(42px, .72fr) minmax(0, 1fr) minmax(0, 1fr) 44px; }
+.coach-gcoach-columns {
+  display: grid; grid-template-columns: var(--cw-log-grid); gap: 5px; margin-top: 2px;
+  padding: 7px 4px; color: #ccd0d7; text-align: center; text-transform: uppercase; font-size: .64rem; font-weight: 850;
+  border-block: 1px solid #373940;
+}
+.coach-workout-log-page .coach-gcoach-set {
+  display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: start; column-gap: 5px;
+  margin: 0; padding: 3px 4px; border: 0; border-bottom: 1px solid #373940; border-radius: 0; background: var(--cw-bg);
+}
+.coach-workout-log-page .coach-gcoach-set .coach-workout-grouped-row {
+  grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 30px minmax(42px, .72fr) repeat(2, minmax(0, 1fr));
+  gap: 5px; align-items: center; padding: 0; background: none; border: 0;
+}
+.coach-gcoach-pr { color: var(--cw-text); font-size: .7rem; font-weight: 750; text-align: center; overflow-wrap: anywhere; }
+.coach-workout-log-page .coach-gcoach-set :is(.coach-workout-grouped-field, .coach-workout-grouped-code) { min-height: 44px; background: transparent; border-color: #626567; padding: 0; }
+.coach-workout-log-page .coach-gcoach-set .coach-workout-grouped-field > input { width: 100%; min-width: 0; min-height: 42px; padding-inline: 3px; font-size: 1rem; }
+.coach-gcoach-rir { grid-column: 1 / -1; display: none; }
+.coach-workout-log-page .coach-gcoach-set:has(.coach-gcoach-set-options[open]) .coach-gcoach-rir { display: block; }
+.coach-workout-log-page .coach-gcoach-set .coach-workout-round-action { display: contents; }
+:root body.coach-workout-log-page .coach-gcoach-set [data-coach-gcoach-log] {
+  grid-column: 2; grid-row: 1; display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px;
+  background: transparent; border: 0; padding: 0; color: var(--cw-blue);
+}
+.coach-gcoach-set [data-coach-gcoach-log] > span { display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid #aab3bb; border-radius: 4px; color: transparent; font-size: .9rem; }
+.coach-gcoach-set [data-coach-gcoach-log][data-logged="true"] > span { color: #111214; background: var(--cw-blue); border-color: var(--cw-blue); }
+.coach-gcoach-set :is(.coach-gcoach-set-options, [data-coach-copy-status], [data-coach-pr-preview], [data-coach-inline-rest], [data-coach-rest-status]) { grid-column: 1 / -1; }
+.coach-gcoach-set .coach-gcoach-set-options { grid-row: 2; color: var(--cw-muted); font-size: .72rem; }
+.coach-gcoach-set .coach-gcoach-set-options summary { padding: 5px 0; min-height: 32px; }
+.coach-gcoach-set .coach-gcoach-set-options[open] summary { color: var(--cw-blue); }
+.coach-gcoach-set .coach-workout-copy-actions { margin-block: 5px; }
+:root body.coach-workout-log-page #coach-workout-main-panel :is(.coach-workout-grouped-notes, .coach-workout-grouped-history, .coach-gcoach-card-format) {
+  margin-block: 0; padding: 0; min-width: 0; border: 0; border-radius: 0; background: transparent;
+}
+:root body.coach-workout-log-page #coach-workout-main-panel :is(.coach-gcoach-exercise-tools, .coach-gcoach-set-actions) summary {
+  display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 3px; list-style: none;
+  border: 0; background: transparent; color: var(--cw-blue); font-size: .8rem; font-weight: 750; cursor: pointer;
+}
+.coach-gcoach-exercise-tools summary::-webkit-details-marker, .coach-gcoach-set-actions summary::-webkit-details-marker { display: none; }
+:root body.coach-workout-log-page #coach-workout-main-panel .coach-gcoach-add-set { width: auto !important; color: var(--cw-blue); }
+:root body.coach-workout-log-page #coach-workout-add-exercise { min-height: 50px; background: #23252a; color: #ffdb32; border: 1px solid #c5a71b; }
+:root body.coach-workout-log-page .coach-workout-submit-panel {
+  position: static; inset: auto; z-index: auto; display: grid; gap: 3px; justify-items: center;
+  box-sizing: border-box; width: 100%; margin: 0; padding: 4px var(--cw-right) calc(6px + env(safe-area-inset-bottom)) var(--cw-left);
+  border: 0; border-top: 1px solid #373940; border-radius: 0; background: var(--cw-bg); box-shadow: none;
+}
+:root body.coach-workout-log-page #coach-rest-timer { position: static; width: min(100%, 480px); margin: 0; padding: 6px 8px; }
+:root body.coach-workout-log-page #coach-workout-status { display: block; margin: 0; max-width: min(100%, 520px); padding: 2px 8px; font-size: .72rem; color: var(--cw-muted); text-align: center; }
+:root body.coach-workout-log-page #coach-workout-status.is-error { color: #ff9c9c; }
+.coach-workout-log-page .coach-workout-submit-panel > .coach-workout-submit-actions { width: min(100%, 300px); justify-content: center; gap: 8px; }
+.coach-workout-log-page #coach-workout-reset { color: var(--cw-blue); flex: 0 0 46px; max-width: 46px; min-width: 46px; width: 46px; padding: 0; display: grid; place-items: center; }
+.coach-workout-log-page #coach-workout-finish { min-height: 46px; width: auto !important; max-width: 195px; white-space: nowrap; padding-inline: 14px; }
+:root body.coach-workout-log-page.coach-gcoach-keyboard .coach-workout-submit-panel { display: none; }
+.coach-workout-log-page :is(input, textarea, select, button, a, summary):focus-visible { outline: 2px solid var(--cw-blue); outline-offset: 2px; }
+@media (max-width: 520px) {
+  .coach-gcoach-art { margin-inline: calc(-1 * var(--cw-left)) calc(-1 * var(--cw-right)); }
+  :root body.coach-workout-log-page .coach-workout-client-search #coach-workout-client-view { width: 44px !important; flex: 0 0 44px; font-size: 0; }
+  .coach-gcoach-client-view-text { display: none; }
+}
