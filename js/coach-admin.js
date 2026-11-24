@@ -43,7 +43,7 @@ const coachAdminTabNames = new Set([
 ]);
 
 function requestedCoachAdminTab() {
-  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "home";
+  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "notifications";
   return coachAdminTabNames.has(requestedTab) ? requestedTab : "home";
 }
 
@@ -6108,8 +6108,9 @@ function handleAdminTabs() {
 
   tabs.forEach((button) => {
     button.addEventListener("click", () => {
-      setAdminTab(button.dataset.adminTab);
       closeCoachAdminSidebarDrawer({ restoreFocus: true });
+      if (button.dataset.adminTab === "notifications") openCoachActivity();
+      else setAdminTab(button.dataset.adminTab);
     });
   });
 
@@ -6136,12 +6137,53 @@ function openCoachHomeClientSection(email, tabName) {
 }
 
 function openCoachActivity({ settings = false } = {}) {
-  setAdminTab("notifications");
+  if (activeAdminTab !== "notifications") setAdminTab("notifications");
   const disclosure = document.querySelector(".coach-alert-settings");
   if (settings && disclosure) disclosure.open = true;
   const target = settings ? disclosure?.querySelector("summary") : document.getElementById("coach-notification-title");
   target?.focus({ preventScroll: true });
   target?.scrollIntoView({ block: "start" });
+}
+
+function handleCoachActivityDesk() {
+  const desk = document.querySelector(".coach-activity-desk");
+  const list = desk?.querySelector("[data-web-notification-list]");
+  if (!list) return;
+
+  const filters = desk.querySelectorAll("[data-coach-activity-filter]");
+  const empty = desk.querySelector("[data-coach-activity-filter-empty]");
+  let selected = "all";
+
+  const applyFilter = () => {
+    let visible = 0;
+    for (const item of list.children) {
+      const kind = item.dataset.webNotificationKind;
+      const matches = selected === "all"
+        || (selected === "workouts" && kind === "workout_completed")
+        || (selected === "checkins" && (
+          kind === "weekly_check_in"
+          || kind === "check_in_submitted"
+          || item.querySelector('[data-web-notification-icon="checkin"]')
+        ));
+      item.hidden = !matches;
+      if (!item.hidden) visible++;
+    }
+    empty.hidden = selected === "all" || !list.childElementCount || visible > 0;
+  };
+
+  filters.forEach((button) => {
+    button.addEventListener("click", () => {
+      selected = button.dataset.coachActivityFilter;
+      filters.forEach((filter) => filter.setAttribute("aria-pressed", String(filter === button)));
+      empty.textContent = selected === "workouts"
+        ? "No workouts in recent activity."
+        : "No check-ins in recent activity.";
+      applyFilter();
+    });
+  });
+  new MutationObserver(applyFilter).observe(list, { childList: true });
+  desk.querySelector("[data-coach-activity-clients]")?.addEventListener("click", () => openCoachHomeShortcut("clients"));
+  desk.querySelector("[data-coach-activity-settings]")?.addEventListener("click", () => openCoachActivity({ settings: true }));
 }
 
 function openCoachHomeShortcut(destination) {
@@ -6219,7 +6261,6 @@ function handleCoachMobileNavigation() {
   const moreButton = document.querySelector("[data-coach-mobile-more-open]");
   const moreDialog = document.querySelector("[data-coach-mobile-more-dialog]");
   const settingsButton = document.querySelector("[data-coach-home-settings]");
-  const notificationClose = document.querySelector("[data-coach-notification-close]");
   let moreReturnFocus = null;
 
   const closeMoreDialog = ({ restoreFocus = true } = {}) => {
@@ -6244,18 +6285,12 @@ function handleCoachMobileNavigation() {
   moreDialog?.addEventListener("click", (event) => {
     if (event.target === moreDialog) closeMoreDialog();
   });
-  moreDialog?.querySelectorAll("[data-coach-mobile-more-destination]").forEach((button) => {
-    button.addEventListener("click", () => {
-      closeMoreDialog({ restoreFocus: false });
-      setAdminTab(button.dataset.coachMobileMoreDestination);
-    });
+  moreDialog?.querySelector("[data-coach-mobile-settings]")?.addEventListener("click", () => {
+    closeMoreDialog({ restoreFocus: false });
+    openCoachActivity({ settings: true });
   });
 
   settingsButton?.addEventListener("click", () => openCoachActivity({ settings: true }));
-  notificationClose?.addEventListener("click", () => {
-    setAdminTab("home");
-    window.requestAnimationFrame(() => settingsButton?.focus({ preventScroll: true }));
-  });
 
   document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -7993,6 +8028,7 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
+  handleCoachActivityDesk();
   handleCoachHomeActions();
   handleCoachMobileNavigation();
   handleCoachAdminSidebar();

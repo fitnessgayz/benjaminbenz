@@ -17817,28 +17817,6 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
     right: 12px;
   }
 
-  .coach-admin-page .admin-workspace[data-active-tab="notifications"]::before {
-    position: fixed;
-    z-index: 1090;
-    inset: 0;
-    content: "";
-    background: rgba(5, 8, 5, .46);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .coach-admin-page .coach-notification-panel:not([hidden]) {
-    position: fixed;
-    z-index: 1100;
-    inset: 12px 8px calc(12px + env(safe-area-inset-bottom));
-    display: grid;
-    max-height: calc(100dvh - 24px - env(safe-area-inset-bottom));
-    padding: 20px 16px;
-    overflow: auto;
-    border-radius: 22px;
-    box-shadow: 0 24px 70px rgba(5, 8, 5, .28);
-  }
-
   .coach-notification-heading {
     min-width: 0;
     padding-top: 6px;

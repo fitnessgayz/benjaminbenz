@@ -47,9 +47,9 @@ test("collapsed sidebar controls retain accessible names and navigation state se
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
   assert.doesNotMatch(navMarkup, /aria-selected=/);
-  assert.match(navMarkup, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
+  assert.match(navMarkup, /data-admin-tab="home"[^>]*aria-label="Home"/);
   assert.match(navMarkup, /data-admin-tab="clients"[^>]*aria-label="Clients"/);
-  assert.match(navMarkup, /data-admin-tab="notifications"[^>]*aria-label="Activity"/);
+  assert.match(navMarkup, /data-admin-tab="notifications"[^>]*aria-label="Activity"[^>]*aria-current="page"/);
   assert.doesNotMatch(navMarkup, /data-admin-tab="(?:profile|program|workouts|nutrition|progress|notes|logs|sessions)"/);
   assert.match(adminSource, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(adminSource, /button\.removeAttribute\("aria-current"\)/);
@@ -108,15 +108,15 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile dock keeps Home, Clients, Inbox, and More with direct tool links in More", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs :is\(\.admin-tab-session-logger, \.admin-tab-exercise-library, \[data-admin-tab="notifications"\]\)\s*\{[^}]*display: none !important/);
+test("mobile dock exposes Activity alongside Home, Clients, Inbox, and More", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs :is\(\.admin-tab-session-logger, \.admin-tab-exercise-library\)\s*\{[^}]*display: none !important/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
   const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));
   for (const file of ["coach-workout-log.html", "coach-exercise-library.html", "coach-community-wall.html"]) {
     assert.ok(tools.includes(`href="${file}"`));
   }
-  assert.match(tools, /data-coach-mobile-more-destination="notifications"/);
+  assert.match(tools, /data-coach-mobile-settings/);
 });
 
 test("mobile Home uses a compact Settings shortcut with a corner activity badge", () => {

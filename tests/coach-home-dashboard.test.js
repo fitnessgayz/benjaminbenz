@@ -21,14 +21,15 @@ function javascriptFunction(name) {
   return adminSource.slice(start, end);
 }
 
-test("Coach Home is the first and default sidebar destination", () => {
+test("Coach Home remains first in the sidebar and Activity is the default view", () => {
   const navStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navigation = adminHtml.slice(navStart, navEnd);
 
   assert.ok(navigation.indexOf('data-admin-tab="home"') < navigation.indexOf('href="coach-workout-log.html"'));
-  assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
-  assert.match(adminSource, /get\("tab"\) \|\| "home"/);
+  assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"/);
+  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Activity"[^>]*aria-current="page"/);
+  assert.match(adminSource, /get\("tab"\) \|\| "notifications"/);
   assert.match(adminSource, /coachAdminTabNames\.has\(tabName\) \? tabName : "home"/);
 });
 

@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=11&amp;mobile-client-hub=2&amp;home-settings=1&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1&amp;invite-dialog=1&amp;activity-controls-layout=1&amp;compact-activity-inbox=5&amp;electric-gold=2&amp;likeness-motion=1&amp;anatomy-images=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=11&amp;mobile-client-hub=2&amp;home-settings=1&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1&amp;invite-dialog=1&amp;activity-controls-layout=1&amp;compact-activity-inbox=5&amp;electric-gold=2&amp;likeness-motion=1&amp;anatomy-images=1&amp;activity-desk=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=3&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1&amp;electric-gold=2" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1&amp;electric-gold=2" />
@@ -36,12 +36,12 @@
   <link rel="stylesheet" href="css/client-access-requests.css?v=1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
-  <link rel="stylesheet" href="css/coach-workspace.css?v=2&amp;compact-home=2&amp;unified-activity=1" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=2&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <a class="coach-skip" href="#coach-main">Skip to workspace</a>
   <header class="site-header dashboard-header">
-    <a class="brand coach-brand-lockup" href="coach-admin.html" aria-label="GRUNTR Coach home">
+    <a class="brand coach-brand-lockup" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
       <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="42" height="42" />
       <strong>GRUNTR Coach</strong>
     </a>
@@ -73,7 +73,7 @@
       ></button>
       <aside class="coach-admin-sidebar" aria-label="GRUNTR Coach navigation">
         <div class="coach-admin-sidebar-header">
-          <a class="coach-admin-sidebar-brand" href="coach-admin.html" aria-label="GRUNTR Coach home">
+          <a class="coach-admin-sidebar-brand" href="coach-admin.html?tab=home" aria-label="GRUNTR Coach home">
             <img class="coach-brand-logo" src="/images/gruntr/client-22e30eae/icon-192.png" alt="" width="38" height="38" />
             <span class="coach-admin-sidebar-title">GRUNTR Coach</span>
           </a>
@@ -90,9 +90,13 @@
         </div>
 
         <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="GRUNTR Coach sections">
-          <button class="admin-tab is-active" type="button" data-admin-tab="home" aria-label="Home" aria-current="page">
+          <button class="admin-tab" type="button" data-admin-tab="home" aria-label="Home">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
             <span class="admin-nav-label">Home</span>
+          </button>
+          <button class="admin-tab is-active" type="button" data-admin-tab="notifications" aria-label="Activity" aria-current="page">
+            <svg class="admin-nav-icon admin-nav-activity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+            <span class="admin-nav-label">Activity</span>
           </button>
           <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Workout logger">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-5"/></svg>
@@ -113,10 +117,6 @@
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg>
             <span class="admin-nav-label">Exercise library</span>
           </a>
-          <button class="admin-tab" type="button" data-admin-tab="notifications" aria-label="Activity">
-            <svg class="admin-nav-icon admin-nav-activity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
-            <span class="admin-nav-label">Activity</span>
-          </button>
           <button class="admin-tab admin-tab-mobile-more" type="button" aria-label="More coach tools" aria-haspopup="dialog" data-coach-mobile-more-open>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
             <span class="admin-nav-label">More</span>
@@ -136,7 +136,7 @@
           <a href="coach-workout-log.html"><strong>Workout logger</strong><span>Record an in-person session</span></a>
           <a href="coach-exercise-library.html"><strong>Exercise library</strong><span>Manage exercises and media</span></a>
           <a href="coach-community-wall.html"><strong>FWB Wall</strong><span>See the wins clients choose to share</span></a>
-          <button type="button" data-coach-mobile-more-destination="notifications"><strong>Activity &amp; settings</strong><span>Workouts, check-ins, and notification preferences</span></button>
+          <button type="button" data-coach-mobile-settings><strong>Notification settings</strong><span>Browser alerts and notification preferences</span></button>
         </nav>
       </dialog>
 
@@ -314,54 +314,44 @@
         </section>
 
         <section
-          class="admin-card coach-notification-panel"
+          class="admin-card coach-notification-panel coach-activity-desk"
           data-admin-panel="notifications"
           aria-labelledby="coach-notification-title"
           hidden
         >
-          <button class="coach-notification-close" type="button" aria-label="Back to Coach Home" data-coach-notification-close>×</button>
-          <div class="admin-section-heading coach-notification-heading">
+          <header class="coach-activity-header">
             <div>
+              <p class="kicker">Client updates</p>
               <h2 id="coach-notification-title" tabindex="-1">Activity</h2>
             </div>
-          </div>
+            <button class="button button-ghost coach-notification-mark-all" type="button" aria-label="Mark all notifications read" data-web-notification-mark-all hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
+              <span>Mark read</span>
+            </button>
+          </header>
 
-          <div class="coach-notification-summary" aria-label="Activity summary">
-            <article class="coach-notification-summary-card is-new">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-              <strong data-web-notification-summary="unread">0</strong>
-              <span>new</span>
-            </article>
-            <article class="coach-notification-summary-card">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>
-              <strong data-web-notification-summary="workouts">0</strong>
-              <span>workouts</span>
-            </article>
-            <article class="coach-notification-summary-card">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
-              <strong data-web-notification-summary="checkins">0</strong>
-              <span>check-ins</span>
-            </article>
-          </div>
-
-          <div class="coach-notification-inbox" aria-labelledby="coach-notification-inbox-title">
-            <div class="coach-notification-section-heading">
-              <div class="coach-notification-inbox-title">
-                <div class="coach-notification-inbox-title-row">
-                  <h3 id="coach-notification-inbox-title">Recent activity</h3>
-                  <span class="coach-notification-inbox-count" data-web-notification-unread hidden>0</span>
-                </div>
+          <div class="coach-activity-layout">
+            <section class="coach-notification-inbox" aria-label="Recent activity">
+              <div class="coach-activity-filters" role="group" aria-label="Filter activity">
+                <button type="button" data-coach-activity-filter="all" aria-pressed="true">All activity</button>
+                <button type="button" data-coach-activity-filter="workouts" aria-pressed="false">Workouts</button>
+                <button type="button" data-coach-activity-filter="checkins" aria-pressed="false">Check-ins</button>
               </div>
-              <button class="button button-ghost coach-notification-mark-all" type="button" aria-label="Mark all notifications read" data-web-notification-mark-all hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
-                <span>Mark read</span>
-              </button>
-            </div>
-            <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
-            <p class="web-notification-empty" data-web-notification-empty>Client workouts, check-ins, gym visits, and badges will appear here.</p>
-          </div>
+              <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
+              <p class="web-notification-empty" data-web-notification-empty>Client workouts, check-ins, gym visits, and badges will appear here.</p>
+              <p class="web-notification-empty" data-coach-activity-filter-empty role="status" hidden></p>
+              <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
+            </section>
 
-          <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
+            <aside class="coach-activity-aside" aria-label="Activity shortcuts">
+              <div class="coach-activity-unread"><strong data-web-notification-summary="unread">0</strong><span>Unread updates</span></div>
+              <h3>Go to</h3>
+              <button class="coach-home-destination" type="button" data-coach-activity-clients>Client profiles <span aria-hidden="true">↗</span></button>
+              <a class="coach-home-destination" href="coach-exercise-library.html">Exercise library <span aria-hidden="true">↗</span></a>
+              <button class="coach-home-destination" type="button" data-coach-activity-settings>Notification settings <span aria-hidden="true">↓</span></button>
+              <button class="button button-dark coach-activity-add" type="button" data-open-invite-client>Add client</button>
+            </aside>
+          </div>
           <details class="coach-home-disclosure coach-alert-settings">
             <summary>Notification settings</summary>
             <div class="coach-notification-actions">
@@ -1202,6 +1192,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1"></script>
 </body>
 </html>
