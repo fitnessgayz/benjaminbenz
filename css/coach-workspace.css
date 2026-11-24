@@ -558,14 +558,13 @@
   display: inline-flex;
   justify-self: start;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   inline-size: auto !important;
   min-inline-size: 0;
   min-height: 44px;
   margin-inline-start: 44px;
   padding: 0 8px;
   border: 0;
-  border-radius: 6px;
   color: var(--secondary-accent);
   background: transparent;
   box-shadow: none;
@@ -575,7 +574,8 @@
   z-index: -1;
   inset: 8px 0;
   border: 1px solid var(--line);
-  border-radius: inherit;
+  border-radius: 999px;
+  background: var(--surface-soft);
   content: "";
 }
 :root body.coach-admin-page .coach-activity-feed [data-web-notification-kind="workout_completed"] .web-notification-like {
@@ -590,7 +590,9 @@
   background: var(--secondary-surface);
 }
 :root body.coach-admin-page .coach-activity-feed .web-notification-item .web-notification-like:disabled { color: var(--muted); opacity: .75; }
-.coach-activity-feed .web-notification-like :is(.web-notification-like-icon, .web-notification-like-label) {
+.coach-activity-feed .web-notification-like-icon { display: grid; flex: none; }
+.coach-activity-feed .web-notification-like-icon svg { width: 14px; height: 14px; }
+.coach-activity-feed .web-notification-like-label {
   font-size: .75rem;
   font-weight: 650;
 }

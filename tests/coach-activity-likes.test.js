@@ -170,7 +170,8 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(harness.checkInSummary.textContent, "0");
   assert.ok(likeButton);
   assert.equal(likeButton.children[0].className, "web-notification-like-icon");
-  assert.equal(likeButton.children[0].textContent, "💪🏽");
+  assert.equal(likeButton.children[0]["aria-hidden"], "true");
+  assert.match(likeButton.children[0].innerHTML, /<svg.*stroke="currentColor".*M7 10v11/);
   assert.equal(likeButton.children[1].textContent, "Give props");
   assert.equal(likeButton["aria-pressed"], "false");
   assert.equal(likeButton["aria-label"], "Give props for this client update");
@@ -199,7 +200,7 @@ test("deployed notification fallback keeps activity metadata and like controls",
   const firstItem = harness.list.children[0];
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
-  assert.equal(likeButton.children[0].textContent, "💪🏽");
+  assert.match(likeButton.children[0].innerHTML, /<svg/);
   assert.equal(likeButton.children[1].textContent, "Give props");
 });
 
@@ -244,7 +245,7 @@ test("production compatibility feed resolves legacy activity without exposing ar
 test("customer-facing reaction copy uses props without renaming stable database identifiers", () => {
   assert.match(propsMigration, /Benjamin gave you props for your workout/);
   assert.match(notificationsSource, /Give props for this client update/);
-  assert.match(notificationsSource, /likeIcon\.textContent = "💪🏽"/);
+  assert.match(notificationsSource, /likeIcon\.innerHTML = '<svg/);
   assert.match(notificationsSource, /likeLabel\.textContent = liked \? "Props sent" : "Give props"/);
   assert.doesNotMatch(notificationsSource, /Like this client update|♥ Liked|Client notified that you liked/);
   assert.match(client, /Coach replies, props \+ form reviews/);

@@ -696,7 +696,7 @@
         likeButton.setAttribute("aria-label", liked ? "Remove props from this client update" : "Give props for this client update");
         likeIcon.className = "web-notification-like-icon";
         likeIcon.setAttribute("aria-hidden", "true");
-        likeIcon.textContent = "💪🏽";
+        likeIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 10v11H3V10h4Zm0 0 5-7c2 0 2 2 1 5h5a2 2 0 0 1 2 2l-2 8a2 2 0 0 1-2 2H7"/></svg>';
         likeLabel.className = "web-notification-like-label";
         likeLabel.textContent = liked ? "Props sent" : "Give props";
         likeButton.append(likeIcon, likeLabel);
