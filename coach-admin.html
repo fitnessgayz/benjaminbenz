@@ -42,7 +42,7 @@
   <link rel="stylesheet" href="css/coach-workout-schedule.css?v=1" />
   <link rel="stylesheet" href="css/client-access-requests.css?v=1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
-  <link rel="stylesheet" href="css/coach-workspace.css?v=1" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=2" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <a class="coach-skip" href="#coach-main">Skip to workspace</a>
@@ -175,7 +175,6 @@
           <header class="coach-overview">
             <div class="coach-overview-title">
               <h2 id="coach-home-title">Coach Home</h2>
-              <p>Upcoming sessions, client activity, and follow-ups.</p>
             </div>
             <div class="coach-home-mobile-toolbar">
               <button class="coach-home-notification-button" type="button" aria-label="Open coach settings" data-coach-home-settings>
@@ -188,44 +187,13 @@
               <a class="button button-dark coach-primary-action" href="coach-workout-log.html">Log a workout <span aria-hidden="true">→</span></a>
               <button class="button button-ghost" type="button" data-coach-home-shortcut="clients">Find a client</button>
               <button class="button button-ghost" type="button" id="new-client-button">Invite new client</button>
-              <a class="coach-home-text-link" href="coach-community-wall.html">FWB Wall <span aria-hidden="true">↗</span></a>
             </nav>
           </header>
-
-          <div class="coach-home-metrics" aria-label="Coach summary">
-            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="clients">
-              <span>Active clients</span>
-              <strong id="coach-home-active-clients">0</strong>
-              <small>On your roster</small>
-              <em>View clients <span aria-hidden="true">→</span></em>
-            </button>
-            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="workouts">
-              <span>Workouts</span>
-              <strong id="coach-home-recent-workouts">0</strong>
-              <small>Last 7 days</small>
-            <em>View activity <span aria-hidden="true">→</span></em>
-            </button>
-            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="sessions">
-              <span>Sessions left</span>
-              <strong id="coach-home-sessions-left">0</strong>
-              <small id="coach-home-session-total">Alex Fitness Master only</small>
-            <em>View session sheets <span aria-hidden="true">→</span></em>
-            </button>
-            <button class="coach-home-shortcut coach-home-attention-metric" type="button" data-coach-home-shortcut="attention">
-              <span>Needs attention</span>
-              <strong id="coach-home-needs-attention">0</strong>
-              <small>Low sessions or inactivity</small>
-            <em>View follow-ups <span aria-hidden="true">→</span></em>
-            </button>
-          </div>
 
           <div class="coach-home-dashboard-grid">
             <section class="coach-home-module coach-home-schedule" aria-labelledby="coach-home-schedule-title">
               <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">FWB Calendar</p>
-                  <h3 id="coach-home-schedule-title">Session schedule</h3>
-                </div>
+                <h3 id="coach-home-schedule-title">Session schedule</h3>
                 <div class="coach-home-calendar-actions">
                   <button class="coach-home-text-link" type="button" data-coach-home-refresh-calendar>Refresh</button>
                   <a class="coach-home-text-link" href="https://calendar.google.com/calendar/u/0/r?cid=ms1pdspk1qona0lr8d8est34ek%40group.calendar.google.com" target="_blank" rel="noopener noreferrer">Open calendar</a>
@@ -235,85 +203,114 @@
               <div class="coach-home-list coach-home-schedule-list" id="coach-home-schedule-list">
                 <p class="empty-state">FWB Calendar events will appear here.</p>
               </div>
-              <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
+              <details class="coach-home-disclosure coach-home-month">
+                <summary>Month view</summary>
+                <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
+              </details>
             </section>
+            <div class="coach-home-metrics" aria-label="Coach summary">
+              <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="clients">
+                <span>Active clients</span>
+                <strong id="coach-home-active-clients">0</strong>
+              </button>
+              <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="workouts">
+                <span>Workouts in 7 days</span>
+                <strong id="coach-home-recent-workouts">0</strong>
+              </button>
+              <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="sessions">
+                <span>Sessions left</span>
+                <strong id="coach-home-sessions-left">0</strong>
+                <small id="coach-home-session-total">Alex Fitness Master only</small>
+              </button>
+              <button class="coach-home-shortcut coach-home-attention-metric" type="button" data-coach-home-shortcut="attention">
+                <span>Needs attention</span>
+                <strong id="coach-home-needs-attention">0</strong>
+              </button>
+            </div>
+            <div class="coach-home-details">
+              <details class="coach-home-disclosure">
+                <summary>Recent workouts</summary>
+                <section class="coach-home-module coach-home-recent" aria-labelledby="coach-home-recent-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                          <h3 id="coach-home-recent-title" tabindex="-1">Last workout by client</h3>
+                    </div>
+                    <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
+                  </div>
+                  <div class="coach-home-list" id="coach-home-recent-list">
+                    <p class="empty-state">Workout activity will appear here.</p>
+                  </div>
+                </section>
+              </details>
+              <details class="coach-home-disclosure">
+                <summary>Session sheets</summary>
+                <section class="coach-home-module" aria-labelledby="coach-home-sheets-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                          <h3 id="coach-home-sheets-title" tabindex="-1">Session sheets</h3>
+                    </div>
+                  </div>
+                  <p class="coach-home-module-copy">Alex Fitness, B2 Master Session, and other saved client sheets stay one tap away.</p>
+                  <div class="coach-home-sheet-grid" id="coach-home-sheet-list">
+                    <p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>
+                  </div>
+                </section>
+              </details>
+              <details class="coach-home-disclosure">
+                <summary>Client follow-ups and requests</summary>
+                <section class="coach-home-module" aria-labelledby="coach-home-membership-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">Client intake</p>
+                      <h3 id="coach-home-membership-title" tabindex="-1">Membership requests</h3>
+                    </div>
+                  </div>
+                  <div class="coach-home-list" id="coach-home-membership-requests">
+                    <p class="empty-state">No membership requests are waiting.</p>
+                  </div>
+                </section>
 
-            <section class="coach-home-module coach-home-recent" aria-labelledby="coach-home-recent-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Training activity</p>
-                  <h3 id="coach-home-recent-title" tabindex="-1">Last workout by client</h3>
-                </div>
-                <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
-              </div>
-              <div class="coach-home-list" id="coach-home-recent-list">
-                <p class="empty-state">Workout activity will appear here.</p>
-              </div>
-            </section>
+                <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">Session count</p>
+                      <h3 id="coach-home-session-alert-title" tabindex="-1">Low or out of sessions</h3>
+                    </div>
+                  </div>
+                  <div class="coach-home-list" id="coach-home-session-alert-list">
+                    <p class="empty-state">No session packages need attention.</p>
+                  </div>
+                </section>
 
-            <section class="coach-home-module" aria-labelledby="coach-home-sheets-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Master sessions</p>
-                  <h3 id="coach-home-sheets-title" tabindex="-1">Session sheets</h3>
-                </div>
-              </div>
-              <p class="coach-home-module-copy">Alex Fitness, B2 Master Session, and other saved client sheets stay one tap away.</p>
-              <div class="coach-home-sheet-grid" id="coach-home-sheet-list">
-                <p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>
-              </div>
-            </section>
+                <section class="coach-home-module coach-home-inactive" aria-labelledby="coach-home-inactive-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">Follow-up</p>
+                      <h3 id="coach-home-inactive-title">No workout in a while</h3>
+                    </div>
+                  </div>
+                  <p class="coach-home-module-copy">Clients appear here after 14 days without a saved workout.</p>
+                  <div class="coach-home-list" id="coach-home-inactive-list">
+                    <p class="empty-state">Everyone has trained recently.</p>
+                  </div>
+                </section>
 
-            <section class="coach-home-module" aria-labelledby="coach-home-membership-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Client intake</p>
-                  <h3 id="coach-home-membership-title" tabindex="-1">Membership requests</h3>
-                </div>
-              </div>
-              <div class="coach-home-list" id="coach-home-membership-requests">
-                <p class="empty-state">No membership requests are waiting.</p>
-              </div>
-            </section>
-
-            <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Session count</p>
-                  <h3 id="coach-home-session-alert-title" tabindex="-1">Low or out of sessions</h3>
-                </div>
-              </div>
-              <div class="coach-home-list" id="coach-home-session-alert-list">
-                <p class="empty-state">No session packages need attention.</p>
-              </div>
-            </section>
-
-            <section class="coach-home-module coach-home-inactive" aria-labelledby="coach-home-inactive-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">Follow-up</p>
-                  <h3 id="coach-home-inactive-title">No workout in a while</h3>
-                </div>
-              </div>
-              <p class="coach-home-module-copy">Clients appear here after 14 days without a saved workout.</p>
-              <div class="coach-home-list" id="coach-home-inactive-list">
-                <p class="empty-state">Everyone has trained recently.</p>
-              </div>
-            </section>
-
-            <section class="coach-home-module coach-access-requests" aria-labelledby="coach-access-requests-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <p class="kicker">New clients</p>
-                  <h3 id="coach-access-requests-title">Sign-up requests</h3>
-                </div>
-                <button class="button button-ghost" type="button" id="refresh-access-requests">Refresh</button>
-              </div>
-              <p class="coach-home-module-copy">Review each request before sending an invitation.</p>
-              <div class="coach-home-list" id="coach-access-request-list" aria-live="polite">
-                <p class="empty-state">Loading requests…</p>
-              </div>
-            </section>
+                <section class="coach-home-module coach-access-requests" aria-labelledby="coach-access-requests-title">
+                  <div class="coach-home-module-heading">
+                    <div>
+                      <p class="kicker">New clients</p>
+                      <h3 id="coach-access-requests-title">Sign-up requests</h3>
+                    </div>
+                    <button class="button button-ghost" type="button" id="refresh-access-requests">Refresh</button>
+                  </div>
+                  <p class="coach-home-module-copy">Review each request before sending an invitation.</p>
+                  <div class="coach-home-list" id="coach-access-request-list" aria-live="polite">
+                    <p class="empty-state">Loading requests…</p>
+                  </div>
+                </section>
+              </details>
+              <a class="coach-home-text-link coach-home-wall-link" href="coach-community-wall.html">FWB Wall <span aria-hidden="true">↗</span></a>
+            </div>
           </div>
         </section>
 
@@ -1243,6 +1240,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1"></script>
 </body>
 </html>

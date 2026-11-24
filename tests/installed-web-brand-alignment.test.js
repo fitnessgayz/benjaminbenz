@@ -102,7 +102,7 @@ test("Coach workspace surfaces share GRUNTR's charcoal, gold, and blue", () => {
     "coach-exercise-library.html",
     "coach-community-wall.html",
   ]) {
-    assert.match(read(file), /coach-workspace\.css\?v=1/);
+    assert.match(read(file), /coach-workspace\.css\?v=2/);
     assert.match(read(file), /theme-color" content="#101113"/);
   }
 });

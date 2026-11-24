@@ -6417,6 +6417,8 @@ function openCoachHomeShortcut(destination) {
   };
   const target = document.getElementById(targetIds[destination]);
   if (!target) return;
+  const disclosure = target.closest("details");
+  if (disclosure) disclosure.open = true;
   target.focus({ preventScroll: true });
   target.scrollIntoView({
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",

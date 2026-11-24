@@ -7,6 +7,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "utf8");
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
+const workspaceStyles = fs.readFileSync(path.join(projectRoot, "css/coach-workspace.css"), "utf8");
 
 function javascriptFunction(name) {
   const declaration = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`);
@@ -100,25 +101,35 @@ test("home actions open the selected client's training logs or sessions", () => 
   assert.match(opener, /setAdminTab\(tabName\)/);
 });
 
-test("home dashboard adapts its cards and lists for phone screens", () => {
-  assert.match(styleSource, /\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
-  assert.match(styleSource, /@media \(max-width: 720px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
+test("mobile Home prioritizes the schedule and keeps extra detail in disclosures", () => {
+  assert.ok(adminHtml.indexOf('id="coach-home-schedule-list"') < adminHtml.indexOf('class="coach-home-metrics"'));
+  assert.match(adminHtml, /<details class="coach-home-disclosure coach-home-month">\s*<summary>Month view<\/summary>/);
+  for (const label of ["Recent workouts", "Session sheets", "Client follow-ups and requests"]) {
+    assert.ok(adminHtml.includes(`<summary>${label}</summary>`));
+  }
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /@media \(max-width: 480px\)[\s\S]*?\.coach-home-sheet-card\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
 
-test("summary cards are four keyboard-accessible buttons rather than static articles", () => {
-  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('class="coach-home-dashboard-grid"'));
+test("summary metrics are four keyboard-accessible shortcuts", () => {
+  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('class="coach-home-details"'));
   for (const destination of ["clients", "workouts", "sessions", "attention"]) {
     assert.match(metrics, new RegExp(`<button[^>]+type="button"[^>]+data-coach-home-shortcut="${destination}"`));
   }
   assert.doesNotMatch(metrics, /<article/);
 });
 
-test("summary shortcuts select active clients or focus and scroll to the matching section", () => {
+test("summary shortcuts select active clients or open and focus the matching section", () => {
   const calls = [];
   const nodes = {};
   for (const id of ["client-search-input", "coach-home-recent-title", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
-    nodes[id] = {value: "Old search", focus: () => calls.push(["focus", id]), scrollIntoView: options => calls.push(["scroll", id, options.behavior])};
+    const disclosure = { open: false };
+    nodes[id] = {
+      value: "Old search",
+      closest: (selector) => selector === "details" ? disclosure : null,
+      focus: () => calls.push(["focus", id, disclosure.open]),
+      scrollIntoView: options => calls.push(["scroll", id, options.behavior])
+    };
   }
   let reducedMotion = false;
   const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", `
@@ -138,7 +149,7 @@ test("summary shortcuts select active clients or focus and scroll to the matchin
   for (const [destination,id] of [["workouts","coach-home-recent-title"],["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
     calls.length = 0;
     api.openCoachHomeShortcut(destination);
-    assert.deepEqual(calls, [["focus",id],["scroll",id,"smooth"]]);
+    assert.deepEqual(calls, [["focus",id,true],["scroll",id,"smooth"]]);
   }
   reducedMotion = true;
   calls.length = 0;
