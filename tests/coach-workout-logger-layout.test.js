@@ -231,9 +231,11 @@ test("reopens a collapsed grouped name editor before focusing a validation error
   assert.doesNotMatch(focusVisible, /coachWorkoutFormatValue\(\) === "single"/);
 });
 
-test("Exercise Library tab opens from Add Exercise and preserves custom exercise entry", () => {
-  assert.match(loggerHtml, /role="tab" aria-selected="false" aria-controls="coach-workout-library-panel" tabindex="-1">Exercise Library/);
-  assert.match(sourceForFunction("handleCoachWorkoutForm"), /coach-workout-add-exercise[\s\S]*?selectCoachWorkoutTab\(true, true\)/);
+test("Add Exercise opens a picker with a return action, not a second Library tab", () => {
+  assert.doesNotMatch(loggerHtml, /coach-workout-library-tab/);
+  assert.match(loggerHtml, /coach-workout-library-panel" aria-labelledby="coach-workout-library-title" hidden/);
+  assert.match(loggerHtml, /id="coach-workout-library-close">Back to workout/);
+  assert.match(sourceForFunction("handleCoachWorkoutForm"), /coach-workout-add-exercise[\s\S]*?showCoachWorkoutExercisePicker\(true, event.currentTarget\)/);
   const add = sourceForFunction("addCoachWorkoutLibraryExercise");
   assert.match(add, /if \(!name\) focusCoachWorkoutVisibleField\(index, "name"\)/);
   assert.match(add, /const duplicate = name && items\.find/);

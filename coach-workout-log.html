@@ -22,7 +22,7 @@
   <meta name="theme-color" content="#101113" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
-  <link rel="stylesheet" href="css/coach-workout-client-style.css?v=5" />
+  <link rel="stylesheet" href="css/coach-workout-client-style.css?v=6" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=1" />
   <link rel="stylesheet" href="css/coach-workspace.css?v=2" />
 </head>
@@ -39,11 +39,8 @@
     </section>
 
     <form class="coach-workout-logger" id="coach-workout-log-form" hidden>
-      <div class="coach-gcoach-tabs" role="tablist" aria-label="Workout tools">
-        <button type="button" id="coach-workout-main-tab" role="tab" aria-selected="true" aria-controls="coach-workout-main-panel">Workout</button>
-        <button type="button" id="coach-workout-library-tab" role="tab" aria-selected="false" aria-controls="coach-workout-library-panel" tabindex="-1">Exercise Library</button>
-      </div>
-      <div class="coach-gcoach-workout" id="coach-workout-main-panel" role="tabpanel" aria-labelledby="coach-workout-main-tab">
+      <div class="coach-gcoach-workout" id="coach-workout-main-panel">
+      <div class="coach-gcoach-workout-scroll" role="region" aria-label="Workout details and exercises" tabindex="0">
       <section class="coach-workout-client-search" aria-labelledby="coach-workout-client-search-title">
         <label id="coach-workout-client-search-title" for="coach-workout-client-name">Find a client</label>
         <div class="coach-workout-client-control">
@@ -112,8 +109,24 @@
         </div>
         <button class="button button-ghost coach-workout-add-exercise" type="button" id="coach-workout-add-exercise"><span aria-hidden="true">⊕</span> Add Exercise</button>
       </section>
+      </div>
 
       <section class="admin-card coach-workout-submit-panel">
+        <aside class="coach-rest-timer" id="coach-rest-timer" aria-label="Rest timer" hidden>
+          <div class="coach-rest-timer-heading">
+            <strong id="coach-rest-timer-status" role="status">Rest timer</strong>
+            <output id="coach-rest-timer-display" aria-label="Time remaining" aria-live="off">01:00</output>
+          </div>
+          <div class="coach-rest-timer-controls">
+            <label>Rest duration
+              <select id="coach-rest-timer-duration">
+                <option value="30">30 sec</option><option value="60" selected>60 sec</option><option value="90">90 sec</option><option value="120">2 min</option><option value="180">3 min</option>
+              </select>
+            </label>
+            <button type="button" id="coach-rest-timer-toggle">Pause</button>
+            <button type="button" id="coach-rest-timer-skip">Skip</button>
+          </div>
+        </aside>
         <p id="coach-workout-status" role="status">Autosave is on. Choose a client and add the exercises completed today.</p>
         <div class="coach-workout-submit-actions">
           <button class="button button-ghost" type="button" id="coach-workout-reset" aria-label="Clear form" title="Clear form"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M9 6V3h6v3m-9 0 1 15h10l1-15M10 10v7m4-7v7"/></svg></button>
@@ -123,7 +136,8 @@
         </div>
       </section>
       </div>
-      <section class="coach-gcoach-library" id="coach-workout-library-panel" role="tabpanel" aria-labelledby="coach-workout-library-tab" hidden>
+      <section class="coach-gcoach-library" id="coach-workout-library-panel" aria-labelledby="coach-workout-library-title" hidden>
+        <div class="coach-gcoach-picker-heading"><h2 id="coach-workout-library-title">Add Exercise</h2><button type="button" id="coach-workout-library-close">Back to workout</button></div>
         <label for="coach-workout-library-search">Find an exercise</label>
         <input id="coach-workout-library-search" type="search" placeholder="Search by exercise or muscle" autocomplete="off" aria-controls="coach-workout-library-results" />
         <div class="coach-gcoach-library-tools"><p data-coach-workout-library-status role="status"></p><button type="button" data-coach-workout-custom-exercise>Type a custom exercise</button></div>
@@ -136,27 +150,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/auth-session.js?v=remember-login-2"></script>
-  <aside class="coach-rest-timer" id="coach-rest-timer" aria-label="Rest timer" hidden>
-    <div class="coach-rest-timer-heading">
-      <strong id="coach-rest-timer-status" role="status">Rest timer</strong>
-      <output id="coach-rest-timer-display" aria-label="Time remaining" aria-live="off">01:00</output>
-    </div>
-    <div class="coach-rest-timer-controls">
-      <label>Rest duration
-        <select id="coach-rest-timer-duration">
-          <option value="30">30 sec</option>
-          <option value="60" selected>60 sec</option>
-          <option value="90">90 sec</option>
-          <option value="120">2 min</option>
-          <option value="180">3 min</option>
-        </select>
-      </label>
-      <button type="button" id="coach-rest-timer-toggle">Pause</button>
-      <button type="button" id="coach-rest-timer-skip">Skip</button>
-    </div>
-  </aside>
   <script src="js/coach-rest-timer.js?v=inline-rest-1"></script>
   <script src="js/one-rep-max.js?v=2"></script>
-  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1&amp;client-layout=5"></script>
+  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1&amp;client-layout=6"></script>
 </body>
 </html>

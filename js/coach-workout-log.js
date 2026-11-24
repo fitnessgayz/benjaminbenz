@@ -24,6 +24,8 @@ const coachWorkoutSupabase = hasCoachWorkoutConfig && window.supabase
 let coachWorkoutPrograms = [];
 let coachWorkoutExerciseLibrary = [];
 let coachWorkoutLibraryLimit = 40;
+let coachWorkoutLibraryTrigger = null;
+let coachWorkoutLibraryScroll = 0;
 let coachWorkoutExerciseId = 0;
 let coachWorkoutGroupId = 0;
 let coachWorkoutAutosaveTimer = null;
@@ -352,7 +354,7 @@ function renderCoachWorkoutLibrary() {
   if (!search || !list) return;
   const results = coachWorkoutLibraryMatches(coachWorkoutExerciseLibrary, search.value);
   const visible = results.slice(0, coachWorkoutLibraryLimit);
-  const panel = list.closest('[role="tabpanel"]');
+  const panel = list.closest("#coach-workout-library-panel");
   panel.querySelector("[data-coach-workout-library-status]").textContent = results.length
     ? `${visible.length === results.length ? results.length : `${visible.length} of ${results.length}`} exercises`
     : "No matching exercises";
@@ -363,25 +365,34 @@ function renderCoachWorkoutLibrary() {
   }).join("");
 }
 
-function selectCoachWorkoutTab(library = false, focus = false) {
-  const workout = document.getElementById("coach-workout-main-tab");
-  const catalog = document.getElementById("coach-workout-library-tab");
-  if (!workout || !catalog) return;
-  for (const [tab, shown] of [[workout, !library], [catalog, library]]) {
-    tab.setAttribute("aria-selected", String(shown));
-    tab.tabIndex = shown ? 0 : -1;
-    document.getElementById(tab.getAttribute("aria-controls")).hidden = !shown;
+function showCoachWorkoutExercisePicker(open, trigger = null) {
+  const workout = document.getElementById("coach-workout-main-panel");
+  const picker = document.getElementById("coach-workout-library-panel");
+  const scroll = workout?.querySelector(".coach-gcoach-workout-scroll");
+  if (!workout || !picker || !scroll) return;
+  if (open) {
+    coachWorkoutLibraryTrigger = trigger;
+    coachWorkoutLibraryScroll = scroll.scrollTop;
   }
-  document.getElementById("coach-workout-save").hidden = library;
-  if (library) renderCoachWorkoutLibrary();
-  if (focus) (library ? catalog : workout).focus();
+  workout.hidden = open;
+  picker.hidden = !open;
+  document.getElementById("coach-workout-save").hidden = open;
+  if (open) {
+    renderCoachWorkoutLibrary();
+    picker.scrollTop = 0;
+    document.getElementById("coach-workout-library-close")?.focus({ preventScroll: true });
+  } else {
+    scroll.scrollTop = coachWorkoutLibraryScroll;
+    coachWorkoutLibraryTrigger?.focus({ preventScroll: true });
+    coachWorkoutLibraryTrigger = null;
+  }
 }
 
 function addCoachWorkoutLibraryExercise(name = "") {
   const items = coachWorkoutExerciseElements();
   const nameField = (exercise) => exercise.querySelector("[data-coach-workout-name]");
   const duplicate = name && items.find((exercise) => normalizeCoachWorkoutHistoryName(nameField(exercise)?.value) === normalizeCoachWorkoutHistoryName(name));
-  selectCoachWorkoutTab(false);
+  showCoachWorkoutExercisePicker(false);
   const carousel = document.getElementById("coach-workout-carousel");
   if (carousel) carousel.dataset.coachWorkoutStarted = "true";
   let target = duplicate;
@@ -400,19 +411,15 @@ function addCoachWorkoutLibraryExercise(name = "") {
     ?.querySelector("[data-coach-grouped-name-toggle]")?.focus();
 }
 
-function handleCoachWorkoutLibrary() {
-  const workout = document.getElementById("coach-workout-main-tab");
-  const library = document.getElementById("coach-workout-library-tab");
+function handleCoachWorkoutExercisePicker() {
   const search = document.getElementById("coach-workout-library-search");
   const panel = document.getElementById("coach-workout-library-panel");
-  if (!workout || !library || !panel || !search) return;
-  workout.addEventListener("click", () => selectCoachWorkoutTab(false));
-  library.addEventListener("click", () => selectCoachWorkoutTab(true));
-  workout.parentElement.addEventListener("keydown", (event) => {
-    if (event.target !== workout && event.target !== library) return;
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  if (!panel || !search) return;
+  document.getElementById("coach-workout-library-close")?.addEventListener("click", () => showCoachWorkoutExercisePicker(false));
+  panel.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
     event.preventDefault();
-    selectCoachWorkoutTab(event.key === "End" || (event.key !== "Home" && event.target === workout), true);
+    showCoachWorkoutExercisePicker(false);
   });
   search.addEventListener("input", () => { coachWorkoutLibraryLimit = 40; renderCoachWorkoutLibrary(); });
   search.addEventListener("keydown", (event) => { if (event.key === "Enter") event.preventDefault(); });
@@ -969,7 +976,7 @@ function coachWorkoutPreviousExerciseMarkup(exercise, groupIndex, position) {
 function coachWorkoutGroupedHistoryMarkup(group, groupIndex) {
   return `
     <details class="coach-workout-grouped-history" data-coach-grouped-history>
-      <summary>◷ History <small>Previous workout</small></summary>
+      <summary><span aria-hidden="true">◷</span> History</summary>
       <div><header><strong>Previous workout</strong><span>Latest earlier session</span></header>
       ${group.map(({ exercise }, position) => coachWorkoutPreviousExerciseMarkup(exercise, groupIndex, position)).join("")}</div>
     </details>
@@ -1274,9 +1281,6 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
           <h3>${escapeCoachWorkoutHtml(title)}</h3>
           <p data-coach-grouped-progress>0 / 0 complete</p>
         </header>
-        <details class="coach-gcoach-card-format"><summary>Card format</summary><div class="coach-workout-card-format" role="group" aria-label="Workout card format">
-          ${[["single", "Straight sets"], ["superset", "Superset"], ["circuit", "Circuit"]].map(([value, label]) => `<button type="button" data-coach-grouped-format="${value}" aria-pressed="${format === value}">${label}</button>`).join("")}
-        </div></details>
         <div class="coach-workout-grouped-exercise-key" role="list" aria-label="Exercises in ${escapeCoachWorkoutHtml(title)}">
           ${group.map(({ exercise }, position) => `
             <div role="listitem"><span>${position + 1}</span><strong data-coach-grouped-exercise-name="${position}">${escapeCoachWorkoutHtml(exercise.querySelector("[data-coach-workout-name]")?.value.trim() || `Exercise ${position + 1}`)}</strong></div>
@@ -1287,18 +1291,28 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
           <output><span>${format === "single" ? "Sets" : "Rounds"}</span> <strong>${roundCount}</strong></output>
           <button type="button" data-coach-grouped-add-round aria-label="Add ${format === "single" ? "set" : "round"}">+</button>
         </div>
-        <details class="coach-gcoach-guide" data-coach-gcoach-guide hidden><summary>ⓘ Guide</summary><div></div></details>
+        <div class="coach-gcoach-exercise-tools">
+          <details class="coach-gcoach-guide" data-coach-gcoach-guide hidden><summary><span aria-hidden="true">ⓘ</span> Guide</summary><div></div></details>
+          <details class="coach-workout-grouped-notes">
+            <summary><span aria-hidden="true">▤</span> Note</summary>
+            <div>
+              ${group.map(({ exercise, exerciseIndex }, position) => `
+                <label><span>${escapeCoachWorkoutHtml(coachWorkoutGroupedExerciseCode(groupIndex, position))}</span><textarea rows="2" placeholder="Any exercise modifications?" aria-label="Exercise note for ${escapeCoachWorkoutHtml(coachWorkoutGroupedExerciseCode(groupIndex, position))}" data-coach-grouped-notes data-coach-grouped-exercise-index="${exerciseIndex}">${escapeCoachWorkoutHtml(exercise.querySelector("[data-coach-workout-notes]")?.value || "")}</textarea></label>
+              `).join("")}
+            </div>
+          </details>
+          <details class="coach-gcoach-card-format"><summary>Card options</summary>
+            <div class="coach-workout-card-format" role="group" aria-label="Workout card format">
+              ${[["single", "Straight sets"], ["superset", "Superset"], ["circuit", "Circuit"]].map(([value, label]) => `<button type="button" data-coach-grouped-format="${value}" aria-pressed="${format === value}">${label}</button>`).join("")}
+            </div>
+            ${format === "single" && roundCount > 1 ? '<button class="coach-gcoach-add-set" type="button" data-coach-grouped-delete-round>Remove last set</button>' : ""}
+          </details>
+        </div>
         <div data-coach-grouped-sections>${coachWorkoutGroupedSectionsMarkup(group, format)}</div>
-        ${format === "single" ? `<div class="coach-gcoach-set-actions"><button class="coach-gcoach-add-set" type="button" data-coach-grouped-add-round>⊕ Add set</button><button class="coach-gcoach-add-set" type="button" data-coach-grouped-delete-round${roundCount <= 1 ? " disabled" : ""}>Remove last set</button></div>` : ""}
-        <details class="coach-workout-grouped-notes">
-          <summary>Exercise notes <span>Optional</span></summary>
-          <div>
-            ${group.map(({ exercise, exerciseIndex }, position) => `
-              <label><span>${escapeCoachWorkoutHtml(coachWorkoutGroupedExerciseCode(groupIndex, position))}</span><textarea rows="2" placeholder="Any exercise modifications?" data-coach-grouped-notes data-coach-grouped-exercise-index="${exerciseIndex}">${escapeCoachWorkoutHtml(exercise.querySelector("[data-coach-workout-notes]")?.value || "")}</textarea></label>
-            `).join("")}
-          </div>
-        </details>
-        ${coachWorkoutGroupedHistoryMarkup(group, groupIndex)}
+        <div class="coach-gcoach-set-actions">
+          ${format === "single" ? '<button class="coach-gcoach-add-set" type="button" data-coach-grouped-add-round><span aria-hidden="true">⊕</span> Add set</button>' : ""}
+          ${coachWorkoutGroupedHistoryMarkup(group, groupIndex)}
+        </div>
       </article>
     </section>
   `;
@@ -2730,19 +2744,22 @@ function handleCoachWorkoutForm() {
   const updateKeyboard = () => {
     const viewport = window.visualViewport;
     const textField = document.activeElement?.matches('textarea, input:not([type="radio"]):not([type="checkbox"])');
-    document.body.classList.toggle("coach-gcoach-keyboard", Boolean(textField && viewport &&
-      window.innerHeight - viewport.height - viewport.offsetTop > 130));
+    const keyboard = Boolean(textField && viewport && viewport.scale === 1 &&
+      document.documentElement.clientHeight - viewport.height > 130);
+    document.body.classList.toggle("coach-gcoach-keyboard", keyboard);
+    if (keyboard) document.body.style.setProperty("--cw-visible-height", `${Math.round(viewport.height)}px`);
+    else document.body.style.removeProperty("--cw-visible-height");
   };
   window.visualViewport?.addEventListener("resize", updateKeyboard);
   document.addEventListener("focusin", updateKeyboard);
   document.addEventListener("focusout", () => requestAnimationFrame(updateKeyboard));
 
-  document.getElementById("coach-workout-first-exercise")?.addEventListener("click", () => {
-    selectCoachWorkoutTab(true, true);
+  document.getElementById("coach-workout-first-exercise")?.addEventListener("click", (event) => {
+    showCoachWorkoutExercisePicker(true, event.currentTarget);
   });
 
-  document.getElementById("coach-workout-add-exercise")?.addEventListener("click", () => {
-    selectCoachWorkoutTab(true, true);
+  document.getElementById("coach-workout-add-exercise")?.addEventListener("click", (event) => {
+    showCoachWorkoutExercisePicker(true, event.currentTarget);
   });
   document.getElementById("coach-workout-reset")?.addEventListener("click", () => {
     if (window.confirm("Clear this workout form?")) resetCoachWorkoutForm();
@@ -2750,7 +2767,7 @@ function handleCoachWorkoutForm() {
   document.getElementById("coach-workout-finish")?.addEventListener("click", finishCoachWorkout);
   form.addEventListener("submit", saveCoachWorkout);
   form.addEventListener("input", (event) => {
-    if (event.target.matches("#coach-workout-library-search")) return;
+    if (event.target.matches("#coach-workout-library-search, #coach-rest-timer-duration")) return;
     if (event.target.matches("#coach-workout-gym")) syncCoachWorkoutToolLabels();
     if (event.target.matches("#coach-workout-client-name")) {
       handleCoachWorkoutClientNameInput(event.target);
@@ -2763,7 +2780,7 @@ function handleCoachWorkoutForm() {
     scheduleCoachWorkoutAutosave();
   });
   form.addEventListener("change", (event) => {
-    if (event.target.matches("#coach-workout-library-search")) return;
+    if (event.target.matches("#coach-workout-library-search, #coach-rest-timer-duration")) return;
     if (event.target.matches("#coach-workout-client-name")) return;
     if (event.target.matches("#coach-workout-client, #coach-workout-date")) {
       switchCoachWorkoutContext();
@@ -3145,7 +3162,7 @@ async function bootCoachWorkoutPage() {
   }
 
   handleCoachWorkoutForm();
-  handleCoachWorkoutLibrary();
+  handleCoachWorkoutExercisePicker();
   document.querySelector("[data-coach-workout-sign-out]")?.addEventListener("click", signOutCoachWorkout);
 
   if (!coachWorkoutSupabase) {

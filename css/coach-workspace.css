@@ -96,6 +96,7 @@
   color: var(--secondary-accent);
 }
 :root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: none !important; }
+.coach-library-nav-short { display: none; }
 :root body.coach-admin-page .admin-tabs .admin-tab.is-active {
   border-color: transparent;
   background: var(--selected-surface);
@@ -290,9 +291,11 @@
   :root body.coach-admin-page .admin-shell {
     width: min(800px, calc(100% - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right))));
   }
-  :root body.coach-admin-page .admin-tabs :is(.admin-tab-session-logger, .admin-tab-exercise-library) {
+  :root body.coach-admin-page .admin-tabs .admin-tab-session-logger {
     display: none !important;
   }
+  .coach-library-nav-full { display: none; }
+  .coach-library-nav-short { display: inline; }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab[data-admin-tab="notifications"] {
     padding-inline: 4px !important;
   }
@@ -343,13 +346,20 @@
   #coach-admin-workspace .coach-overview-actions .coach-primary-action { grid-column: 1 / -1; }
 }
 
+@media (max-width: 430px) {
+  :root body.coach-admin-page #coach-admin-sidebar-nav .admin-nav-label { font-size: .625rem; }
+  :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab { padding-inline: 1px !important; }
+}
+
 @media (max-width: 360px) {
-  :root body.coach-admin-page .coach-admin-sidebar { padding-inline: 4px; }
-  :root body.coach-admin-page #coach-admin-sidebar-nav :is(.admin-tab[data-admin-tab], .admin-tab-mobile-more) {
+  :root body.coach-admin-page .coach-admin-sidebar { inset-inline: max(2px, env(safe-area-inset-left)) max(2px, env(safe-area-inset-right)); padding-inline: 1px; }
+  :root body.coach-admin-page #coach-admin-sidebar-nav { overflow-x: auto; }
+  :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab {
+    min-width: 44px !important;
     padding-inline: 1px !important;
   }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-nav-label {
-    font-size: .625rem;
+    font-size: .585rem;
   }
 }
 

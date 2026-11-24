@@ -108,14 +108,16 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile dock exposes Sessions beside Clients and retains the other destinations", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs :is\(\.admin-tab-session-logger, \.admin-tab-exercise-library\)\s*\{[^}]*display: none !important/);
+test("mobile dock exposes Sessions and a direct Exercise Library destination", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?admin-tab-exercise-library" href="coach-exercise-library.html"[\s\S]*?data-coach-mobile-more-open/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger\s*\{[^}]*display: none !important/);
+  assert.doesNotMatch(workspaceStyles, /admin-tab-exercise-library[^{}]*\{[^}]*display: none/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
   const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));
-  for (const file of ["coach-workout-log.html", "coach-exercise-library.html", "coach-community-wall.html"]) {
+  for (const file of ["coach-workout-log.html", "coach-community-wall.html"]) {
     assert.ok(tools.includes(`href="${file}"`));
   }
+  assert.doesNotMatch(tools, /coach-exercise-library\.html/);
   assert.match(tools, /data-coach-mobile-settings/);
 });
 
