@@ -158,6 +158,59 @@ test("Sessions keeps FWB totals and the Alex Fitness history in separate tabs", 
   assert.match(source("handleCoachClientWorkspace"), /openCoachHomeClientSection\(program\.client_email, "sessions"\)/);
 });
 
+test("Alex Fitness shows only the selected pack and preserves source session numbers", () => {
+  const node = () => ({
+    children: [], dataset: {}, textContent: "",
+    append(...children) { this.children.push(...children); },
+    replaceChildren(...children) { this.children = children; },
+    setAttribute(key, value) { this[key] = value; },
+    contains() { return false; },
+    classList: { toggle() {} }
+  });
+  const selectors = new Map();
+  const lookup = (selector) => {
+    if (!selectors.has(selector)) selectors.set(selector, { ...node(), querySelector: lookup });
+    return selectors.get(selector);
+  };
+  const picker = lookup("[data-coach-alex-packs]");
+  const panel = { querySelector: lookup, querySelectorAll: () => picker.children };
+  const fixture = {
+    ...context,
+    document: { createElement: node },
+    coachAlexPacks: new Map(), coachAlexPack: null, coachAlexPage: 0, coachAlexHistoryPageSize: 25,
+    formatSessionDate: (date) => date
+  };
+  vm.runInNewContext([
+    source("renderCoachAlexPacks"), source("renderCoachAlexHistory")
+  ].join("\n"), fixture);
+  const sessions = [
+    { package_number: 5, session_number: 34, session_date: "2026-11-24", start_time: "06:15:00" },
+    { package_number: 1, session_number: 92, session_date: "2025-03-14", start_time: null },
+    { package_number: 5, session_number: 33, session_date: "2026-11-21", start_time: "07:00:00" },
+    { package_number: 1, session_number: 90, session_date: "2025-03-11", start_time: null }
+  ];
+  const title = lookup("[data-coach-alex-pack-title]");
+  const numbers = () => lookup("[data-coach-alex-rows]").children.map((row) => row.children[2].textContent);
+  fixture.renderCoachAlexPacks(panel, sessions);
+  assert.deepEqual(picker.children.map((button) => button.children.map((child) => child.textContent)), [
+    ["Pack 5", "2 recorded"], ["Pack 1", "2 recorded"]
+  ]);
+  assert.equal(picker.children[0]["aria-pressed"], "true");
+  assert.equal(title.textContent, "Pack 5 history");
+  assert.deepEqual(numbers(), ["#34", "#33"]);
+
+  fixture.coachAlexPack = 1;
+  fixture.renderCoachAlexPacks(panel, sessions);
+  assert.equal(picker.children[1]["aria-pressed"], "true");
+  assert.equal(title.textContent, "Pack 1 history");
+  assert.deepEqual(numbers(), ["#92", "#90"]);
+
+  fixture.renderCoachAlexPacks(panel, []);
+  assert.equal(picker.hidden, true);
+  assert.equal(lookup("[data-coach-alex-pack-history]").hidden, true);
+  assert.equal(numbers().length, 0);
+});
+
 test("Alex Fitness shows the recorded Pacific wall-clock time or an explicit missing time", () => {
   assert.equal(context.formatCoachAlexStartTime("06:15:00"), "6:15 AM");
   assert.equal(context.formatCoachAlexStartTime("12:00:00"), "12:00 PM");

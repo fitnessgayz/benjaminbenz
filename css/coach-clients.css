@@ -98,24 +98,35 @@
 #coach-session-count-title { scroll-margin-block-start: 86px; }
 .coach-session-views { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 :root body.coach-admin-page #coach-client-session-counts [hidden] { display: none !important; }
-.coach-alex-history-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 18px;
-  margin-block-end: 8px;
-}
+.coach-alex-history-heading { margin-block-end: 10px; }
 :root body.coach-admin-page .coach-alex-history-heading h3 { margin: 0; color: var(--ink); font-size: 1rem; }
-.coach-alex-history-heading :is(p, label), .coach-alex-pagination p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
-.coach-alex-history-heading label { display: grid; gap: 3px; }
-:root body.coach-admin-page .coach-alex-history-heading select {
-  min-height: 44px;
+.coach-alex-history-heading p, .coach-alex-pagination p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
+.coach-alex-packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 100px), 1fr));
+  gap: 6px;
+  margin-block-end: 14px;
+}
+:root body.coach-admin-page .coach-alex-packs button {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 9px;
   border: 1px solid var(--control-border);
+  border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
-  font-size: 1rem;
+  text-align: start;
+  overflow-wrap: anywhere;
 }
+.coach-alex-packs button span { color: var(--muted); font-size: .75rem; }
+:root body.coach-admin-page .coach-alex-packs button[aria-pressed="true"] {
+  border-color: var(--coach-gold-line);
+  background: var(--selected-surface);
+}
+:root body.coach-admin-page .coach-alex-pack-history h4 { margin: 0 0 4px; font-size: 1rem; }
 .coach-alex-pagination { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-block: 8px; text-align: center; }
 :root body.coach-admin-page .coach-alex-pagination .button {
   min-height: 44px; min-width: 44px; width: auto !important; padding: 3px 8px;

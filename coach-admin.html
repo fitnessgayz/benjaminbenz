@@ -39,7 +39,7 @@
   <link rel="stylesheet" href="/css/coach-brand.css?v=theme-1" />
   <script defer src="/js/coach-install.js?v=1"></script>
   <link rel="stylesheet" href="css/coach-workspace.css?v=4&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=1" />
-  <link rel="stylesheet" href="css/coach-clients.css?v=theme-1" />
+  <link rel="stylesheet" href="css/coach-clients.css?v=alex-packs-1" />
   <link rel="stylesheet" href="/css/coach-theme.css?v=2" />
 </head>
 <body class="dashboard-page coach-admin-page">
@@ -285,22 +285,23 @@
           </div>
           <div id="coach-sessions-alex" role="tabpanel" aria-labelledby="coach-sessions-alex-tab" tabindex="0" hidden>
             <div class="coach-alex-history-heading">
-              <div>
-                <h3>Session history</h3>
-                <p>Completed Alex Fitness sessions · Pacific time</p>
-                <p data-coach-alex-status role="status"></p>
+              <h3>100-session packs</h3>
+              <p>Completed Alex Fitness sessions · Pacific time</p>
+              <p data-coach-alex-status role="status"></p>
+            </div>
+            <div class="coach-alex-packs" role="group" aria-label="Alex Fitness packs" data-coach-alex-packs hidden></div>
+            <section class="coach-alex-pack-history" aria-labelledby="coach-alex-pack-title" data-coach-alex-pack-history hidden>
+              <h4 id="coach-alex-pack-title" data-coach-alex-pack-title></h4>
+              <div class="coach-alex-pagination" data-coach-alex-pagination hidden>
+                <button class="button button-ghost" type="button" data-coach-alex-page="-1">Newer</button>
+                <p data-coach-alex-range aria-live="polite"></p>
+                <button class="button button-ghost" type="button" data-coach-alex-page="1">Older</button>
               </div>
-              <label data-coach-alex-filter hidden>Package<select aria-label="Alex Fitness package" data-coach-alex-package></select></label>
-            </div>
-            <div class="coach-alex-pagination" data-coach-alex-pagination hidden>
-              <button class="button button-ghost" type="button" data-coach-alex-page="-1">Newer</button>
-              <p data-coach-alex-range aria-live="polite"></p>
-              <button class="button button-ghost" type="button" data-coach-alex-page="1">Older</button>
-            </div>
-            <table class="coach-alex-history-table" aria-label="Completed Alex Fitness sessions" hidden>
-              <thead><tr><th scope="col">Date</th><th scope="col">Start time</th><th scope="col">Session</th></tr></thead>
-              <tbody data-coach-alex-rows></tbody>
-            </table>
+              <table class="coach-alex-history-table" aria-labelledby="coach-alex-pack-title">
+                <thead><tr><th scope="col">Date</th><th scope="col">Start time</th><th scope="col">Session</th></tr></thead>
+                <tbody data-coach-alex-rows></tbody>
+              </table>
+            </section>
           </div>
         </section>
 
@@ -1261,6 +1262,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=1"></script>
 </body>
 </html>

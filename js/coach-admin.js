@@ -80,7 +80,8 @@ let showingArchivedClients = false;
 let coachClientsView = "personal_training";
 let coachFwbSessionMonth = "";
 let coachFwbSessionRequest = 0;
-let coachAlexHistory = [];
+let coachAlexPacks = new Map();
+let coachAlexPack = null;
 let coachAlexPage = 0;
 let coachAlexHistoryRequest = 0;
 const coachAlexHistoryPageSize = 25;
@@ -4432,9 +4433,53 @@ function formatCoachAlexStartTime(value) {
   return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? "AM" : "PM"}`;
 }
 
+function renderCoachAlexPacks(panel, sessions) {
+  const packs = new Map();
+  for (const entry of sessions) {
+    const pack = packs.get(entry.package_number) || [];
+    pack.push(entry);
+    packs.set(entry.package_number, pack);
+  }
+  coachAlexPacks = packs;
+
+  const numbers = [...packs.keys()].sort((a, b) => b - a);
+  if (!packs.has(coachAlexPack)) {
+    coachAlexPack = numbers[0] ?? null;
+    coachAlexPage = 0;
+  }
+
+  const picker = panel.querySelector("[data-coach-alex-packs]");
+  const focusedPack = picker.contains(document.activeElement)
+    ? Number(document.activeElement.dataset.coachAlexPack) : null;
+  const buttons = numbers.map((number) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.coachAlexPack = String(number);
+    const name = document.createElement("strong");
+    name.textContent = `Pack ${number}`;
+    const count = document.createElement("span");
+    count.textContent = `${packs.get(number).length} recorded`;
+    button.append(name, count);
+    return button;
+  });
+  picker.replaceChildren(...buttons);
+  picker.hidden = buttons.length === 0;
+  renderCoachAlexHistory(panel);
+
+  if (focusedPack !== null) {
+    const button = buttons.find((control) => Number(control.dataset.coachAlexPack) === focusedPack)
+      || buttons[0];
+    button?.focus({ preventScroll: true });
+  }
+}
+
 function renderCoachAlexHistory(panel) {
-  const packageValue = panel.querySelector("[data-coach-alex-package]").value;
-  const entries = packageValue ? coachAlexHistory.filter((entry) => String(entry.package_number) === packageValue) : coachAlexHistory;
+  const entries = coachAlexPacks.get(coachAlexPack) || [];
+  panel.querySelector("[data-coach-alex-pack-history]").hidden = entries.length === 0;
+  panel.querySelector("[data-coach-alex-pack-title]").textContent = entries.length ? `Pack ${coachAlexPack} history` : "";
+  for (const button of panel.querySelectorAll("[data-coach-alex-pack]")) {
+    button.setAttribute("aria-pressed", String(Number(button.dataset.coachAlexPack) === coachAlexPack));
+  }
   const lastPage = Math.max(0, Math.ceil(entries.length / coachAlexHistoryPageSize) - 1);
   coachAlexPage = Math.min(lastPage, Math.max(0, coachAlexPage));
   const start = coachAlexPage * coachAlexHistoryPageSize;
@@ -4451,13 +4496,11 @@ function renderCoachAlexHistory(panel) {
     startTime.textContent = formatCoachAlexStartTime(entry.start_time);
     startTime.classList.toggle("coach-alex-unrecorded", !entry.start_time);
     const number = document.createElement("td");
-    number.textContent = `P${entry.package_number} · #${entry.session_number}`;
-    number.setAttribute("aria-label", `Package ${entry.package_number}, session ${entry.session_number}`);
+    number.textContent = `#${entry.session_number}`;
     row.append(date, startTime, number);
     return row;
   });
   table.querySelector("[data-coach-alex-rows]").replaceChildren(...rows);
-  table.hidden = rows.length === 0;
   panel.querySelector("[data-coach-alex-pagination]").hidden = lastPage === 0;
   panel.querySelector("[data-coach-alex-range]").textContent = rows.length ? `${start + 1}–${start + rows.length} of ${entries.length}` : "";
   panel.querySelector('[data-coach-alex-page="-1"]').setAttribute("aria-disabled", String(coachAlexPage === 0));
@@ -4471,30 +4514,24 @@ async function refreshCoachAlexHistory() {
 
   const request = ++coachAlexHistoryRequest;
   const status = panel.querySelector("[data-coach-alex-status]");
-  if (!coachAlexHistory.length) status.textContent = "Loading Alex Fitness history…";
+  if (!coachAlexPacks.size) status.textContent = "Loading Alex Fitness history…";
 
   const { data, error } = await coachSupabase.from("coach_alex_fitness_history")
     .select("source_read_at,sessions").eq("singleton", true).maybeSingle();
   if (request !== coachAlexHistoryRequest) return;
   if (error) {
-    status.textContent = coachAlexHistory.length ? "Could not refresh. Showing last loaded history." : "Could not load Alex Fitness history";
+    status.textContent = coachAlexPacks.size ? "Could not refresh. Showing last loaded history." : "Could not load Alex Fitness history";
     return;
   }
 
-  coachAlexHistory = Array.isArray(data?.sessions) ? data.sessions : [];
-  const picker = panel.querySelector("[data-coach-alex-package]");
-  const selectedPackage = picker.value;
-  const packages = [...new Set(coachAlexHistory.map((entry) => entry.package_number))].sort((a, b) => b - a);
-  picker.replaceChildren(new Option("All packages", ""), ...packages.map((number) => new Option(`Package ${number}`, String(number))));
-  if (packages.includes(Number(selectedPackage))) picker.value = selectedPackage;
-  panel.querySelector("[data-coach-alex-filter]").hidden = packages.length < 2;
-  if (coachAlexHistory.length) {
+  const sessions = Array.isArray(data?.sessions) ? data.sessions : [];
+  if (sessions.length) {
     const syncedOn = coachSessionToday(new Date(data.source_read_at));
-    status.textContent = `${coachAlexHistory.length} recorded · Last synced ${formatSessionDate(syncedOn)}`;
+    status.textContent = `Last synced ${formatSessionDate(syncedOn)}`;
   } else {
     status.textContent = "Alex Fitness history has not been imported yet";
   }
-  renderCoachAlexHistory(panel);
+  renderCoachAlexPacks(panel, sessions);
 }
 
 function renderCoachClientWorkspace() {
@@ -4593,6 +4630,16 @@ function handleCoachClientWorkspace() {
       selectSessionTab(tab);
       return;
     }
+    const pack = event.target.closest("[data-coach-alex-pack]");
+    if (pack) {
+      const number = Number(pack.dataset.coachAlexPack);
+      if (number !== coachAlexPack) {
+        coachAlexPack = number;
+        coachAlexPage = 0;
+        renderCoachAlexHistory(pack.closest('[role="tabpanel"]'));
+      }
+      return;
+    }
     const page = event.target.closest("[data-coach-alex-page]");
     if (page && page.getAttribute("aria-disabled") !== "true") {
       coachAlexPage += Number(page.dataset.coachAlexPage);
@@ -4617,10 +4664,6 @@ function handleCoachClientWorkspace() {
       const program = activeClientPrograms().find((item) => item.id === count.dataset.coachCountClient && item.active !== false);
       if (program) openCoachHomeClientSection(program.client_email, "sessions");
     }
-  });
-  sessions.querySelector("[data-coach-alex-package]").addEventListener("change", (event) => {
-    coachAlexPage = 0;
-    renderCoachAlexHistory(event.target.closest('[role="tabpanel"]'));
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && activeAdminTab === "session-counts") refreshSelectedCoachSessions();
