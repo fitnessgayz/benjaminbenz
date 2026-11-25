@@ -40,6 +40,7 @@ function coachHarness({ deployedBackend = false, noticeOverrides = {}, controlle
   const badge = element("span");
   const markAll = element("button");
   const status = element("p");
+  const settingsStatus = element("p");
   const unreadSummary = element("strong");
   const workoutSummary = element("strong");
   const checkInSummary = element("strong");
@@ -49,6 +50,7 @@ function coachHarness({ deployedBackend = false, noticeOverrides = {}, controlle
     ["[data-web-notification-unread]", badge],
     ["[data-web-notification-mark-all]", markAll],
     ["[data-web-notification-status]", status],
+    ["[data-web-notification-settings-status]", settingsStatus],
     ['[data-web-notification-summary="unread"]', unreadSummary],
     ['[data-web-notification-summary="workouts"]', workoutSummary],
     ['[data-web-notification-summary="checkins"]', checkInSummary]
@@ -124,7 +126,7 @@ function coachHarness({ deployedBackend = false, noticeOverrides = {}, controlle
   const controller = sandbox.window.FWBWebNotifications.createController({
     supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement, ...controllerOptions
   });
-  return { controller, list, status, listeners, rpcCalls, selectCalls, unreadSummary, workoutSummary, checkInSummary };
+  return { controller, list, status, settingsStatus, listeners, rpcCalls, selectCalls, unreadSummary, workoutSummary, checkInSummary };
 }
 
 test("coach activity likes are source-bound, account-scoped, and notify the client", () => {
@@ -191,6 +193,13 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(updatedButton["aria-pressed"], "true");
   assert.equal(updatedButton.title, "Remove props");
   assert.match(harness.status.textContent, /Client notified/);
+});
+
+test("browser-alert guidance stays in Settings, leaving Activity clear", async () => {
+  const { controller, status, settingsStatus } = coachHarness();
+  assert.equal(await controller.init(), true);
+  assert.equal(status.textContent, "");
+  assert.match(settingsStatus.textContent, /alert|notifications/i);
 });
 
 test("deployed notification fallback keeps activity metadata and like controls", async () => {

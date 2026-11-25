@@ -36,6 +36,7 @@ const coachAdminTabNames = new Set([
   "workouts",
   "library",
   "notifications",
+  "settings",
   "nutrition",
   "progress",
   "notes",
@@ -1004,7 +1005,7 @@ function setAdminTab(tabName) {
   });
 
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
-    panel.hidden = nextTab === "notifications" || nextTab === "home" || nextTab === "inbox" || nextTab === "session-counts";
+    panel.hidden = ["notifications", "settings", "home", "inbox", "session-counts"].includes(nextTab);
   });
 
   coachMessagesController?.setActive(nextTab === "inbox");
@@ -1013,7 +1014,7 @@ function setAdminTab(tabName) {
     renderCoachHome();
   }
 
-  if (nextTab === "notifications" && coachNotificationsController) {
+  if (["notifications", "settings"].includes(nextTab) && coachNotificationsController) {
     coachNotificationsController.refresh().catch(() => {
       // The controller renders a user-facing retry message.
     });
@@ -6393,7 +6394,8 @@ function resolveCoachActivityCommentClient(row, actionUrl) {
 
 async function initializeCoachNotifications(user) {
   const root = document.querySelector("[data-web-notifications]");
-  const status = root?.querySelector("[data-web-notification-status]");
+  const feedStatus = root?.querySelector("[data-web-notification-status]");
+  const settingsStatus = root?.querySelector("[data-web-notification-settings-status]");
   const factory = window.FWBWebNotifications?.createController;
 
   if (!root || !user?.id) {
@@ -6401,9 +6403,8 @@ async function initializeCoachNotifications(user) {
   }
 
   if (!coachSupabase || typeof factory !== "function") {
-    if (status) {
-      status.textContent = "Notifications are temporarily unavailable. Refresh and try again.";
-    }
+    if (feedStatus) feedStatus.textContent = "Activity is temporarily unavailable. Refresh and try again.";
+    if (settingsStatus) settingsStatus.textContent = "Notification settings are temporarily unavailable. Refresh and try again.";
     return;
   }
 
@@ -6428,9 +6429,8 @@ async function initializeCoachNotifications(user) {
   try {
     await coachNotificationsController.init();
   } catch (_error) {
-    if (status) {
-      status.textContent = "Notifications could not be loaded. Your other coach tools still work.";
-    }
+    if (feedStatus) feedStatus.textContent = "Could not load recent activity. Refresh and try again.";
+    if (settingsStatus) settingsStatus.textContent = "Could not load notification settings. Refresh and try again.";
   }
 }
 
@@ -6477,13 +6477,18 @@ function openCoachHomeClientSection(email, tabName) {
   });
 }
 
-function openCoachActivity({ settings = false } = {}) {
+function openCoachActivity() {
   if (activeAdminTab !== "notifications") setAdminTab("notifications");
-  const disclosure = document.querySelector(".coach-alert-settings");
-  if (settings && disclosure) disclosure.open = true;
-  const target = settings ? disclosure?.querySelector("summary") : document.getElementById("coach-notification-title");
-  target?.focus({ preventScroll: true });
-  target?.scrollIntoView({ block: "start" });
+  const heading = document.getElementById("coach-notification-title");
+  heading?.focus({ preventScroll: true });
+  heading?.scrollIntoView({ block: "start" });
+}
+
+function openCoachSettings() {
+  setAdminTab("settings");
+  const heading = document.getElementById("coach-settings-title");
+  heading?.focus({ preventScroll: true });
+  heading?.scrollIntoView({ block: "start" });
 }
 
 function handleCoachActivityDesk() {
@@ -6523,8 +6528,6 @@ function handleCoachActivityDesk() {
     });
   });
   new MutationObserver(applyFilter).observe(list, { childList: true });
-  desk.querySelector("[data-coach-activity-clients]")?.addEventListener("click", () => openCoachHomeShortcut("clients"));
-  desk.querySelector("[data-coach-activity-settings]")?.addEventListener("click", () => openCoachActivity({ settings: true }));
 }
 
 function openCoachHomeShortcut(destination) {
@@ -6552,6 +6555,7 @@ function openCoachHomeShortcut(destination) {
   };
   const target = document.getElementById(targetIds[destination]);
   if (!target) return;
+  setAdminTab(destination === "sessions" ? "session-counts" : "clients");
   const disclosure = target.closest("details");
   if (disclosure) disclosure.open = true;
   target.focus({ preventScroll: true });
@@ -6562,13 +6566,8 @@ function openCoachHomeShortcut(destination) {
 }
 
 function handleCoachHomeActions() {
-  const panel = document.querySelector('[data-admin-panel="home"]');
-
-  if (!panel) {
-    return;
-  }
-
-  panel.addEventListener("click", (event) => {
+  const editor = document.getElementById("program-editor");
+  editor?.addEventListener("click", (event) => {
     const shortcut = event.target.closest("[data-coach-home-shortcut]");
     if (shortcut) {
       openCoachHomeShortcut(shortcut.dataset.coachHomeShortcut);
@@ -6577,7 +6576,6 @@ function handleCoachHomeActions() {
     const logsButton = event.target.closest("[data-coach-home-open-logs]");
     const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
     const membershipButton = event.target.closest("[data-coach-home-open-membership]");
-    const tabButton = event.target.closest("[data-coach-home-tab]");
 
     if (logsButton) {
       openCoachHomeClientSection(logsButton.dataset.coachHomeOpenLogs, "logs");
@@ -6590,11 +6588,6 @@ function handleCoachHomeActions() {
     }
     if (membershipButton) {
       openCoachHomeClientSection(membershipButton.dataset.coachHomeOpenMembership, "profile");
-      return;
-    }
-
-    if (tabButton) {
-      setAdminTab(tabButton.dataset.coachHomeTab);
     }
   });
 }
@@ -6629,10 +6622,10 @@ function handleCoachMobileNavigation() {
   });
   moreDialog?.querySelector("[data-coach-mobile-settings]")?.addEventListener("click", () => {
     closeMoreDialog({ restoreFocus: false });
-    openCoachActivity({ settings: true });
+    openCoachSettings();
   });
 
-  settingsButton?.addEventListener("click", () => openCoachActivity({ settings: true }));
+  settingsButton?.addEventListener("click", openCoachSettings);
 
   document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
     button.addEventListener("click", () => {

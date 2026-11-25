@@ -282,13 +282,17 @@
       return root?.querySelector(selector) || null;
     }
 
-    function setStatus(message, state = "") {
-      const status = element("[data-web-notification-status]");
+    function setStatus(message, state = "", status = element("[data-web-notification-status]")) {
       if (!status) {
         return;
       }
       status.textContent = message;
       status.dataset.state = state;
+    }
+
+    function setSettingsStatus(message, state) {
+      const status = element("[data-web-notification-settings-status]");
+      setStatus(message, state, status || undefined);
     }
 
     function setBusy(nextBusy) {
@@ -963,14 +967,14 @@
         return false;
       }
       setBusy(true);
-      setStatus("Updating notification settings…");
+      setSettingsStatus("Updating notification settings…");
       try {
         const enabled = Boolean(subscription && preferences?.push_enabled !== false);
         const result = enabled ? await disableAlerts() : await enableAlerts();
-        setStatus(result ? "Alerts are on for this device." : "Background alerts are off.", result ? "success" : "");
+        setSettingsStatus(result ? "Alerts are on for this device." : "Background alerts are off.", result ? "success" : "");
         return result;
       } catch (error) {
-        setStatus(error?.message || "Could not update notification settings.", "error");
+        setSettingsStatus(error?.message || "Could not update notification settings.", "error");
         renderEnableState();
         return false;
       } finally {
@@ -984,14 +988,14 @@
         return false;
       }
       setBusy(true);
-      setStatus("Sending a private test alert…");
+      setSettingsStatus("Sending a private test alert…");
       try {
         await invokeNotificationFunction("test");
         await loadInbox();
-        setStatus("Test sent. It should appear on this device shortly.", "success");
+        setSettingsStatus("Test sent. It should appear on this device shortly.", "success");
         return true;
       } catch (error) {
-        setStatus(error?.message || "Could not send the test alert.", "error");
+        setSettingsStatus(error?.message || "Could not send the test alert.", "error");
         return false;
       } finally {
         setBusy(false);
@@ -1004,14 +1008,14 @@
       if (!allowedPreferenceKeys.has(key)) {
         return;
       }
-      setStatus("Saving notification choices…");
+      setSettingsStatus("Saving notification choices…");
       try {
         await savePreferences({ [key]: input.checked });
         renderPreferences();
-        setStatus("Notification choices saved.", "success");
+        setSettingsStatus("Notification choices saved.", "success");
       } catch (error) {
         input.checked = !input.checked;
-        setStatus("Could not save that choice. Please try again.", "error");
+        setSettingsStatus("Could not save that choice. Please try again.", "error");
       }
     }
 
@@ -1138,11 +1142,15 @@
             // Inbox availability must not prevent restoring this device's alerts.
             await loadInbox();
             if (connectionError) {
-              setStatus("Could not reconnect background alerts. Reopen FWB or try again in Settings.", "error");
+              setSettingsStatus("Could not reconnect background alerts. Reopen FWB or try again in Settings.", "error");
             }
             return !connectionError;
           } catch (error) {
-            setStatus(global.FWB_AUTH_SESSION?.requiresLogin(error)
+            const expired = global.FWB_AUTH_SESSION?.requiresLogin(error);
+            if (element("[data-web-notification-settings-status]")) {
+              setStatus(expired ? "Your sign-in has expired. Sign in again to see activity." : "Could not load recent activity. Please try again.", "error");
+            }
+            setSettingsStatus(expired
               ? "Your sign-in has expired. Sign in again to reconnect notifications."
               : subscription && preferences?.push_enabled !== false
               ? "Alerts are on, but recent updates could not load. Please try again soon."
@@ -1177,7 +1185,7 @@
       global.document?.addEventListener?.("visibilitychange", handleResume);
       global.addEventListener?.("focus", handleResume);
       setBusy(true);
-      setStatus("Loading notification settings…");
+      setSettingsStatus("Loading notification settings…");
       const loaded = await refresh();
       setBusy(false);
       renderEnableState();
@@ -1186,9 +1194,9 @@
       }
       const support = pushSupport();
       if (!support.supported || global.Notification.permission === "denied") {
-        setStatus(permissionHelp());
+        setSettingsStatus(permissionHelp());
       } else {
-        setStatus(subscription && preferences?.push_enabled !== false
+        setSettingsStatus(subscription && preferences?.push_enabled !== false
           ? "Alerts are on for this device."
           : "Enable alerts when you’re ready.");
       }

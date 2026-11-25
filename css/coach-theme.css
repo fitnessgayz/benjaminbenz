@@ -150,7 +150,7 @@
   border-color: var(--secondary-border);
 }
 
-.coach-theme-setting {
+:root[data-coach-theme] > body .coach-theme-setting {
   display: flex;
   min-height: 44px;
   align-items: center;
@@ -198,5 +198,4 @@
 
 .coach-theme-setting [data-coach-theme-toggle]:checked::before { background: var(--brand-primary-ink); }
 .coach-theme-setting [data-coach-theme-toggle]:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
-.coach-theme-setting-login { width: max-content; margin-inline: auto; }
-.coach-alert-settings .coach-theme-setting { margin-block-start: 10px; }
+:root[data-coach-theme] > body .coach-theme-setting-login { width: max-content; margin-inline: auto; }

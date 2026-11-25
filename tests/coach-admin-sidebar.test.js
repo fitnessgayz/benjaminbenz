@@ -109,7 +109,7 @@ test("desktop navigation stays light and keeps client tools only in the selected
 });
 
 test("mobile dock exposes Sessions and a direct Exercise Library destination", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?admin-tab-exercise-library" href="coach-exercise-library.html"[\s\S]*?data-coach-mobile-more-open/);
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?admin-tab-exercise-library" href="coach-exercise-library\.html\?v=coach-workspace-2"[\s\S]*?data-coach-mobile-more-open/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger\s*\{[^}]*display: none !important/);
   assert.doesNotMatch(workspaceStyles, /admin-tab-exercise-library[^{}]*\{[^}]*display: none/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
@@ -121,12 +121,12 @@ test("mobile dock exposes Sessions and a direct Exercise Library destination", (
   assert.match(tools, /data-coach-mobile-settings/);
 });
 
-test("mobile Home uses a compact Settings shortcut with a corner activity badge", () => {
+test("mobile Home keeps a compact Settings shortcut and moves the unread badge to Activity", () => {
   assert.match(adminHtml, /data-coach-home-settings/);
   assert.match(adminHtml, /aria-label="Open coach settings"/);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-home-notification-button\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*padding:\s*0[^}]*border-radius:\s*50%/s);
   assert.match(styleSource, /\.coach-home-notification-button > span:not\(\.admin-nav-unread-count\)\s*\{[^}]*display:\s*none/s);
-  assert.match(styleSource, /\.coach-home-notification-button \.admin-nav-unread-count\s*\{[^}]*top:\s*-6px[^}]*right:\s*-6px/s);
+  assert.match(adminHtml, /data-admin-tab="notifications"[\s\S]*?data-web-notification-unread[^>]*>[\s\S]*?<\/button>/);
 });
 
 test("mobile Clients becomes the selector and selected-client tool hub", () => {

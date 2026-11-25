@@ -62,7 +62,7 @@
   background: var(--secondary-surface);
   color: var(--secondary-accent);
 }
-:root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: none !important; }
+:root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: flex; }
 .coach-library-nav-short { display: none; }
 :root body.coach-admin-page .admin-tabs .admin-tab.is-active {
   border-color: transparent;
@@ -134,19 +134,7 @@
   color: var(--brand-primary-ink);
 }
 #coach-admin-workspace .coach-overview-actions .coach-primary-action:hover { background: var(--brand-primary-hover); }
-:root body.coach-admin-page .coach-home-text-link {
-  color: var(--secondary-accent);
-  text-decoration-thickness: 1px;
-  text-decoration-color: currentColor;
-  text-underline-offset: 3px;
-}
-
-:root body.coach-admin-page .coach-home-dashboard-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: 18px clamp(18px, 3vw, 44px);
-}
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-module {
+:root body.coach-admin-page .coach-workspace-disclosure .coach-home-module {
   min-width: 0;
   padding: 12px 0;
   border: 0;
@@ -161,7 +149,7 @@
   gap: 0;
   border-block-start: 1px solid var(--line);
 }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-shortcut {
+:root body.coach-admin-page .coach-home-panel .coach-home-metrics .coach-home-shortcut {
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: center;
   align-items: center;
@@ -177,12 +165,12 @@
   box-shadow: none;
   text-align: start;
 }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-shortcut:nth-child(odd) { border-inline-end: 1px solid var(--line); }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-shortcut:hover { background: var(--surface-soft); }
+:root body.coach-admin-page .coach-home-panel .coach-home-metrics .coach-home-shortcut:nth-child(odd) { border-inline-end: 1px solid var(--line); }
+:root body.coach-admin-page .coach-home-panel .coach-home-metrics .coach-home-shortcut:hover { background: var(--surface-soft); }
 :root body.coach-admin-page .coach-home-shortcut:focus-visible { outline-offset: -2px; }
 :root body.coach-admin-page .coach-home-shortcut span { letter-spacing: 0; text-transform: none; }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-shortcut strong { color: var(--ink); font-size: 1.4rem; line-height: 1; }
-:root body.coach-admin-page .coach-home-dashboard-grid .coach-home-metrics .coach-home-attention-metric strong { color: var(--coach-gold-ink); }
+:root body.coach-admin-page .coach-home-panel .coach-home-metrics .coach-home-shortcut strong { color: var(--ink); font-size: 1.4rem; line-height: 1; }
+:root body.coach-admin-page .coach-home-panel .coach-home-metrics .coach-home-attention-metric strong { color: var(--coach-gold-ink); }
 :root body.coach-admin-page .coach-home-shortcut small { grid-column: 1 / -1; color: var(--muted); font-weight: 600; opacity: 1; }
 
 .coach-home-disclosure { border-block-end: 1px solid var(--line); }
@@ -212,7 +200,6 @@
 .coach-home-disclosure[open] > summary::after { transform: rotate(225deg); }
 .coach-home-disclosure > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .coach-home-disclosure > summary:hover { color: var(--secondary-accent); }
-.coach-home-wall-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 
 :root body.coach-admin-page .coach-home-module .coach-home-list-row {
   border-radius: 0 !important;
@@ -266,6 +253,15 @@
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab[data-admin-tab="notifications"] {
     padding-inline: 4px !important;
   }
+  :root body.coach-admin-page .admin-tabs .admin-nav-unread-count {
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding-inline: 3px;
+    font-size: .6rem;
+    transform: none;
+  }
   :root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: flex !important; }
   :root body.coach-admin-page .coach-home-notification-button {
     width: 44px !important;
@@ -302,10 +298,6 @@
   html:has(> body.coach-admin-page) {
     scroll-padding-block-end: calc(98px + env(safe-area-inset-bottom));
   }
-  :root body.coach-admin-page .coach-home-dashboard-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .coach-home-wall-link { display: none; }
 }
 
 @media (max-width: 540px) {
@@ -330,27 +322,6 @@
   }
 }
 
-:root body.coach-admin-page .coach-home-destination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 48px;
-  padding: 6px 3px;
-  border: 0;
-  border-block-end: 1px solid var(--line);
-  border-radius: 0 !important;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-weight: 750;
-  text-align: start;
-  text-decoration: none;
-  cursor: pointer;
-}
-:root body.coach-admin-page .coach-home-destination:is(:hover, :focus-visible) { color: var(--secondary-accent); }
-:root body.coach-admin-page .coach-alert-settings { margin-top: 16px; }
 :root body.coach-admin-page .coach-profile-details > :is(.admin-field-grid, .profile-management-row) { padding-block: 6px 18px; }
 :root body.coach-admin-page .coach-profile-details .profile-management-row { margin-block: 0; }
 
@@ -388,12 +359,6 @@
   white-space: nowrap;
 }
 .coach-activity-header .coach-notification-mark-all svg { width: 16px; height: 16px; }
-.coach-activity-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(168px, .37fr);
-  align-items: start;
-  gap: clamp(18px, 3vw, 34px);
-}
 .coach-activity-feed {
   display: grid;
   align-content: start;
@@ -638,38 +603,36 @@
   font-size: .825rem;
   font-weight: 550;
 }
-.coach-activity-aside {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  padding-inline-start: 16px;
-  border-inline-start: 1px solid var(--line);
-}
-.coach-activity-unread {
-  display: grid;
-  gap: 5px;
-  margin-block-end: 12px;
+.coach-activity-header .coach-activity-unread {
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: .83rem;
+  font-size: .85rem;
 }
-.coach-activity-unread strong { color: var(--ink); font-size: 2.35rem; line-height: 1; }
-.coach-activity-aside h3 { margin: 0; font-size: 1rem; }
-:root body.coach-admin-page .coach-activity-aside .coach-activity-add {
-  margin-block-start: 8px;
-  border-color: var(--coach-gold-line);
-  background: var(--lime);
-  color: var(--brand-primary-ink);
+
+:root body.coach-admin-page #coach-settings-panel:not([hidden]) {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  width: min(100%, 780px);
+  padding: clamp(14px, 3vw, 28px);
 }
-@media (max-width: 900px) {
-  .coach-activity-layout { grid-template-columns: minmax(0, 1fr); }
-  .coach-activity-aside {
-    padding: 14px 0 0;
-    border: 0;
-    border-block-start: 1px solid var(--line);
-  }
-  .coach-activity-unread { display: flex; align-items: baseline; gap: 6px; }
-  .coach-activity-unread strong { font-size: 1.35rem; }
+
+#coach-settings-title,
+.coach-workspace-disclosure h3[tabindex="-1"] { scroll-margin-block-start: 86px; }
+.coach-settings-panel :is(h2, h3, .coach-theme-setting) { margin: 0; }
+.coach-device-alerts { display: grid; gap: 10px; }
+.coach-settings-panel .coach-notification-actions { justify-content: flex-start; }
+:root body.coach-admin-page .coach-settings-panel .coach-notification-status {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: .875rem;
 }
+:root body.coach-admin-page :is(.coach-settings-panel, .coach-activity-desk) .coach-notification-status[data-state="error"] { color: var(--danger); }
+.coach-settings-panel .coach-notification-status:empty,
+.coach-activity-feed .coach-notification-status:empty { display: none; }
 
 .coach-exercise-library-page .coach-library-names { order: 2; }
 :root body.coach-exercise-library-page #coach-exercise-editor { display: block; }

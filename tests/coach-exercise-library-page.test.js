@@ -11,13 +11,15 @@ const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "coach.webmanifest"), "utf8"));
 
 test("exercise library opens as a focused coach tool like the workout logger", () => {
-  assert.match(adminHtml, /href="coach-exercise-library\.html"[^>]*aria-label="Exercise library"/);
+  assert.match(adminHtml, /href="coach-exercise-library\.html\?v=coach-workspace-2"[^>]*aria-label="Exercise library"/);
   assert.doesNotMatch(adminHtml, /data-admin-tab="library"/);
-  assert.ok(adminHtml.indexOf('href="coach-exercise-library.html"') > adminHtml.indexOf('href="coach-workout-log.html"'));
+  assert.ok(adminHtml.indexOf('href="coach-exercise-library.html?v=coach-workspace-2"') > adminHtml.indexOf('href="coach-workout-log.html"'));
   assert.ok(adminHtml.indexOf('data-admin-tab="home"') < adminHtml.indexOf('href="coach-workout-log.html"'));
   assert.match(libraryHtml, /<body class="dashboard-page coach-exercise-library-page">/);
   assert.match(libraryHtml, /id="exercise-library-page-title">Exercise library<\/h1>/);
-  assert.match(libraryHtml, /href="coach-admin\.html">Back to GRUNTR Coach<\/a>/);
+  const returns = [...libraryHtml.matchAll(/href="(coach-admin\.html[^"]*)"/g)];
+  assert.equal(returns.length, 3);
+  assert.ok(returns.every(([, url]) => url === "coach-admin.html?tab=home&amp;v=coach-workspace-2"));
   assert.ok(manifest.shortcuts.some((shortcut) => shortcut.url === "/coach-exercise-library.html"));
 });
 

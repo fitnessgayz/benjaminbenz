@@ -61,10 +61,10 @@ async function settle() {
   await new Promise(resolve => setImmediate(resolve));
 }
 
-test('the Coach feed and both navigation links use the GRUNTR FEED name', () => {
+test('the Coach feed and the More menu use the GRUNTR FEED name', () => {
   assert.match(pageHtml, /<title>GRUNTR FEED \| GRUNTR Coach<\/title>/);
   assert.match(pageHtml, /<h1>GRUNTR FEED<\/h1>/);
-  assert.equal((coachHtml.match(/href="coach-community-wall\.html">(?:<strong>)?GRUNTR FEED/g) || []).length, 2);
+  assert.equal((coachHtml.match(/href="coach-community-wall\.html"><strong>GRUNTR FEED/g) || []).length, 1);
   assert.doesNotMatch(pageHtml + source, /FWB Wall/);
   assert.doesNotMatch(pageHtml + coachHtml, /wall-note|See the wins clients choose to share|Celebrate the workouts/);
 });

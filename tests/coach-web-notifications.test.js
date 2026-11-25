@@ -42,40 +42,37 @@ test("keeps Home first and adds a coach Recent Activity destination", () => {
   assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Activity"/);
   assert.match(navigation, /admin-nav-activity-icon/);
   assert.match(navigation, /<span class="admin-nav-label">Activity<\/span>/);
-  assert.doesNotMatch(navigation, /data-web-notification-unread/);
-  assert.match(adminHtml, /data-coach-home-settings[\s\S]*?data-web-notification-unread/);
+  assert.match(navigation, /data-admin-tab="notifications"[\s\S]*?data-web-notification-unread[\s\S]*?<\/button>/);
 });
 
-test("Activity keeps its feed visible and notification controls together in a disclosure", () => {
-  const panelStart = adminHtml.indexOf('data-admin-panel="notifications"');
-  const panelEnd = adminHtml.indexOf("</details>", panelStart);
-  const settingsPanel = adminHtml.slice(panelStart, panelEnd);
+test("Activity and Coach settings have dedicated panels and feedback", () => {
+  const activityStart = adminHtml.indexOf('data-admin-panel="notifications"');
+  const settingsStart = adminHtml.indexOf('data-admin-panel="settings"', activityStart);
+  const end = adminHtml.indexOf('data-admin-panel="profile"', settingsStart);
+  const activity = adminHtml.slice(activityStart, settingsStart);
+  const settings = adminHtml.slice(settingsStart, end);
 
-  assert.ok(panelStart >= 0);
-  assert.match(settingsPanel, /<h2 id="coach-notification-title" tabindex="-1">Activity<\/h2>/);
-  assert.match(settingsPanel, /<summary>Coach settings<\/summary>[\s\S]*data-coach-theme-toggle/);
-  assert.match(settingsPanel, /data-web-notification-summary="unread"/);
-  assert.match(settingsPanel, /<section class="coach-activity-feed" aria-label="Recent activity">/);
-  assert.match(settingsPanel, /data-coach-activity-filter="all" aria-pressed="true"/);
-  assert.match(settingsPanel, /data-coach-activity-filter="workouts" aria-pressed="false"/);
-  assert.match(settingsPanel, /data-coach-activity-filter="checkins" aria-pressed="false"/);
-  assert.match(settingsPanel, /data-coach-activity-filter-empty[^>]*hidden/);
-  assert.match(settingsPanel, /data-web-notification-enable/);
-  assert.match(settingsPanel, /data-web-notification-test[^>]*disabled/);
-  assert.match(settingsPanel, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
-  assert.match(settingsPanel, /<ol[^>]*data-web-notification-list[^>]*aria-live="polite"/);
-  assert.match(settingsPanel, /data-web-notification-empty/);
-  assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
-  assert.match(settingsPanel, /data-web-notification-mark-all[\s\S]*?<span>Mark read<\/span>/);
-  assert.ok(
-    settingsPanel.indexOf("data-web-notification-list") < settingsPanel.indexOf("data-web-notification-enable"),
-    "Alert controls should appear below recent activity"
-  );
-  assert.ok(
-    settingsPanel.indexOf("data-web-notification-test") < settingsPanel.indexOf('id="coach-notification-settings-title"'),
-    "Alert controls should appear before notification preferences"
-  );
-  assert.ok(settingsPanel.indexOf("data-web-notification-mark-all") < settingsPanel.indexOf("data-web-notification-list"));
+  assert.ok(activityStart >= 0 && settingsStart > activityStart && end > settingsStart);
+  assert.match(activity, /<h2 id="coach-notification-title" tabindex="-1">Activity<\/h2>/);
+  assert.match(activity, /data-web-notification-summary="unread"/);
+  assert.match(activity, /<section class="coach-activity-feed" aria-label="Recent activity">/);
+  for (const [filter, pressed] of [["all", "true"], ["workouts", "false"], ["checkins", "false"]]) {
+    assert.match(activity, new RegExp(`data-coach-activity-filter="${filter}" aria-pressed="${pressed}"`));
+  }
+  assert.match(activity, /data-coach-activity-filter-empty[^>]*hidden/);
+  assert.match(activity, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(activity, /<ol[^>]*data-web-notification-list[^>]*aria-live="polite"/);
+  assert.match(activity, /data-web-notification-empty/);
+  assert.match(activity, /data-web-notification-mark-all[^>]*hidden[\s\S]*?<span>Mark read<\/span>/);
+  assert.doesNotMatch(activity, /data-web-notification-(?:enable|test|preference|settings-status)|data-coach-theme-toggle|Add client|Activity shortcuts/);
+
+  assert.match(settings, /<h2 id="coach-settings-title" tabindex="-1">Coach settings<\/h2>/);
+  assert.match(settings, /data-coach-theme-toggle/);
+  assert.match(settings, /data-web-notification-enable/);
+  assert.match(settings, /data-web-notification-test[^>]*disabled/);
+  assert.match(settings, /data-web-notification-settings-status[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.ok(settings.indexOf("data-web-notification-test") < settings.indexOf('id="coach-notification-settings-title"'));
+  assert.doesNotMatch(settings, /data-web-notification-list|data-web-notification-mark-all/);
   assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-activity-likes-5(?:&amp;[^"]*)?"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
 });
 
@@ -111,7 +108,7 @@ test("coach notification controller initializes, refreshes, and cleans up before
   assert.match(adminSource, /FWBWebNotifications\?\.createController/);
   assert.match(adminSource, /role:\s*"coach"/);
   assert.match(adminSource, /await coachNotificationsController\.init\(\)/);
-  assert.match(adminSource, /nextTab === "notifications" && coachNotificationsController/);
+  assert.match(adminSource, /\["notifications", "settings"\]\.includes\(nextTab\) && coachNotificationsController/);
   assert.match(adminSource, /coachNotificationsController\.refresh\(\)/);
   assert.match(adminSource, /await coachNotificationsController\.prepareForSignOut\(\)/);
   assert.match(adminSource, /prepareForSignOut[\s\S]*?coachSupabase\.auth\.signOut\(\)/);
@@ -119,7 +116,7 @@ test("coach notification controller initializes, refreshes, and cleans up before
 
 test("notification deep links open only allowlisted coach panels", () => {
   assert.match(adminSource, /const coachAdminTabNames = new Set\(\[/);
-  assert.match(adminSource, /"notifications"/);
+  assert.match(adminSource, /"notifications",\s+"settings"/);
   assert.match(adminSource, /new URLSearchParams\(window\.location\.search\)\.get\("tab"\)/);
   assert.match(adminSource, /\.get\("tab"\) \|\| "notifications"/);
   assert.match(adminSource, /coachAdminTabNames\.has\(requestedTab\) \? requestedTab : "home"/);
@@ -131,7 +128,7 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /@media \(max-width: 780px\)[\s\S]*?\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-item\s*\{[^}]*border-block-end:\s*1px solid var\(--line\)/s);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)\s*\{\s*\.coach-activity-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
+  assert.match(workspaceStyles, /#coach-settings-panel:not\(\[hidden\]\)[^}]*width:\s*min\(100%, 780px\)/s);
   assert.match(workspaceStyles, /\.coach-activity-actions :is\(\.web-notification-like, \.coach-activity-comment\)\s*\{[^}]*min-inline-size:\s*44px[^}]*min-height:\s*44px/s);
   assert.match(workspaceStyles, /\.coach-activity-actions :is\(\.web-notification-like, \.coach-activity-comment\)::before\s*\{[^}]*inset:\s*8px 0[^}]*border-radius:\s*999px[^}]*background:\s*var\(--surface-soft\)/s);
   assert.match(workspaceStyles, /\.coach-activity-feed \.web-notification-type-icon svg\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
@@ -143,16 +140,16 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(workspaceStyles, /\.coach-activity-entry-head\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/s);
 });
 
-test("mobile Activity stays in the workspace while Settings opens its disclosure", () => {
-  assert.match(adminHtml, /data-coach-home-settings[\s\S]*?data-web-notification-unread/);
-  assert.match(adminHtml, /data-coach-mobile-settings/);
-  assert.match(adminSource, /settingsButton\?\.addEventListener\("click", \(\) => openCoachActivity\(\{ settings: true \}\)\)/);
-  assert.match(adminSource, /if \(settings && disclosure\) disclosure\.open = true/);
+test("Home and More route to Coach settings without opening Activity", () => {
+  assert.match(adminHtml, /aria-controls="coach-settings-panel" data-coach-home-settings/);
+  assert.match(adminHtml, /aria-controls="coach-settings-panel" data-coach-mobile-settings/);
+  assert.match(adminSource, /settingsButton\?\.addEventListener\("click", openCoachSettings\)/);
+  assert.match(adminSource, /data-coach-mobile-settings[\s\S]*?closeMoreDialog\(\{ restoreFocus: false \}\);\s+openCoachSettings\(\)/);
+  assert.match(adminSource, /function openCoachSettings\(\) \{\s*setAdminTab\("settings"\)/);
   assert.doesNotMatch(adminHtml, /data-coach-notification-close/);
   assert.doesNotMatch(styleSource, /\.admin-workspace\[data-active-tab="notifications"\]::before/);
   assert.doesNotMatch(styleSource, /\.coach-notification-panel:not\(\[hidden\]\)\s*\{[^}]*position:\s*fixed/s);
 });
-
 
 test("matches coach activity by workout identity and keeps saved-only workouts read", () => {
   const window = {};

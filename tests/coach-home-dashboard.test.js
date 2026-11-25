@@ -33,18 +33,21 @@ test("Coach Home remains first in the sidebar and Activity is the default view",
   assert.match(adminSource, /coachAdminTabNames\.has\(tabName\) \? tabName : "home"/);
 });
 
-test("Coach Home exposes workouts, session sheets, and follow-up modules", () => {
-  const homeStart = adminHtml.indexOf('data-admin-panel="home"');
-  const homeEnd = adminHtml.indexOf('data-admin-client-context', homeStart);
-  const home = adminHtml.slice(homeStart, homeEnd);
+test("Home keeps the quick actions and summary while Clients and Sessions own their tools", () => {
+  const home = adminHtml.slice(adminHtml.indexOf('data-admin-panel="home"'), adminHtml.indexOf('data-admin-panel="inbox"'));
+  const clients = adminHtml.slice(adminHtml.indexOf('data-admin-panel="clients"'), adminHtml.indexOf('data-admin-panel="session-counts"'));
+  const sessions = adminHtml.slice(adminHtml.indexOf('data-admin-panel="session-counts"'), adminHtml.indexOf('data-admin-panel="home"'));
 
   assert.match(home, /data-coach-home-shortcut="workouts"/);
-  assert.doesNotMatch(home, /coach-home-recent-list/);
-  assert.match(home, /id="coach-home-sheet-list"/);
-  assert.match(home, /Alex Fitness, B2 Master Session/);
-  assert.match(home, /id="coach-home-session-alert-list"/);
-  assert.match(home, /id="coach-home-inactive-list"/);
   assert.match(home, /id="new-client-button"/);
+  assert.doesNotMatch(home, /<summary>|coach-exercise-library\.html|coach-community-wall\.html|coach-home-destination/);
+  assert.match(clients, /<summary>Client follow-ups and requests<\/summary>/);
+  assert.match(clients, /id="coach-home-session-alert-list"/);
+  assert.match(clients, /id="coach-home-inactive-list"/);
+  assert.match(clients, /id="coach-access-request-list"/);
+  assert.match(sessions, /<summary>Session sheets<\/summary>/);
+  assert.match(sessions, /id="coach-home-sheet-list"/);
+  assert.match(sessions, /Alex Fitness, B2 Master Session/);
 });
 
 test("home summaries come from current programs and bounded workout-log history", () => {
@@ -86,27 +89,25 @@ test("home flags empty or low packages and clients inactive for 14 days", () => 
   assert.match(inactive, /!entry\.workout \|\| entry\.daysSince === null \|\| entry\.daysSince >= 14/);
 });
 
-test("home actions open the selected client's training logs or sessions", () => {
+test("follow-up actions open the selected client's training logs, sessions, or profile", () => {
   const handler = javascriptFunction("handleCoachHomeActions");
   const opener = javascriptFunction("openCoachHomeClientSection");
 
   assert.match(handler, /data-coach-home-open-logs/);
   assert.match(handler, /data-coach-home-open-sessions/);
-  assert.match(handler, /data-coach-home-tab/);
+  assert.match(handler, /data-coach-home-open-membership/);
+  assert.match(handler, /getElementById\("program-editor"\)/);
   assert.match(opener, /fillForm\(program\)/);
   assert.match(opener, /setAdminTab\(tabName\)/);
 });
 
-test("mobile Home keeps extra detail in disclosures", () => {
-  for (const label of ["Session sheets", "Client follow-ups and requests"]) {
-    assert.ok(adminHtml.includes(`<summary>${label}</summary>`));
-  }
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
+test("relocated tools remain compact on mobile", () => {
+  assert.match(workspaceStyles, /\.coach-workspace-disclosure \.coach-home-module\s*\{[^}]*padding:\s*12px 0/s);
   assert.match(styleSource, /@media \(max-width: 480px\)[\s\S]*?\.coach-home-sheet-card\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
 
 test("summary metrics are four keyboard-accessible shortcuts", () => {
-  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('class="coach-home-details"'));
+  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('data-admin-panel="inbox"'));
   for (const destination of ["clients", "workouts", "sessions", "attention"]) {
     assert.match(metrics, new RegExp(`<button[^>]+type="button"[^>]+data-coach-home-shortcut="${destination}"`));
   }
@@ -143,10 +144,10 @@ test("summary shortcuts select active clients or open and focus the matching sec
   calls.length = 0;
   api.openCoachHomeShortcut("workouts");
   assert.deepEqual(calls, [["activity"]]);
-  for (const [destination,id] of [["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
+  for (const [destination,id,tab] of [["sessions","coach-home-sheets-title","session-counts"],["attention","coach-home-session-alert-title","clients"]]) {
     calls.length = 0;
     api.openCoachHomeShortcut(destination);
-    assert.deepEqual(calls, [["focus",id,true],["scroll",id,"smooth"]]);
+    assert.deepEqual(calls, [["tab",tab],["focus",id,true],["scroll",id,"smooth"]]);
   }
   reducedMotion = true;
   calls.length = 0;
