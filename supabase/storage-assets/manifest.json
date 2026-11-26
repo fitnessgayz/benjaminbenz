@@ -1,6 +1,9 @@
 {
   "version": 1,
   "migrations": [
+    "20261126235823_spotter_profile_details.sql",
+    "20261126235824_spotter_chat_unread.sql",
+    "20261126235825_spotter_discover_nearest.sql",
     "20261126224524_spotter_partner_discovery.sql",
     "20260930110000_add_barbell_upright_row_media.sql",
     "20260930180001_assign_bulgarian_split_squat_video.sql",
