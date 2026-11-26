@@ -9027,6 +9027,7 @@ function workoutCompletionSharePromptMarkup() {
         <p class="workout-completion-share-status" data-workout-share-status aria-live="polite"></p>
         <div class="workout-completion-share-actions">
           <button class="workout-completion-share-button" type="button" data-workout-share>Share Workout</button>
+          <button class="workout-completion-share-not-now" type="button" data-client-analyze-workout aria-haspopup="dialog" hidden>Analyze Workout</button>
           <button class="workout-completion-share-not-now" type="button" data-workout-share-apple hidden>Add Apple Workout</button>
           <button class="workout-completion-share-not-now" type="button" data-workout-share-dismiss>Done</button>
         </div>
@@ -9095,6 +9096,9 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
   shareButton.disabled = true;
   shareButton.textContent = "Preparing image…";
   overlay.querySelector("[data-workout-share-status]").textContent = "Preparing your workout card…";
+  const analyzeButton = overlay.querySelector("[data-client-analyze-workout]");
+  analyzeButton.dataset.clientAnalyzeWorkout = summary.historyKey || "";
+  analyzeButton.hidden = !summary.isComplete || !completedWorkoutAnalysisLogs(summary.historyKey).length;
   overlay.querySelector("[data-workout-share-apple]").hidden = !summary.historyKey || isCoachDashboardPreview || !window.FWBAppleWorkout;
   overlay.querySelector("[data-workout-share-apple]").textContent = summary.appleWorkout ? "Edit Apple Workout" : "Add Apple Workout";
   overlay.hidden = false;
@@ -9195,9 +9199,15 @@ async function shareCompletedWorkout(button) {
 function handleWorkoutCompletionSharePrompt() {
   document.addEventListener("click", async (event) => {
     const shareButton = event.target.closest("[data-workout-share]");
+    const analyzeButton = event.target.closest("[data-client-analyze-workout]");
     const dismissButton = event.target.closest("[data-workout-share-dismiss]");
     const appleWorkoutButton = event.target.closest("[data-workout-share-apple]");
     const historyShareButton = event.target.closest("[data-share-workout-history]");
+
+    if (analyzeButton) {
+      openClientWorkoutAnalysis(analyzeButton);
+      return;
+    }
 
     if (historyShareButton) {
       openWorkoutHistoryShare(historyShareButton.dataset.shareWorkoutHistory, historyShareButton);
@@ -9229,7 +9239,8 @@ function handleWorkoutCompletionSharePrompt() {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && document.querySelector("[data-workout-share-overlay]")?.hidden === false) {
+    if (event.key === "Escape" && !document.querySelector(".client-workout-analysis-dialog[open]")
+        && document.querySelector("[data-workout-share-overlay]")?.hidden === false) {
       closeWorkoutCompletionSharePrompt();
     }
   });
@@ -17264,30 +17275,151 @@ function customWorkoutDraftFromLogs(logs = [], options = {}) {
 function workoutHistorySummaryMetrics(workout = {}) {
   const exercises = Array.from(workout.supersets?.values?.() || [])
     .flatMap((superset) => Array.from(superset.exercises?.values?.() || []));
-  const workingSets = exercises.flatMap((exercise) => {
+  let workingSetCount = 0;
+  let totalReps = 0;
+  let totalVolume = 0;
+  for (const exercise of exercises) {
     const exerciseCode = String(exercise.exercise_code || "").trim().toUpperCase();
-
-    if (exerciseCode === warmupExerciseCode || exerciseCode === cardioExerciseCode) {
-      return [];
+    if (exerciseCode === warmupExerciseCode || exerciseCode === cardioExerciseCode) continue;
+    for (const set of exercise.sets || []) {
+      if (normalizedSetType(set.set_type, set.set_number) === warmUpSetType || isWorkoutAnalysisTimedSet(set)) continue;
+      const stats = workoutAnalysisStrengthSet(set, exercise.exercise_name);
+      workingSetCount += Number(stats.reps > 0);
+      totalReps += stats.reps;
+      totalVolume += stats.volume;
     }
-
-    return (Array.isArray(exercise.sets) ? exercise.sets : []).filter((set) => (
-      normalizedSetType(set.set_type, set.set_number) !== warmUpSetType
-    ));
-  });
-  const totalVolume = workingSets.reduce((sum, set) => {
-    const weight = Number(set.weight_used);
-    const reps = Number(set.reps);
-
-    return Number.isFinite(weight) && weight > 0 && Number.isFinite(reps) && reps > 0
-      ? sum + (weight * reps)
-      : sum;
-  }, 0);
+  }
   return {
     exerciseCount: exercises.length,
-    workingSetCount: workingSets.length,
+    workingSetCount,
+    totalReps,
     volumeLabel: totalVolume > 0 ? `${Math.round(totalVolume).toLocaleString("en-US")} lb` : "—"
   };
+}
+
+function isWorkoutAnalysisTimedSet(set) {
+  return set.set_type === "timed" || Number(set.duration_seconds) > 0;
+}
+
+function workoutAnalysisPositiveNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function workoutAnalysisStrengthSet(set, exerciseName) {
+  const reps = workoutAnalysisPositiveNumber(set.reps);
+  // A machine’s counterweight is assistance, so it does not add to total lifted load.
+  const assisted = /^(?:machine )?assisted (?:machine )?(?:dips?|pull ?ups?)(?: machine)?$/
+    .test(String(exerciseName || "").toLowerCase().match(/[a-z]+/g)?.join(" ") || "");
+  return { reps, volume: assisted ? 0 : workoutAnalysisPositiveNumber(set.weight_used) * reps };
+}
+
+function workoutAnalysisNumbers(rows) {
+  const exercises = new Map();
+  const positive = workoutAnalysisPositiveNumber;
+  const ordered = [...rows].sort((left, right) => {
+    const leftOrder = left.exercise_order ?? Infinity;
+    const rightOrder = right.exercise_order ?? Infinity;
+    return leftOrder - rightOrder || String(left.exercise_code || "").localeCompare(
+      String(right.exercise_code || ""), undefined, { numeric: true }
+    );
+  });
+
+  for (const row of ordered) {
+    const code = String(row.exercise_code || "").trim().toUpperCase();
+    const name = String(row.exercise_name || "").trim();
+    if (code === warmupExerciseCode || normalizedSetType(row.set_type, row.set_number) === warmUpSetType) continue;
+    const key = `${code}|${name.toLowerCase()}`;
+    if (!exercises.has(key)) {
+      exercises.set(key, { name: name || (code === cardioExerciseCode ? "Cardio" : "Exercise"), sets: 0, reps: 0,
+        volume: 0, timedSeconds: 0, cardio: [] });
+    }
+    const exercise = exercises.get(key);
+    const duration = positive(row.duration_seconds);
+    if (code === cardioExerciseCode) {
+      exercise.cardio.push({ ...row, weight_used: duration ? duration / 60 : positive(row.weight_used) || null });
+    } else if (isWorkoutAnalysisTimedSet(row)) {
+      exercise.timedSeconds += duration || positive(row.reps);
+    } else {
+      const stats = workoutAnalysisStrengthSet(row, name);
+      exercise.sets += Number(stats.reps > 0);
+      exercise.reps += stats.reps;
+      exercise.volume += stats.volume;
+    }
+  }
+  const summary = { exercises: [...exercises.values()], sets: 0, reps: 0, volume: 0, timedSeconds: 0, cardioSeconds: 0,
+    durationSeconds: rows.reduce((longest, row) => Math.max(longest, positive(row.workout_duration_seconds)), 0) };
+  for (const exercise of summary.exercises) {
+    summary.sets += exercise.sets;
+    summary.reps += exercise.reps;
+    summary.volume += exercise.volume;
+    summary.timedSeconds += exercise.timedSeconds;
+    summary.cardioSeconds += exercise.cardio.reduce((total, row) => total + positive(row.weight_used) * 60, 0);
+  }
+  return summary;
+}
+
+function completedWorkoutAnalysisLogs(sessionKey, logs = trainingLogs) {
+  if (!sessionKey) return [];
+  const rows = ownedWorkoutHistoryLogs(sessionKey, logs);
+  return rows.some((row) => row.completed_at ||
+    (sessionKey.startsWith("legacy:") && row.id && workoutAnalysisPositiveNumber(row.workout_duration_seconds)) ||
+    ["fitbod", "hevy", "client_log_correction"].includes(String(row.source || "").toLowerCase())) ? rows : [];
+}
+
+function workoutAnalysisMetricMarkup(metrics) {
+  return metrics.length ? `<dl class="client-workout-analysis-metrics">${metrics.map(([label, value]) =>
+    `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>` : "";
+}
+
+function openClientWorkoutAnalysis(button) {
+  const sessionKey = button?.dataset.clientAnalyzeWorkout;
+  const rows = completedWorkoutAnalysisLogs(sessionKey);
+  if (!rows.length || document.querySelector(".client-workout-analysis-dialog[open]")) return;
+  const summary = workoutAnalysisNumbers(rows);
+  const number = (value) => value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  const elapsed = (seconds) => workoutElapsedTimeLabel(seconds * 1000);
+  const strengthMetrics = (item) => [
+    ...(item.sets ? [["Working sets", number(item.sets)], ["Reps", number(item.reps)]] : []),
+    ...(item.volume ? [["Volume", `${number(item.volume)} lb`]] : []),
+    ...(item.timedSeconds ? [["Timed work", elapsed(item.timedSeconds)]] : [])
+  ];
+  const engine = window.FWB_ACHIEVEMENTS;
+  const achievementKey = engine?.sessionKey(rows[0]);
+  const records = clientAchievementSnapshot()?.events.filter((event) => event.kind === "pr" && event.sessionId === achievementKey) || [];
+  const displayTitle = automaticCustomWorkoutDisplayTitle(rows[0].workout_title, rows);
+  const exercises = summary.exercises.filter((exercise) => exercise.sets || exercise.timedSeconds ||
+    exercise.cardio.some((row) => row.weight_used || workoutAnalysisPositiveNumber(row.reps) ||
+      workoutAnalysisPositiveNumber(parseCardioNotes(row.notes).calories)));
+  const metrics = [
+    ...(summary.durationSeconds ? [["Duration", elapsed(summary.durationSeconds)]] : []),
+    ["Exercises", number(exercises.length)],
+    ...strengthMetrics(summary),
+    ...(summary.cardioSeconds ? [["Cardio time", elapsed(summary.cardioSeconds)]] : [])
+  ];
+  const exerciseRows = exercises.map((exercise) => `
+    <li><strong>${escapeHtml(exercise.name)}</strong>${workoutAnalysisMetricMarkup(strengthMetrics(exercise))}
+      ${exercise.cardio.map((row) => `<p>${escapeHtml(cardioDisplay(row))}</p>`).join("")}</li>`).join("");
+  const dialog = document.createElement("dialog");
+  dialog.className = "client-workout-analysis-dialog";
+  dialog.setAttribute("aria-labelledby", "client-workout-analysis-title");
+  dialog.innerHTML = `
+    <header>
+      <div><h2 id="client-workout-analysis-title" tabindex="-1" autofocus>Workout Analysis</h2>
+        <p>${escapeHtml(displayTitle)} · ${escapeHtml(formatLogDate(rows[0].entry_date))}</p></div>
+      <form method="dialog"><button type="submit" aria-label="Close workout analysis">×</button></form>
+    </header>
+    ${workoutAnalysisMetricMarkup(metrics)}
+    ${records.length ? `<section><h3>Personal records</h3><ul>${records.map((record) =>
+      `<li><strong>${escapeHtml(record.title)}</strong><p>${escapeHtml(record.detail)}</p></li>`).join("")}</ul></section>` : ""}
+    ${exerciseRows ? `<section><h3>Exercise breakdown</h3><ul>${exerciseRows}</ul></section>` : "<p>No working or timed sets logged.</p>"}
+  `;
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+    if (button.isConnected) button.focus({ preventScroll: true });
+  }, { once: true });
+  document.body.append(dialog);
+  dialog.showModal();
 }
 
 function filteredClientWorkoutHistoryLogs(logs = [], dateFilter = "", searchFilter = "") {
@@ -17757,6 +17889,7 @@ function renderClientTrainingLogs() {
       ))));
     const actionLogs = ownedWorkoutHistoryActionLogs(workout.history_key);
     const canCopyToCustom = actionLogs.length > 0;
+    const canAnalyze = completedWorkoutAnalysisLogs(workout.history_key, workout.logs).length > 0;
     const canSaveRoutine = Boolean(window.FWB_CLIENT_PLANNED_ROUTINES?.historyExerciseNames(actionLogs).length);
     const shareButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-share-button" type="button" data-share-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Share ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}">Share workout</button>` : "";
     const deleteButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-delete-button" type="button" data-delete-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Delete ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}" ${clientWorkoutHistoryDeleteInFlight ? "disabled" : ""}>Delete workout</button>` : "";
@@ -17829,7 +17962,8 @@ function renderClientTrainingLogs() {
         <div class="training-log-history-card-details" id="${escapeHtml(detailsId)}" data-client-workout-history-details hidden>
           <div class="client-logs-detail-heading"><span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span><strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong></div>
           <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
-          <dl class="training-log-history-metrics"><div><dt>Exercises</dt><dd>${metrics.exerciseCount}</dd></div><div><dt>Sets</dt><dd>${metrics.workingSetCount}</dd></div><div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div></dl>
+          <dl class="training-log-history-metrics"><div><dt>Exercises</dt><dd>${metrics.exerciseCount}</dd></div><div><dt>Sets</dt><dd>${metrics.workingSetCount}</dd></div><div><dt>Reps</dt><dd>${metrics.totalReps.toLocaleString("en-US")}</dd></div><div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div></dl>
+          ${canAnalyze ? `<button class="client-logs-analyze-workout" type="button" data-client-analyze-workout="${escapeHtml(workout.history_key)}" aria-haspopup="dialog">Analyze Workout</button>` : ""}
           <div class="client-logs-detail-actions client-logs-detail-primary-actions">${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}" aria-describedby="${detailsId}-repeat-help"><strong>Repeat Workout</strong><small id="${detailsId}-repeat-help">Start a fresh session now.</small></button>` : ""}
           ${canSaveRoutine ? `<button class="training-log-share-button" type="button" data-save-workout-as-routine="${escapeHtml(workout.history_key)}">Save as Routine</button>` : ""}${shareButtonMarkup}</div>
           ${appleWorkoutMarkup}${detailsHtml}
@@ -18369,11 +18503,16 @@ function openClientWorkoutCopyHistory() {
   });
 }
 
-function ownedWorkoutHistoryActionLogs(sessionKey) {
+function ownedWorkoutHistoryLogs(sessionKey, logs = trainingLogs) {
   const email = normalizeClientEmail(activeClientEmail);
   if (!activeDashboardUser?.id || isCoachDashboardPreview || !email ||
     normalizeClientEmail(activeDashboardUser.email) !== email) return [];
-  return workoutHistoryLogsForCopy(sessionKey).filter(log => normalizeClientEmail(log.client_email) === email);
+  return logs.filter((log) => clientWorkoutHistorySessionKey(log) === sessionKey &&
+    normalizeClientEmail(log.client_email) === email);
+}
+
+function ownedWorkoutHistoryActionLogs(sessionKey) {
+  return ownedWorkoutHistoryLogs(sessionKey).filter(isCopyableWorkoutHistoryLog);
 }
 
 function openClientPlannedRoutines(button, logKey = null) {
