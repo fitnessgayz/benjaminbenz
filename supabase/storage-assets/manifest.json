@@ -1,6 +1,7 @@
 {
   "version": 1,
   "migrations": [
+    "20261126224524_spotter_partner_discovery.sql",
     "20260930110000_add_barbell_upright_row_media.sql",
     "20260930180001_assign_bulgarian_split_squat_video.sql",
     "20260930231839_add_missing_strength_exercise_cards.sql",
