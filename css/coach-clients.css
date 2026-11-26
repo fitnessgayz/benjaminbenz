@@ -122,6 +122,7 @@
   overflow-wrap: anywhere;
 }
 .coach-alex-packs button span { color: var(--muted); font-size: .75rem; }
+.coach-alex-packs button time { white-space: nowrap; }
 :root body.coach-admin-page .coach-alex-packs button[aria-pressed="true"] {
   border-color: var(--coach-gold-line);
   background: var(--selected-surface);

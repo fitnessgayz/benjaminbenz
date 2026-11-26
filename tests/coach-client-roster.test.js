@@ -158,7 +158,7 @@ test("Sessions keeps FWB totals and the Alex Fitness history in separate tabs", 
   assert.match(source("handleCoachClientWorkspace"), /openCoachHomeClientSection\(program\.client_email, "sessions"\)/);
 });
 
-test("Alex Fitness shows only the selected pack and preserves source session numbers", () => {
+test("Alex Fitness shows pack start dates and preserves source session numbers", () => {
   const node = () => ({
     children: [], dataset: {}, textContent: "",
     append(...children) { this.children.push(...children); },
@@ -192,8 +192,11 @@ test("Alex Fitness shows only the selected pack and preserves source session num
   const title = lookup("[data-coach-alex-pack-title]");
   const numbers = () => lookup("[data-coach-alex-rows]").children.map((row) => row.children[2].textContent);
   fixture.renderCoachAlexPacks(panel, sessions);
-  assert.deepEqual(picker.children.map((button) => button.children.map((child) => child.textContent)), [
-    ["Pack 5", "2 recorded"], ["Pack 1", "2 recorded"]
+  assert.deepEqual(picker.children.map((button) => {
+    const [name, count, start] = button.children;
+    return [name.textContent, count.textContent, start.children[0].dateTime];
+  }), [
+    ["Pack 5", "2 recorded", "2026-11-21"], ["Pack 1", "2 recorded", "2025-03-11"]
   ]);
   assert.equal(picker.children[0]["aria-pressed"], "true");
   assert.equal(title.textContent, "Pack 5 history");

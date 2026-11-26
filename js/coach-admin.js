@@ -4452,14 +4452,23 @@ function renderCoachAlexPacks(panel, sessions) {
   const focusedPack = picker.contains(document.activeElement)
     ? Number(document.activeElement.dataset.coachAlexPack) : null;
   const buttons = numbers.map((number) => {
+    const pack = packs.get(number);
+    const startDate = pack.reduce((earliest, entry) =>
+      entry.session_date < earliest ? entry.session_date : earliest, pack[0].session_date);
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.coachAlexPack = String(number);
     const name = document.createElement("strong");
     name.textContent = `Pack ${number}`;
     const count = document.createElement("span");
-    count.textContent = `${packs.get(number).length} recorded`;
-    button.append(name, count);
+    count.textContent = `${pack.length} recorded`;
+    const start = document.createElement("span");
+    start.textContent = "Started ";
+    const date = document.createElement("time");
+    date.dateTime = startDate;
+    date.textContent = formatSessionDate(startDate);
+    start.append(date);
+    button.append(name, count, start);
     return button;
   });
   picker.replaceChildren(...buttons);
