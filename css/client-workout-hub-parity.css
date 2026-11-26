@@ -9,19 +9,21 @@ body.client-dashboard-page #client-workouts-panel .client-workout-hub {
 
 .client-workout-hub-tabs {
   display: grid;
-  grid-template-columns: .85fr 1.3fr 1fr;
-  border-bottom: 1px solid var(--fwb-border, #6b737a);
-  gap: 5px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--fwb-border, #39423d);
+  border-radius: 15px;
+  background: var(--fwb-card, #1d2227);
 }
 
 :root body.client-dashboard-page #client-workouts-panel .client-workout-hub-tabs button {
   min-width: 0;
-  min-height: 48px;
-  padding: 4px 4px 2px;
-  background: none;
+  min-height: 44px;
+  padding: 8px 4px;
+  background: transparent;
   border: 0;
-  border-bottom: 3px solid transparent;
-  border-radius: 0 !important;
+  border-radius: 11px !important;
   box-shadow: none;
   color: inherit;
   font-family: inherit;
@@ -31,8 +33,14 @@ body.client-dashboard-page #client-workouts-panel .client-workout-hub {
 }
 
 :root body.client-dashboard-page #client-workouts-panel .client-workout-hub-tabs button[aria-selected="true"] {
-  border-bottom-color: #edbf00;
+  background: #ffd400;
+  color: #151513;
   font-weight: 800;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-tabs button:focus-visible {
+  outline: 2px solid #72b8ef;
+  outline-offset: 2px;
 }
 
 body.client-dashboard-page #client-workouts-panel .client-workout-hub-section[hidden],
@@ -40,14 +48,75 @@ body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidde
   display: none !important;
 }
 
-:root body.client-dashboard-page #client-workouts-panel #workout-hub-routines {
+:root body.client-dashboard-page #client-workouts-panel :is(#workout-hub-routines, #workout-hub-trainer) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px;
 }
 
-#workout-hub-routines .client-workout-hub-start {
-  grid-column: 1 / -1;
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .client-workout-hub-section > .workout-hub-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 106px;
+  padding: 12px 8px;
+  border-radius: 17px;
+  border-color: var(--fwb-border, #39423d);
+  background: var(--fwb-card, #1d2227);
+  color: #ffd400;
+  text-align: center;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .client-workout-hub-section > .workout-hub-choice:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .client-workout-hub-section > .workout-hub-choice:focus-visible {
+  outline: 2px solid #72b8ef;
+  outline-offset: 2px;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-hub-choice .workout-choice-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  background: rgb(255 212 0 / 12%);
+  color: #ffd400;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-hub-choice.workout-choice-quick .workout-choice-icon {
+  background: #ffd400;
+  color: #151513;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-hub-choice .workout-choice-copy {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-hub-choice .workout-choice-title {
+  color: #ffd400;
+  font-size: clamp(.78rem, 3.3vw, .93rem);
+  line-height: 1.2;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-hub-choice .workout-choice-description {
+  color: #abb9ad;
+  font-size: .7rem;
+  line-height: 1.25;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-hub-choice .workout-choice-arrow {
+  display: none;
 }
 
 :root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-card.has-shortcut-cover {
@@ -92,32 +161,12 @@ body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[o
   border-block-end: 1px solid var(--line, #434649);
 }
 
-:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-start {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-  gap: .5em;
-  padding: 10px;
-  border: 0;
-  border-radius: 15px;
-  background: #ffd400;
-  color: #151513;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-start:hover {
-  background: #edbf00;
-}
-
-:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-resume {
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .client-workout-hub-section > .client-workout-hub-resume {
   display: none;
 }
 
-:root body.client-dashboard-page #client-workouts-panel:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-resume {
-  display: flex;
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-section > .client-workout-hub-resume {
+  display: grid;
 }
 
 :root body.client-dashboard-page #client-workouts-panel:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-start:not(.client-workout-hub-resume),

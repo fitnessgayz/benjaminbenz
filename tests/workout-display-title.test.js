@@ -132,7 +132,7 @@ test("CSV export and copy status use readable names without mutating source reco
   const csv = context.workoutHistoryCsv([row]);
   assert.match(csv, /2026-09-25,Full Body Workout,/);
   assert.ok(!csv.includes(id));
-  assert.match(context.customWorkoutCopyStatusMessage({ copiedFrom: { workoutTitle: stored, entryDate: "2026-09-25" } }), /^Copied Full Body Workout from/);
+  assert.match(context.customWorkoutCopyStatusMessage({ copiedFrom: { workoutTitle: stored, entryDate: "2026-09-25" } }), /^Repeating Full Body Workout from/);
   assert.equal(row.workout_title, stored);
 });
 
@@ -140,7 +140,7 @@ test("log headings, accessible actions, confirmation and share summary use reada
   const render = functionSource("renderClientTrainingLogs");
   assert.match(render, /const displayTitle = automaticCustomWorkoutDisplayTitle\(workout.workout_title, workout.logs\)/);
   assert.match(render, /<h3>\$\{escapeHtml\(\[displayTitle, workout\.gym_name\]\.filter\(Boolean\)\.join\(" · "\)\)\}<\/h3>/);
-  assert.match(render, /Copy \$\{displayTitle\}/);
+  assert.match(render, /Repeat \$\{displayTitle\}/);
   assert.match(render, /Share \$\{displayTitle\}/);
   assert.match(functionSource("deleteClientWorkoutHistory"), /automaticCustomWorkoutDisplayTitle\(first.workout_title, target.rows\)/);
   const row = Object.freeze({ workout_title: stored, session_id: id, entry_date: "2026-09-25", exercise_code: "A1", exercise_name: "Squat" });

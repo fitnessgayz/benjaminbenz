@@ -43,7 +43,9 @@ test("every coach surface stays inside the coach app install identity", () => {
   }
   assert.equal((coachAdmin.match(/class="coach-brand-logo"/g) || []).length, 2);
   assert.equal(coachManifest.short_name, "GRUNTR Coach");
-  assert.deepEqual(coachManifest.icons, clientManifest.icons);
+  assert.ok(coachManifest.icons.every(({ src }) => src.startsWith("/images/gruntr/client-22e30eae/")));
+  assert.ok(clientManifest.icons.every(({ src }) => src.startsWith("/images/gruntr/client-pulse-1380/")));
+  assert.notDeepEqual(coachManifest.icons, clientManifest.icons);
   assert.match(adminScript, /const coachLoginUrl = "coach-login\.html/);
   assert.match(workoutScript, /const coachWorkoutLoginUrl = "coach-login\.html/);
 });

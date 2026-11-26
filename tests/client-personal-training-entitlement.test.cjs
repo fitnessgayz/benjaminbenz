@@ -11,7 +11,7 @@ const program = (type, fields = {}) => ({
   workouts: [], program_title: "Fixture " + type, ...fields
 });
 const panels = new Map();
-const tabs = ["routines", "personal", "trainer"].map(name => ({
+const tabs = ["routines", "trainer"].map(name => ({
   name, dataset: { clientWorkoutHubTab: name }, state: {},
   setAttribute(key, value) { this.state[key] = value; },
   getAttribute() { return name; }
@@ -46,20 +46,20 @@ test("canonical current ownership, membership, beta, archive and loading checks"
   assert.equal(scope.clientPersonalTrainingAccess([pt, app], owner).programs.length, 1);
 });
 
-test("personal route falls back, does not render assigned content, and keeps Trainer", () => {
+test("personal route opens the nested Trainer Program only for entitled clients", () => {
   scope.clientAvailablePrograms = [program("app_access_only")];
   scope.currentProgram = scope.clientAvailablePrograms[0];
   scope.clientPreviewProgramSelected = true;
   scope.selectClientWorkoutHubSection("personal");
-  assert.equal(panels.get("personal").hidden, true);
   assert.equal(panels.get("routines").hidden, false);
   const html = scope.clientWorkoutListMarkup([]);
-  assert.match(html, /disabled aria-describedby="client-personal-training-access-hint"/);
+  assert.match(source, /Requires a coaching membership\./);
+  assert.match(html, /<button[^>]*disabled[^>]*aria-labelledby="workout-personal-title"/);
   assert.doesNotMatch(html, /data-preview-program=/);
   scope.selectClientWorkoutHubSection("trainer");
   assert.equal(panels.get("trainer").hidden, false);
   scope.clientAvailablePrograms = [program("app_access_only"), program("online_training")];
   scope.selectClientWorkoutHubSection("personal");
-  assert.equal(panels.get("personal").hidden, false);
+  assert.equal(panels.get("trainer").hidden, false);
   assert.match(scope.clientWorkoutListMarkup([]), /data-preview-program="1"/);
 });

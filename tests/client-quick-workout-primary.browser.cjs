@@ -110,30 +110,31 @@ function renderAssignedCase(active) {
       });
       const selectedTab = await page.getByRole('tab', { name: 'Routines' }).evaluate(button => {
         const style = getComputedStyle(button);
-        return { radius: style.borderRadius, fill: style.backgroundColor, underline: style.borderBottomColor };
+        return { radius: style.borderRadius, fill: style.backgroundColor };
       });
       assert.deepEqual(selectedTab, {
-        radius: '0px', fill: 'rgba(0, 0, 0, 0)', underline: 'rgb(237, 191, 0)'
-      }, 'Selected Workout section has a straight gold underline');
+        radius: '11px', fill: 'rgb(255, 212, 0)'
+      }, 'Selected Workout section has a gold rounded tab');
       const routines = page.locator('#workout-hub-routines');
       assert.equal(await routines.getByRole('button', { name: 'Mobility', exact: true }).count(), 0);
       const previous = routines.getByRole('button', { name: 'Previous Workout' });
       const explore = routines.getByRole('button', { name: 'Explore Routines' });
+      const planned = routines.getByRole('button', { name: 'Plan Your Routine' });
       const start = routines.getByRole('button', { name: 'Start Workout' });
-      const [startRect, previousRect, exploreRect] = await Promise.all([start.boundingBox(), previous.boundingBox(), explore.boundingBox()]);
-      assert.ok(previousRect.y >= exploreRect.y + exploreRect.height, 'Explore artwork comes before Previous Workout');
-      assert.ok([exploreRect, previousRect].every(rect => rect.x === startRect.x && rect.width === startRect.width), 'Artwork fits the full shortcut width');
-      const assertCover = async (shortcut, filename) => {
-        const cover = shortcut.locator('img.workout-choice-cover');
-        await cover.scrollIntoViewIfNeeded();
-        assert.equal(await cover.getAttribute('src'), `/images/gruntr/workout-shortcuts/${filename}.jpg`);
-        assert.equal(await cover.getAttribute('alt'), '');
-        assert.ok(await cover.evaluate(async image => { await image.decode(); return image.naturalWidth > 0; }), 'Approved cover image decodes');
+      const [startRect, plannedRect, previousRect, exploreRect] = await Promise.all([start.boundingBox(), planned.boundingBox(), previous.boundingBox(), explore.boundingBox()]);
+      assert.ok(Math.abs(startRect.y - plannedRect.y) < 2 && plannedRect.x > startRect.x, 'Start and Plan share the first tile row');
+      assert.ok(Math.abs(previousRect.y - exploreRect.y) < 2 && previousRect.x > exploreRect.x, 'Explore and Previous share the next tile row');
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Workout hub fits the viewport');
+      const assertTile = async shortcut => {
         assert.ok(await shortcut.locator('.workout-choice-title').isVisible(), 'Shortcut retains a visible title');
-        const coverRect = await cover.boundingBox();
+        assert.equal(await shortcut.locator('img.workout-choice-cover').count(), 0, 'Centered tiles use icons without cover art');
+        const iconRect = await shortcut.locator('.workout-choice-icon').boundingBox();
         const titleRect = await shortcut.locator('.workout-choice-title').boundingBox();
-        assert.ok(Math.abs(coverRect.width / coverRect.height - 3) < .03 && titleRect.y >= coverRect.y + coverRect.height,
-          'The cover is 3:1 and the readable title sits below it');
+        const tileRect = await shortcut.boundingBox();
+        assert.ok(tileRect.height >= 94 && titleRect.y >= iconRect.y + iconRect.height,
+          'Icon and title stack inside a large tile');
+        assert.ok(Math.abs((iconRect.x + iconRect.width / 2) - (tileRect.x + tileRect.width / 2)) < 3,
+          'Icon is centered in its tile');
         for (const theme of ['dark', 'light']) {
           assert.ok(await shortcut.evaluate((button, value) => {
             document.documentElement.dataset.clientTheme = value;
@@ -143,30 +144,32 @@ function renderAssignedCase(active) {
         }
         await page.evaluate(() => { delete document.documentElement.dataset.clientTheme; });
       };
-      await assertCover(explore, 'explore');
-      await assertCover(previous, 'previous');
-      await assertCover(routines.getByRole('button', { name: 'Workout calendar' }), 'calendar');
+      await assertTile(start);
+      await assertTile(planned);
+      await assertTile(explore);
+      await assertTile(previous);
       await start.focus();
       const nextControl = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
       await page.keyboard.press(nextControl);
-      assert.ok(await explore.evaluate(button => document.activeElement === button && getComputedStyle(button).outlineWidth === '2px'));
+      assert.ok(await planned.evaluate(button => document.activeElement === button && getComputedStyle(button).outlineWidth === '2px'));
       await page.keyboard.press(nextControl);
-      assert.ok(await previous.evaluate(button => document.activeElement === button));
+      assert.ok(await explore.evaluate(button => document.activeElement === button));
       await page.evaluate(() => selectClientWorkoutHubSection('trainer'));
       const trainer = page.locator('#workout-hub-trainer');
-      await assertCover(trainer.getByRole('button', { name: 'Start with GRUNTR Trainer' }), 'trainer');
-      await assertCover(trainer.getByRole('button', { name: 'Saved workouts' }), 'saved');
+      await assertTile(trainer.getByRole('button', { name: 'Start with GRUNTR Trainer' }));
+      await assertTile(trainer.getByRole('button', { name: 'Saved FWB Workout' }));
+      await assertTile(trainer.getByRole('button', { name: 'Workout Calendar' }));
       await page.evaluate(() => {
         clientAvailablePrograms = [{ id: 'plan', active: true, client_email: activeDashboardUser.email,
           membership_type: 'personal_training', program_title: 'Strength', workouts: [{}] }];
         document.querySelector('.client-workout-hub').remove();
         document.querySelector('[data-client-workout-choice-dialog]').remove();
         document.getElementById('client-workouts-panel').insertAdjacentHTML('afterbegin', clientWorkoutListMarkup([]));
-        selectClientWorkoutHubSection('personal');
+        selectClientWorkoutHubSection('trainer');
       });
-      await assertCover(page.getByRole('button', { name: 'Trainer Program' }), 'personal-training');
+      await assertTile(page.getByRole('button', { name: 'Trainer Program' }));
       await page.evaluate(() => selectClientWorkoutHubSection('routines'));
-      assert.equal(await start.evaluate(button => getComputedStyle(button).color), 'rgb(21, 21, 19)', 'Start uses dark text on yellow');
+      assert.equal(await start.locator('.workout-choice-title').evaluate(button => getComputedStyle(button).color), 'rgb(255, 212, 0)', 'Start title uses gold');
       assert.equal(await page.getByText('Benjamin’s Routine', { exact: true }).count(), 1);
       await page.evaluate(() => {
         window.FWB_WORKOUT_GENERATOR = {

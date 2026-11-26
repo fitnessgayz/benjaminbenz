@@ -401,7 +401,7 @@ test("service worker handles timer and dynamic same-origin pushes", () => {
   assert.match(sourceForFunction("initializeRestTimerNotifications"), /setClientDashboardTab\("workouts"\)/);
 });
 
-test("web push uses the new GRUNTR artwork for both roles and older payloads", async () => {
+test("web push keeps coach artwork separate from client pulse artwork", async () => {
   const { listeners, notifications } = createServiceWorkerHarness();
   async function push(value) {
     let completion;
@@ -425,12 +425,22 @@ test("web push uses the new GRUNTR artwork for both roles and older payloads", a
   assert.equal(client.icon, icon);
   assert.equal(client.badge, badge);
   assert.equal(client.data.notificationId, "notification-1");
+  const oldClient = await push({ icon: "/images/gruntr/client-22e30eae/icon-192.png",
+    badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
+    data: { url: "/client-dashboard.html?tab=workouts" } });
+  assert.equal(oldClient.icon, icon);
+  assert.equal(oldClient.badge, badge);
 
   const coach = await push({ icon: "/fwb-brand-icon-gold-192-v5.png", badge: "/favicon-32.png",
     data: { url: "/coach-admin.html?tab=notifications" } });
-  assert.equal(coach.icon, icon);
-  assert.equal(coach.badge, badge);
+  assert.equal(coach.icon, "/images/gruntr/client-22e30eae/icon-192.png");
+  assert.equal(coach.badge, "/images/gruntr/client-22e30eae/notification-badge-96.png");
   assert.match(coach.data.url, /\/coach-admin\.html\?tab=notifications$/);
+  const coachExplicit = await push({ icon: "/images/gruntr/client-22e30eae/icon-192.png",
+    badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
+    data: { url: "/coach-admin.html?tab=home" } });
+  assert.equal(coachExplicit.icon, coach.icon);
+  assert.equal(coachExplicit.badge, coach.badge);
   const previous = await push({ icon: "/images/gruntr/client-5e7e5c45/icon-192.png?v=1" });
   assert.equal(previous.icon, icon);
 });
@@ -447,7 +457,7 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.match(dashboard, /href="\/client\.webmanifest(?:\?[^"\s]+)?"/);
   assert.match(dashboard, /js\/web-notifications\.js\?[^"\s]+&amp;notification-artwork=2"/);
   assert.match(dashboard, /js\/client-portal\.js\?[^"\s]+&amp;notification-artwork=2(?:&amp;[^"\s]+)?"/);
-  assert.match(dashboard, /js\/client-unfinished-workout-reminder\.js\?[^"\s]+&amp;notification-artwork=2"/);
+  assert.match(dashboard, /js\/client-unfinished-workout-reminder\.js\?[^"\s]+&amp;notification-artwork=2(?:&amp;[^"\s]+)?"/);
 });
 
 test("Pages deployment includes the client manifest and timer service worker", () => {

@@ -27,7 +27,7 @@ const accessDeclarations = [
   "clientCoachingMembership", "clientPersonalTrainingAccess", "currentClientPersonalTrainingAccess", "allowedClientWorkoutHubSection"
 ];
 
-test('workout chooser separates routines, personal training and GRUNTR Trainer', () => {
+test('workout chooser has centered Routines and GRUNTR Trainer tiles', () => {
   const context = vm.createContext({
     ...accessGlobals,
     clientPreviewProgramSelected: false,
@@ -40,20 +40,24 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
     ...accessDeclarations, 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
-  for (const title of ['Routines', 'Personal Training', 'GRUNTR Trainer', 'Start Workout', 'Previous Workout',
-    'Explore Routines', 'Workout calendar', 'Strength + Mobility', 'Start with GRUNTR Trainer', 'Saved workouts', 'Benjamin’s Routine']) {
+  for (const title of ['Routines', 'GRUNTR Trainer', 'Start Workout', 'Plan Your Routine', 'Previous Workout',
+    'Explore Routines', 'Workout Calendar', 'Trainer Program', 'Start with GRUNTR Trainer', 'Saved FWB Workout', 'Benjamin’s Routine']) {
     assert.ok(markup.includes(title), `${title} is shown`);
   }
   const routines = markup.match(/id="workout-hub-routines"[\s\S]*?<\/section>/)[0];
   const trainer = markup.match(/id="workout-hub-trainer"[\s\S]*?<\/section>/)[0];
+  assert.doesNotMatch(markup, /id="workout-hub-personal"|data-client-workout-hub-tab="personal"/);
   assert(routines.indexOf('Start Workout') < routines.indexOf('Previous Workout'));
   assert.match(markup, /aria-selected="true"[^>]*[\s\S]*?data-client-workout-hub-tab="routines"/);
   assert.match(routines, /client-workout-hub-start/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym|data-client-saved-workout-plans/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym/);
   assert.doesNotMatch(html, /gym-directory-dialog|client-gym-directory\.js|client-gym-directory\.css/);
-  assert.match(routines, /data-client-workout-calendar-open[\s\S]*workout-shortcuts\/calendar\.jpg/);
-  assert.match(markup, /data-preview-program="0"[\s\S]*workout-shortcuts\/personal-training\.jpg[\s\S]*Trainer Program/);
+  assert.match(routines, /data-client-planned-routines/);
+  assert.doesNotMatch(routines, /data-client-workout-calendar-open/);
+  assert.match(trainer, /data-client-workout-calendar-open/);
+  assert.match(trainer, /data-preview-program="0"/);
+  assert.doesNotMatch(markup, /workout-choice-cover/);
   assert.doesNotMatch(markup, /Form Checks/);
   assert.match(markup, /data-preview-program="0"/);
   assert.match(trainer, /data-client-saved-workout-plans/);
@@ -68,7 +72,7 @@ test('workout chooser separates routines, personal training and GRUNTR Trainer',
   assert.match(html, /client-workout-hub-parity\.css/);
 });
 
-test('multiple eligible trainer programs stay in the Personal Training section', () => {
+test('only entitled trainer programs can open from GRUNTR Trainer', () => {
   const context = vm.createContext({
     ...accessGlobals,
     clientPreviewProgramSelected: false,
@@ -82,10 +86,10 @@ test('multiple eligible trainer programs stay in the Personal Training section',
   });
   vm.runInContext([...accessDeclarations, 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 4 }]);
-  const personal = markup.match(/id="workout-hub-personal"[\s\S]*?<\/section>/)[0];
-  assert.equal((personal.match(/data-preview-program="/g) || []).length, 2);
-  assert.match(personal, /Strength/);
-  assert.match(personal, /Mobility/);
+  const trainer = markup.match(/id="workout-hub-trainer"[\s\S]*?<\/section>/)[0];
+  assert.equal((trainer.match(/data-preview-program="/g) || []).length, 1);
+  assert.match(trainer, /data-preview-program="0"/);
+  assert.match(trainer, /Trainer Program/);
   assert.doesNotMatch(markup, /Hidden beta plan/);
 });
 

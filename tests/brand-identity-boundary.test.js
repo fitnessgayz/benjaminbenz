@@ -43,13 +43,14 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(client.theme_color, "#050806");
   assert.equal(coach.id, "/coach-app");
   assert.equal(coach.name, "GRUNTR Coach");
-  assert.equal(coach.background_color, "#101113");
-  assert.equal(coach.theme_color, "#101113");
-  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-22e30eae/")));
-  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any"));
-  const exact = fs.readFileSync(path.join(root, "images/gruntr/client-22e30eae/icon-1024.png"));
-  assert.equal(createHash("sha256").update(exact).digest("hex"), "4a05711ec176a7b062566730453d83b2a51eae4dbb9857e9bf49d1e6bbad61ee");
-  assert.deepEqual(coach.icons, client.icons);
+  assert.equal(coach.background_color, "#f2f4f6");
+  assert.equal(coach.theme_color, "#f2f4f6");
+  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-pulse-1380/")));
+  assert.ok(coach.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-22e30eae/")));
+  assert.deepEqual(website.icons, coach.icons.filter((icon) => icon.purpose === "any"));
+  assert.notDeepEqual(coach.icons, client.icons);
+  const exact = fs.readFileSync(path.join(root, "images/gruntr/client-pulse-1380/icon-1024.png"));
+  assert.equal(createHash("sha256").update(exact).digest("hex"), "857390bf0e482587a4dd3ba9e8b94bb4a039d8f155c00e08c80f52d1e9f3cb24");
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
@@ -57,11 +58,11 @@ test("client and coach manifests use approved installed identities", () => {
 test("client auth and onboarding stay inside the GRUNTR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
-    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=22e30eae"/);
+    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=pulse-1380"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
-    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-22e30eae\/icon-180\.png"/);
-    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/client-22e30eae\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png"/);
+    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/client-pulse-1380\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
   }
 
   const login = read("client-login.html");
@@ -77,14 +78,14 @@ test("installed entry pages expose the same product names and deep-ink browser c
   assert.match(clientDashboard, /apple-mobile-web-app-title" content="GRUNTR"/);
   assert.match(clientDashboard, /application-name" content="GRUNTR"/);
   assert.match(clientDashboard, /<title>GRUNTR<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/client-22e30eae\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/client-pulse-1380\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {
     const html = read(file);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR Coach"/);
     assert.match(html, /application-name" content="GRUNTR Coach"/);
-    assert.match(html, /theme-color" content="#101113"/);
+    assert.match(html, /theme-color" content="#f2f4f6"/);
   }
 
   assert.match(read("coach-admin.html"), /rel="manifest" href="\/coach\.webmanifest"/);

@@ -54,6 +54,75 @@
     }));
   }
 
+  function personalRecordLoads(exerciseName, record) {
+    const isAssisted = (name) => /^(?:machine )?assisted (?:machine )?(?:dips?|pull ?ups?)(?: machine)?$/
+      .test(String(name || "").toLowerCase().match(/[a-z]+/g)?.join(" ") || "");
+    if (isAssisted(exerciseName) || isAssisted(record?.exercise_name)) {
+      return { message: "This PR shows machine assistance. Percentage loads require a logged resistance weight." };
+    }
+    const reps = Number(record?.reps);
+    const oneRepMax = reps <= 10 ? estimate(record?.weight_used, reps) : null;
+    if (!Number.isFinite(oneRepMax)) {
+      return { message: "Log a weighted set of 1–10 reps to see percentage loads." };
+    }
+    const weights = (values) => values.map((percentage) => {
+      const load = oneRepMax * (percentage / 100);
+      return { percentage, weight: load < 10 ? Math.round(load * 100) / 100 : roundToIncrement(load) };
+    });
+    return { oneRepMax, warmUps: weights([40, 50, 60]), working: weights(percentages) };
+  }
+
+  function openPersonalRecord(trigger, exerciseName, record, onUse) {
+    const loads = personalRecordLoads(exerciseName, record);
+    const formatWeight = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+    const weightLabel = (weight) => `${formatWeight.format(weight)} lb`;
+    const rows = (items) => items.map(({ percentage, weight }) => `
+      <li>
+        <span>${percentage}%</span><strong>${weightLabel(weight)}</strong>
+        ${onUse && weight > 0 ? `<button type="button" data-pr-load="${weight}" aria-label="Use ${weightLabel(weight)} for this set">Use</button>` : ""}
+      </li>`).join("");
+    const sheet = document.createElement("dialog");
+    sheet.className = "one-rm-dialog client-pr-load-dialog";
+    sheet.setAttribute("aria-labelledby", "client-pr-load-title");
+    sheet.innerHTML = `<form method="dialog" class="one-rm-card">
+      <header class="one-rm-heading"><h2 id="client-pr-load-title">PR Weight Estimates</h2></header>
+      <div class="client-pr-load-summary">
+        <strong data-pr-exercise></strong>
+        <span>${weightLabel(Number(record.weight_used))} × ${Number(record.reps)} reps PR</span>
+        <span data-pr-gym hidden></span>
+      </div>
+      ${loads.message ? `<p class="one-rm-prompt">${loads.message}</p>` : `
+        <div class="one-rm-result">
+          <span>Estimated 1RM · 100%</span>
+          <strong>${weightLabel(loads.oneRepMax)}</strong>
+          <small>Use these estimated loads as a starting point and adjust to your equipment and effort.</small>
+        </div>
+        <section class="client-pr-load-group"><h3>Warm-up loads</h3><ul>${rows(loads.warmUps)}</ul></section>
+        <section class="client-pr-load-group"><h3>Working loads</h3><ul>${rows(loads.working)}</ul></section>
+      `}
+      <p class="one-rm-prompt" data-pr-load-error role="status" hidden>This set changed. Close the sheet and select the set again.</p>
+      <button class="one-rm-done" type="submit" autofocus>Done</button>
+    </form>`;
+    sheet.querySelector("[data-pr-exercise]").textContent = exerciseName;
+    if (record.gym_name) {
+      const gym = sheet.querySelector("[data-pr-gym]");
+      gym.textContent = record.gym_name;
+      gym.hidden = false;
+    }
+    sheet.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-pr-load]");
+      if (!button) return;
+      if (onUse?.(Number(button.dataset.prLoad))) sheet.close();
+      else sheet.querySelector("[data-pr-load-error]").hidden = false;
+    });
+    sheet.addEventListener("close", () => {
+      sheet.remove();
+      trigger?.focus({ preventScroll: true });
+    }, { once: true });
+    document.body.append(sheet);
+    sheet.showModal();
+  }
+
   function percentageForTargetReps(reps) {
     const safeReps = Number(reps);
     if (!Number.isInteger(safeReps) || safeReps < 1 || safeReps > 30) return null;
@@ -349,6 +418,6 @@
 
   global.FWBOneRepMax = {
     estimate, roundToIncrement, trainingWeights, percentageForTargetReps,
-    trainingRecommendation, programForLog, calculatorIcon, open
+    trainingRecommendation, programForLog, calculatorIcon, open, personalRecordLoads, openPersonalRecord
   };
 })(window, document);
