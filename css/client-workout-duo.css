@@ -1,0 +1,151 @@
+.client-dashboard-page .workout-duo-layout,
+.client-dashboard-page .workout-duo-layout > .custom-workout-builder {
+  min-width: 0;
+}
+
+.client-dashboard-page .workout-duo-sidebar {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  .client-dashboard-page .workout-duo-shell {
+    container: workout-duo / inline-size;
+    min-width: 0;
+  }
+
+  @container workout-duo (min-width: 700px) {
+    .client-dashboard-page .workout-duo-layout {
+      display: grid;
+      grid-template-columns: clamp(200px, 30cqi, 250px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .client-dashboard-page .workout-duo-layout > .custom-workout-builder:only-child {
+      grid-column: 1 / -1;
+    }
+
+    .client-dashboard-page .workout-duo-layout .is-workout-duo-inactive-group {
+      display: none !important;
+    }
+
+    .client-dashboard-page .workout-duo-sidebar {
+      position: sticky;
+      inset-block-start: 1rem;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      min-width: 0;
+      max-height: calc(100dvh - 2rem);
+      padding-inline-end: 12px;
+      border-inline-end: 1px solid var(--line, #34363b);
+      color: var(--ink, #f6f7f8);
+    }
+
+    .workout-duo-sidebar header h3 {
+      margin: 0;
+      color: var(--secondary-accent, #59b5ff);
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .045em;
+    }
+
+    .workout-duo-sidebar header p {
+      margin: 4px 0 0;
+      font-size: .78rem;
+      color: var(--muted, #a5abb6);
+    }
+
+    .workout-duo-sidebar ol {
+      display: grid;
+      gap: 6px;
+      align-content: start;
+      min-height: 0;
+      margin: 0;
+      padding: 2px;
+      overflow: auto;
+      overscroll-behavior: contain;
+      list-style: none;
+    }
+
+    .workout-duo-sidebar footer {
+      display: grid;
+      gap: 8px;
+    }
+
+    .workout-duo-sidebar button {
+      width: 100%;
+      min-width: 0;
+      min-height: 44px;
+      padding: 8px;
+      border: 1px solid var(--line, #34363b);
+      border-radius: 11px;
+      background: var(--surface, #24262a);
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .workout-duo-sidebar button[data-workout-duo-exercise] {
+      display: grid;
+      grid-template-columns: minmax(26px, auto) minmax(0, 1fr) auto;
+      align-items: center;
+      min-height: 52px;
+      gap: 7px;
+      text-align: start;
+    }
+
+    .workout-duo-sidebar button[aria-current="true"] {
+      border-color: var(--secondary-accent, #59b5ff);
+      box-shadow: inset 0 0 0 1px var(--secondary-accent, #59b5ff);
+    }
+
+    .workout-duo-sidebar button:focus-visible {
+      outline: 2px solid var(--secondary-accent, #59b5ff);
+      outline-offset: 1px;
+    }
+
+    .workout-duo-code {
+      display: grid;
+      place-items: center;
+      min-height: 26px;
+      padding: 3px;
+      border-radius: 7px;
+      background: var(--canvas, #151719);
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .workout-duo-copy strong {
+      display: block;
+      font-size: .84rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .workout-duo-copy small,
+    .workout-duo-progress {
+      color: var(--muted, #a5abb6);
+      font-size: .73rem;
+    }
+
+    .workout-duo-progress {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .workout-duo-sidebar footer button {
+      font-weight: 750;
+    }
+
+    .workout-duo-sidebar footer [data-workout-exercise-add] {
+      border-color: var(--lime, #ffd400);
+      background: var(--lime, #ffd400);
+      color: #101113;
+    }
+
+    .workout-duo-sidebar footer button:disabled {
+      opacity: .46;
+      cursor: default;
+    }
+  }
+}

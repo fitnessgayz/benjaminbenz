@@ -109,6 +109,61 @@
 .one-rm-recommendation button:disabled { cursor: default; opacity: .48; }
 .one-rm-done { min-height: 50px; border: 1px solid #111411; border-radius: 12px; background: #ffd400; color: #111411; font: 900 1rem/1 Inter, sans-serif; cursor: pointer; }
 
+body.client-dashboard-page #client-workout-panels button.ios-log-previous[data-client-pr-loads] {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+body.client-dashboard-page #client-workout-panels button.ios-log-previous[data-client-pr-loads]:enabled {
+  color: var(--client-neon, #2c9cff) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+body.client-dashboard-page #client-workout-panels [data-client-pr-loads]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.client-pr-load-summary { display: grid; gap: 4px; }
+.client-pr-load-summary span { font-size: .85rem; }
+.client-pr-load-group h3 { margin: 0; }
+.client-pr-load-group ul { margin: 4px 0 0; padding: 0; list-style: none; }
+.client-pr-load-group li {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px solid #68706455;
+}
+.client-pr-load-group button {
+  min-width: 46px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+:root:not([data-client-theme="light"]) .client-pr-load-dialog {
+  background: #181b20;
+  border-color: #3e4855;
+  color: #f7f8fa;
+}
+:root:not([data-client-theme="light"]) .client-pr-load-dialog .one-rm-prompt {
+  color: #bdc5d0;
+}
+
 @media (max-width: 600px) {
   .one-rm-card { padding: 18px 15px; }
   .one-rm-pr-trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

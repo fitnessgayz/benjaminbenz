@@ -210,7 +210,7 @@ const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
-const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-3";
+const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=gruntr-pulse-1380";
 let exerciseLibraryEntries = [];
 const exerciseNameRefreshTimers = new WeakMap();
 const exerciseNameRefreshDelay = 120;
@@ -5353,7 +5353,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <em>Set</em>
         <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
       </label>
-      <span class="ios-log-previous" data-set-previous aria-label="No personal record">—</span>
+      <button class="ios-log-previous" type="button" data-set-previous data-client-pr-loads aria-haspopup="dialog" aria-label="No personal record" disabled>—</button>
       <label class="set-input-field">
         <em>Weight</em>
         <input type="number" min="0" step="0.5" placeholder="${escapeHtml(weightPlaceholder)}" data-default-placeholder="${escapeHtml(weightPlaceholder)}" data-set-weight />
@@ -6650,7 +6650,7 @@ function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
 
   const sourceLabel = entryDate ? `${workoutTitle} from ${formatLogDate(entryDate)}` : workoutTitle;
 
-  return `Copied ${sourceLabel}. Enter your values for this workout.`;
+  return `Repeating ${sourceLabel}. Log your sets for this new session.`;
 }
 
 function customWorkoutStorageTitle(draft = activeCustomWorkoutDraft()) {
@@ -8199,8 +8199,8 @@ async function showRestTimerCompleteNotification() {
 
   const options = {
     body: "Your next set is ready.",
-    icon: "/images/gruntr/client-22e30eae/icon-192.png",
-    badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
+    icon: "/images/gruntr/client-pulse-1380/icon-192.png",
+    badge: "/images/gruntr/client-pulse-1380/notification-badge-96.png",
     tag: "fwb-rest-timer-complete",
     renotify: true,
     silent: false,
@@ -10695,6 +10695,7 @@ function scrollToNextCustomWorkoutGroupedExercise(carousel, currentIndex) {
   const nextIndex = nextCustomWorkoutGroupedExerciseIndex(carousel, currentIndex);
   if (nextIndex < 0) return;
   const logElement = customWorkoutGroupedLogElements(carousel)[nextIndex];
+  globalThis.ClientWorkoutDuo?.advance(carousel, logElement);
   delete logElement.dataset.exerciseManuallyCollapsed;
   refreshCustomWorkoutGroupedCompletion(carousel);
   window.requestAnimationFrame(() => {
@@ -10782,7 +10783,9 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
     >
       <button class="custom-workout-grouped-code" type="button" data-custom-grouped-set-options
         aria-label="Options for ${escapeHtml(kindLabel ? `${kindLabel}, ${context}` : context)}">${escapeHtml(marker)}</button>
-      <span class="ios-log-previous" aria-label="${escapeHtml(row?.dataset.personalRecordDescription || "No personal record")}">${escapeHtml(row?.dataset.personalRecordLabel || "—")}</span>
+      ${row?.dataset.personalRecordLabel && row.dataset.personalRecordLabel !== "—" && kind !== "timed"
+        ? `<button class="ios-log-previous" type="button" data-client-pr-loads aria-haspopup="dialog" aria-label="${escapeHtml(row.dataset.personalRecordDescription)}">${escapeHtml(row.dataset.personalRecordLabel)}</button>`
+        : `<span class="ios-log-previous" aria-label="${escapeHtml(row?.dataset.personalRecordDescription || "No personal record")}">${escapeHtml(row?.dataset.personalRecordLabel || "—")}</span>`}
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.dataset.timedSet === "true" ? "Seconds" : row?.querySelector("[data-set-reps]")?.placeholder || "", "", row?.dataset.timedSet === "true" ? "Seconds" : "")}
       <button class="custom-workout-grouped-log-check" type="button" data-custom-grouped-set-toggle
@@ -13437,6 +13440,7 @@ function syncCustomWorkoutCarousel(panel, options = {}) {
   const focusCard = options.focusCard;
   const focusCarousel = focusCard?.closest("[data-custom-workout-carousel]");
   if (focusCarousel) {
+    globalThis.ClientWorkoutDuo?.select(panel, focusCard.querySelector("[data-exercise-log]"));
     const focusIndex = customWorkoutCarouselCards(focusCarousel).indexOf(focusCard);
     moveCustomWorkoutCarousel(focusCarousel, Math.max(focusIndex, 0), { instant: options.instant });
     if (focusCarousel.dataset.customWorkoutGrouped === "true") {
@@ -13632,6 +13636,7 @@ function syncWorkoutExerciseList(panel) {
   const list = section?.querySelector("[data-workout-exercise-list-items]");
   if (!list) return;
   const logs = workoutExerciseListLogs(panel);
+  globalThis.ClientWorkoutDuo?.sync(panel, logs);
   const entries = logs.map((log, index) => {
     const input = exerciseNameInputForLog(log);
     return {
@@ -13686,7 +13691,7 @@ function syncWorkoutExerciseList(panel) {
 
 function jumpToWorkoutExercise(button) {
   const panel = button?.closest(".client-workout-panel");
-  const index = Number(button?.dataset.workoutExerciseJump);
+  const index = Number(button?.dataset.workoutExerciseJump ?? button?.dataset.workoutDuoExercise);
   if (!panel || !Number.isInteger(index) || index < 0) return;
   const log = workoutExerciseListLogs(panel)[index];
   const card = log?.closest("[data-custom-exercise-card]");
@@ -13694,6 +13699,9 @@ function jumpToWorkoutExercise(button) {
   const carousel = card.closest("[data-custom-workout-carousel]");
   const localIndex = customWorkoutGroupedLogElements(carousel).indexOf(log);
   let target = card;
+  if (globalThis.ClientWorkoutDuo?.isVisible(panel)) {
+    globalThis.ClientWorkoutDuo.select(panel, log, { expand: true });
+  }
   setWorkoutExerciseCardExpanded(card, true);
   if (carousel?.dataset.customWorkoutGrouped === "true") {
     target = carousel.querySelector(`[data-ios-log-exercise-index="${localIndex}"]`) ||
@@ -13926,6 +13934,7 @@ function syncCustomWorkoutExerciseControls(panel) {
 function openCustomWorkoutExerciseEditor(card, { focusInput = true } = {}) {
   const panel = card?.closest(".client-workout-panel-custom");
   if (!panel) return;
+  globalThis.ClientWorkoutDuo?.revealTarget(panel, card.querySelector("[data-exercise-log]"));
   const carousel = card.closest("[data-custom-workout-carousel]");
   const index = customWorkoutCarouselCards(carousel).indexOf(card);
   setWorkoutExerciseCardExpanded(card, true);
@@ -14434,6 +14443,8 @@ function customWorkoutPanelMarkup(index) {
         gymName: activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle) || "",
         format, canChangeFormat: true
       })}
+      <div class="workout-duo-shell"><div class="workout-duo-layout">
+      ${globalThis.ClientWorkoutDuo && !isCoachDashboardPreview ? globalThis.ClientWorkoutDuo.markup() : ""}
       <div class="custom-workout-builder">
         <div class="custom-workout-primary-actions">
           <div data-custom-workout-start-control>
@@ -14471,6 +14482,7 @@ function customWorkoutPanelMarkup(index) {
           ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
         </div>
       </div>
+      </div></div>
       ${floatingWorkoutFinishMarkup()}
     </section>
   `;
@@ -15036,7 +15048,9 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     copy: '<rect x="8" y="4" width="12" height="16" rx="2"/><path d="M16 4V2H6a2 2 0 0 0-2 2v12h4"/>',
     plan: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="M18 15.8v4.4m-2.2-2.2h4.4" stroke="#1b2117" stroke-width="1.8"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
-    sparkles: '<path d="m9 3 2.2 5.8L17 11l-5.8 2.2L9 19l-2.2-5.8L1 11l5.8-2.2L9 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/>'
+    sparkles: '<path d="m9 3 2.2 5.8L17 11l-5.8 2.2L9 19l-2.2-5.8L1 11l5.8-2.2L9 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/>',
+    bookmark: '<path d="M5 4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v18l-7-5-7 5V4Z"/>',
+    list: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'
   };
   return `<span class="workout-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">${icons[icon] || icons.calendar}</svg></span>
     <span class="workout-choice-copy">
@@ -15073,7 +15087,7 @@ function currentClientPersonalTrainingAccess() {
 }
 
 function allowedClientWorkoutHubSection(section, state) {
-  return section === "trainer" || (section === "personal" && state === "available") ? section : "routines";
+  return section === "trainer" || (section === "personal" && state === "available") ? "trainer" : "routines";
 }
 
 function selectClientWorkoutHubSection(section) {
@@ -15093,51 +15107,39 @@ function clientWorkoutListMarkup(workouts) {
   if (!access.programs.some(program => program.id === currentProgram?.id)) clientPreviewProgramSelected = false;
   if (!clientPreviewProgramSelected) {
     const programs = access.programs;
-    const sections = [["routines", "Routines"], ["personal", "Personal Training"], ["trainer", "GRUNTR Trainer"]];
+    const sections = [["routines", "Routines"], ["trainer", "GRUNTR Trainer"]];
     const active = allowedClientWorkoutHubSection(clientWorkoutHubSection, access.state);
-    const lockHint = access.state === "app-only" ? "Personal Training isn’t included with app-only access."
-      : "Personal Training access is not verified.";
     const panel = (id, content) => `<section id="workout-hub-${id}" class="workout-choice-list client-workout-hub-section"
       role="tabpanel" aria-labelledby="workout-hub-tab-${id}" ${id === active ? "" : "hidden"}>${content}</section>`;
-    const card = (action, icon, title, description, id, cover) => {
+    const card = (action, icon, title, description, id, extraClass = "") => {
       const content = clientWorkoutChoiceContent({
         icon, title, description, titleId: `${id}-title`, descriptionId: `${id}-description`
       });
-      return `<button type="button" class="workout-choice-card workout-hub-choice${cover ? " has-shortcut-cover" : ""}" ${action}
-        aria-labelledby="${id}-title" aria-describedby="${id}-description">${cover ? `
-          <img class="workout-choice-cover" src="/images/gruntr/workout-shortcuts/${cover}.jpg" alt="" loading="lazy" decoding="async" />
-          <span class="workout-choice-card-content">${content}</span>` : content}</button>`;
+      return `<button type="button" class="workout-choice-card workout-hub-choice ${extraClass}" ${action}
+        aria-labelledby="${id}-title" aria-describedby="${id}-description">${content}</button>`;
     };
+    const trainerProgramDescription = access.state === "available"
+      ? "Open workouts assigned by your coach."
+      : access.state === "app-only" ? "Requires a coaching membership." : "Coaching access hasn’t been verified.";
     return `<div class="workout-program-picker client-workout-hub">
       <div class="client-workout-hub-tabs" role="tablist" aria-label="Workout sections">${sections.map(([id, label]) => `
         <button id="workout-hub-tab-${id}" type="button" role="tab" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}"
-          aria-controls="workout-hub-${id}" data-client-workout-hub-tab="${id}"
-          ${id === "personal" && access.state !== "available" ? 'disabled aria-describedby="client-personal-training-access-hint"' : ""}>${label}</button>`).join("")}</div>
-      ${access.state !== "available" ? `<p id="client-personal-training-access-hint" class="client-workout-hub-empty">${escapeHtml(lockHint)}</p>` : ""}
+          aria-controls="workout-hub-${id}" data-client-workout-hub-tab="${id}">${label}</button>`).join("")}</div>
       ${panel("routines", `
-        <button type="button" class="client-workout-hub-start" data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
-          data-client-workout-selection-target="Log Workout"><span aria-hidden="true">＋</span> Start Workout</button>
-        <button type="button" class="client-workout-hub-start client-workout-hub-resume" data-resume-active-workout>
-          <span aria-hidden="true">▶</span> Resume Workout
-        </button>
-        ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore", "explore")}
-        ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous", "previous")}
-        ${card("data-client-workout-calendar-open", "calendarPlus", "Workout calendar", "Plan sessions from your coach or saved workouts.", "workout-calendar", "calendar")}
+        ${card('data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Log Workout"',
+          "plus", "Start Workout", "Build a workout as you go.", "workout-start", "client-workout-hub-start workout-choice-quick")}
+        ${card('data-resume-active-workout', "plus", "Resume Workout", "Continue your saved workout.",
+          "workout-resume", "client-workout-hub-start client-workout-hub-resume workout-choice-quick")}
+        ${card('data-client-planned-routines', "list", "Plan Your Routine", "Save exercises for your next visit.", "workout-planned")}
+        ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore")}
+        ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous")}
       `)}
-      ${panel("personal", access.state === "available" ? `
-        ${programs.map(program => {
-          const count = (program.workouts || []).length;
-          const index = clientAvailablePrograms.indexOf(program);
-          const name = program.program_title || "Your assigned program";
-          const description = count ? `${name} · ${count} ${count === 1 ? "workout" : "workouts"}` : name;
-          return card(`data-preview-program="${index}"`, "calendar", "Trainer Program", description,
-            `workout-personal-${index}`, "personal-training");
-        }).join("")}
-      ` : "")}
       ${panel("trainer", `
-        ${card("data-client-generate-workout-plan", "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan around your schedule.", "workout-fwb-trainer", "trainer")}
-        ${card("data-client-saved-workout-plans", "saved", "Saved workouts", "Open one of your saved plans.", "workout-fwb-saved", "saved")}
-        ${card('data-generate-workout data-generator-preset="today"', "plus", "Build one session", "Generate a workout for today.", "workout-fwb-today")}
+        ${card('data-client-workout-choice-menu="generate"', "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan or a workout for today.", "workout-fwb-trainer", "workout-choice-quick")}
+        ${card("data-client-saved-workout-plans", "bookmark", "Saved FWB Workout", "Open a program you’ve saved.", "workout-fwb-saved")}
+        ${card(access.state === "available" ? `data-preview-program="${clientAvailablePrograms.indexOf(programs[0])}"` : 'disabled',
+          access.state === "available" ? "list" : "saved", "Trainer Program", trainerProgramDescription, "workout-personal")}
+        ${card("data-client-workout-calendar-open", "calendarPlus", "Workout Calendar", "Plan sessions from your coach or saved workouts.", "workout-calendar")}
       `)}
     </div>${clientWorkoutChoiceDialogMarkup()}`;
   }
@@ -15640,6 +15642,8 @@ function renderClientWorkoutTabs(workouts = []) {
       </div>
       ${workoutLoggerSetupMarkup(index, { gymName: storedWorkoutGymLocation(title) || "", format: workoutFormat })}
       ${workoutStartControlMarkup(title)}
+      <div class="workout-duo-shell"><div class="workout-duo-layout">
+        ${globalThis.ClientWorkoutDuo && !isCoachDashboardPreview ? globalThis.ClientWorkoutDuo.markup() : ""}
       <div class="custom-workout-builder" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
         ${warmupLogFields(title, { showDate: false })}
         ${workoutExerciseMarkup(workout, title)}
@@ -15648,6 +15652,7 @@ function renderClientWorkoutTabs(workouts = []) {
         ${cardioLogFields(title, { showDate: false })}
         ${workoutActionsMarkup(workout, { includeCardio: true })}
       </div>
+      </div></div>
       ${floatingWorkoutFinishMarkup({ assigned: true })}
     </section>
   `;
@@ -16346,6 +16351,7 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
     if (previousCell) {
       previousCell.textContent = personalRecordLabel;
       previousCell.setAttribute("aria-label", personalRecordDescription);
+      previousCell.disabled = !best || row.dataset.timedSet === "true";
     }
 
     if (weightInput) {
@@ -17029,12 +17035,6 @@ function customWorkoutFormatForHistoryLogs(logs = []) {
     return normalizeCustomWorkoutFormat(inferWorkoutFormat(assignedWorkout));
   }
 
-  // Historical Custom Workout rows do not store their original format. Keep the
-  // safe straight-set fallback and let the client review the visible picker.
-  if (sourceTitle.startsWith(customWorkoutTitle.toLowerCase())) {
-    return "single";
-  }
-
   if (sourceTitle.includes("circuit")) {
     return "circuit";
   }
@@ -17046,7 +17046,7 @@ function customWorkoutFormatForHistoryLogs(logs = []) {
   const sourceGroups = new Map();
   logs.forEach((log) => {
     const match = String(log.exercise_code || "").trim().toUpperCase().match(/^([A-Z]+)(\d+)$/);
-    if (!match) {
+    if (!match || ["CW", "ADD"].includes(match[1])) {
       return;
     }
     if (!sourceGroups.has(match[1])) {
@@ -17055,12 +17055,16 @@ function customWorkoutFormatForHistoryLogs(logs = []) {
     sourceGroups.get(match[1]).add(match[2]);
   });
 
+  // Native planned circuits carry C1, C2, … in their saved set codes.
+  if (sourceGroups.size === 1 && sourceGroups.get("C")?.size >= 3) return "circuit";
+
+  // Older custom logs that only have CW/ADD codes lack grouping information.
   return Array.from(sourceGroups.values()).some((positions) => positions.size > 1)
     ? "superset"
     : "single";
 }
 
-function copiedCustomWorkoutStorageTitle(logs = [], copiedAt = new Date()) {
+function copiedCustomWorkoutStorageTitle(logs = [], copiedAt = new Date(), sessionKey = "") {
   const rawSourceTitle = String(logs[0]?.workout_title || "Previous workout").trim();
   const sourceTitle = rawSourceTitle.toLowerCase().startsWith(customWorkoutTitle.toLowerCase())
     ? "Previous custom"
@@ -17070,7 +17074,7 @@ function copiedCustomWorkoutStorageTitle(logs = [], copiedAt = new Date()) {
     .join(":");
   const milliseconds = String(copiedAt.getMilliseconds()).padStart(3, "0");
 
-  return `${customWorkoutTitle} · ${sourceTitle} · ${time}.${milliseconds}`;
+  return `${customWorkoutTitle} · ${sourceTitle} · ${sessionKey || `${time}.${milliseconds}`}`;
 }
 
 function customWorkoutDraftHasMeaningfulContent(draft, currentDate = "") {
@@ -17167,6 +17171,17 @@ function customWorkoutDraftFromLogs(logs = [], options = {}) {
     left.name.localeCompare(right.name)
   ));
   const sourceGroupIndexes = new Map();
+  const sourceGroupFor = (exercise, index) => {
+    const code = exercise.code.match(/^([A-Z]+)\d+$/)?.[1];
+    return code && !["CW", "ADD"].includes(code) ? code : `EXERCISE-${index}`;
+  };
+  const strengthExercises = exercises.filter(exercise => exercise.code !== cardioExerciseCode).length;
+  const groupSizes = new Map();
+  exercises.forEach((exercise, index) => {
+    if (exercise.code === cardioExerciseCode) return;
+    const key = sourceGroupFor(exercise, index);
+    groupSizes.set(key, (groupSizes.get(key) || 0) + 1);
+  });
 
   return {
     format,
@@ -17205,18 +17220,20 @@ function customWorkoutDraftFromLogs(logs = [], options = {}) {
 
       const warmUpCount = warmUpSetNumbers.size;
       const workingSetCount = Math.max(1, ...workingSets.keys());
-      const sourceGroupKey = exercise.code.match(/^([A-Za-z]+)/)?.[1]?.toUpperCase() || `EXERCISE-${exerciseIndex}`;
+      const sourceGroupKey = sourceGroupFor(exercise, exerciseIndex);
 
       if (!sourceGroupIndexes.has(sourceGroupKey)) {
         sourceGroupIndexes.set(sourceGroupKey, sourceGroupIndexes.size);
       }
 
+      const matchesGroup = !cardioSets && (format === "circuit" ? strengthExercises >= 3 : groupSizes.get(sourceGroupKey) >= 2);
       return {
         code: customExerciseCode(exerciseIndex),
         name: exercise.name,
         ...(exercise.sets.find((set) => set.progression_target)?.progression_target
           ? { progression: exercise.sets.find((set) => set.progression_target).progression_target } : {}),
         group: format === "superset" ? sourceGroupIndexes.get(sourceGroupKey) : 0,
+        groupType: matchesGroup ? format : "single",
         date,
         notes: "",
         skipped: false,
@@ -17738,10 +17755,12 @@ function renderClientTrainingLogs() {
       .some((superset) => Array.from(superset.exercises.values()).some((exercise) => exercise.sets.some((set) => (
         ["fitbod", "hevy", "client_log_correction"].includes(String(set.source || "").toLowerCase())
       ))));
-    const canCopyToCustom = workoutHistoryLogsForCopy(workout.history_key).length > 0;
+    const actionLogs = ownedWorkoutHistoryActionLogs(workout.history_key);
+    const canCopyToCustom = actionLogs.length > 0;
+    const canSaveRoutine = Boolean(window.FWB_CLIENT_PLANNED_ROUTINES?.historyExerciseNames(actionLogs).length);
     const shareButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-share-button" type="button" data-share-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Share ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}">Share workout</button>` : "";
     const deleteButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-delete-button" type="button" data-delete-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Delete ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}" ${clientWorkoutHistoryDeleteInFlight ? "disabled" : ""}>Delete workout</button>` : "";
-    const copyButtonLabel = `Copy ${displayTitle} from ${formatLogDate(workout.entry_date)} to Custom workout`;
+    const copyButtonLabel = `Repeat ${displayTitle} from ${formatLogDate(workout.entry_date)}`;
     const detailsId = `client-workout-history-details-${workoutIndex}`;
     const weekdayDate = /^\d{4}-\d{2}-\d{2}$/.test(String(workout.entry_date || ""))
       ? new Date(`${workout.entry_date}T12:00:00`) : null;
@@ -17811,7 +17830,8 @@ function renderClientTrainingLogs() {
           <div class="client-logs-detail-heading"><span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span><strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong></div>
           <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
           <dl class="training-log-history-metrics"><div><dt>Exercises</dt><dd>${metrics.exerciseCount}</dd></div><div><dt>Sets</dt><dd>${metrics.workingSetCount}</dd></div><div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div></dl>
-          <div class="client-logs-detail-actions client-logs-detail-primary-actions">${shareButtonMarkup}${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}">Copy workout</button>` : ""}</div>
+          <div class="client-logs-detail-actions client-logs-detail-primary-actions">${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}" aria-describedby="${detailsId}-repeat-help"><strong>Repeat Workout</strong><small id="${detailsId}-repeat-help">Start a fresh session now.</small></button>` : ""}
+          ${canSaveRoutine ? `<button class="training-log-share-button" type="button" data-save-workout-as-routine="${escapeHtml(workout.history_key)}">Save as Routine</button>` : ""}${shareButtonMarkup}</div>
           ${appleWorkoutMarkup}${detailsHtml}
           ${deleteButtonMarkup ? `<div class="client-logs-detail-actions"><details><summary aria-label="More workout actions">⋯</summary>${deleteButtonMarkup}</details></div>` : ""}
           <button class="client-logs-detail-back" type="button" data-client-workout-history-close>Back to workouts</button>
@@ -18349,8 +18369,63 @@ function openClientWorkoutCopyHistory() {
   });
 }
 
+function ownedWorkoutHistoryActionLogs(sessionKey) {
+  const email = normalizeClientEmail(activeClientEmail);
+  if (!activeDashboardUser?.id || isCoachDashboardPreview || !email ||
+    normalizeClientEmail(activeDashboardUser.email) !== email) return [];
+  return workoutHistoryLogsForCopy(sessionKey).filter(log => normalizeClientEmail(log.client_email) === email);
+}
+
+function openClientPlannedRoutines(button, logKey = null) {
+  const planner = window.FWB_CLIENT_PLANNED_ROUTINES;
+  const userId = activeDashboardUser?.id;
+  const email = normalizeClientEmail(activeClientEmail);
+  const isCurrentAccount = () => !isCoachDashboardPreview && Boolean(userId && email) &&
+    activeDashboardUser?.id === userId && normalizeClientEmail(activeDashboardUser.email) === email &&
+    normalizeClientEmail(activeClientEmail) === email;
+  if (!planner) { window.alert("Plan Your Routine could not load. Refresh the page and try again."); return; }
+  if (!isCurrentAccount()) { window.alert("Sign in as a client to manage your routines."); return; }
+
+  let seed;
+  if (logKey !== null) {
+    const logs = ownedWorkoutHistoryActionLogs(logKey);
+    const names = planner.historyExerciseNames(logs, name => approvedExerciseForName(name)?.name || name);
+    if (!names.length) { setClientWorkoutCopyStatus("This workout has no exercises to save as a routine."); return; }
+    seed = { names, title: workoutDisplayTitle(logs[0].workout_title) };
+  }
+
+  void planner.open({
+    supabase: supabaseClient, userId, isCurrentAccount, returnFocus: button, library: exerciseLibraryEntries,
+    onSaved() {
+      setClientDashboardTab("workouts");
+      selectClientWorkoutHubSection("routines");
+    },
+    onStart(launch) {
+      if (workoutElapsedTimerState) {
+        if (!window.confirm("Workout in progress. Resume your current workout?")) return false;
+        resumeActiveWorkout();
+        return true;
+      }
+      const workout = { ...launch, format: launch.formatRaw };
+      const draft = generatedCustomWorkoutDraft(workout);
+      draft.exercises.forEach((exercise, index) => {
+        if (draft.format === "circuit") exercise.group = 0;
+        if (draft.format === "superset" && !workout.exercises[index].groupID) exercise.groupType = "single";
+      });
+      return useGeneratedClientWorkout(workout, draft);
+    },
+  }, seed);
+}
+
 function handleCopyWorkoutToCustom() {
   document.addEventListener("click", (event) => {
+    const plannedRoutines = event.target.closest("[data-client-planned-routines]");
+    const saveRoutine = event.target.closest("[data-save-workout-as-routine]");
+    if (plannedRoutines || saveRoutine) {
+      event.preventDefault();
+      openClientPlannedRoutines(plannedRoutines || saveRoutine, saveRoutine?.dataset.saveWorkoutAsRoutine ?? null);
+      return;
+    }
     const button = event.target.closest("[data-copy-workout-to-custom]");
 
     if (!button) {
@@ -18358,10 +18433,15 @@ function handleCopyWorkoutToCustom() {
     }
 
     const sessionKey = String(button.dataset.copyWorkoutToCustom || "");
-    const sourceLogs = workoutHistoryLogsForCopy(sessionKey);
+    const sourceLogs = ownedWorkoutHistoryActionLogs(sessionKey);
 
     if (sourceLogs.length === 0) {
-      setClientWorkoutCopyStatus("This workout could not be copied. Refresh the page and try again.");
+      setClientWorkoutCopyStatus("This workout could not be repeated. Refresh the page and try again.");
+      return;
+    }
+
+    if (workoutElapsedTimerState) {
+      if (window.confirm("Workout in progress. Resume your current workout?")) resumeActiveWorkout();
       return;
     }
 
@@ -18374,57 +18454,49 @@ function handleCopyWorkoutToCustom() {
         customWorkoutDraftHasMeaningfulContent(existingDraft, date) ||
         customWorkoutPanelHasAuxiliaryContent(existingCustomPanel)
       ) &&
-      !window.confirm("Replace your current Custom Workout draft with this previous workout? Your saved workout history will not be changed.")
+      !window.confirm("Start a fresh session from this workout and replace your unsaved draft?")
     ) {
-      setClientWorkoutCopyStatus("Copy canceled. Your current Custom Workout draft was not changed.");
       return;
     }
 
     const format = customWorkoutFormatForHistoryLogs(sourceLogs);
-    const workoutTitle = copiedCustomWorkoutStorageTitle(sourceLogs);
+    const workoutTitle = copiedCustomWorkoutStorageTitle(sourceLogs, new Date(), window.crypto?.randomUUID?.());
     const draft = customWorkoutDraftFromLogs(sourceLogs, { date, format, sessionKey, workoutTitle });
 
     if (!draft.exercises.length && !draft.cardio) {
-      setClientWorkoutCopyStatus("This workout has no exercises to copy.");
+      setClientWorkoutCopyStatus("Choose a workout with logged exercises to repeat.");
       return;
     }
 
-    const endSavedTimer = Boolean(workoutElapsedTimerState);
-    if (
-      endSavedTimer &&
-      !window.confirm(
-        "A workout timer is still saved on this device. End it without saving its workout time and copy this workout?"
-      )
-    ) {
-      setClientWorkoutCopyStatus("Copy canceled. Your saved workout timer is still open.");
-      return;
-    }
-
+    const previousFormat = activeCustomWorkoutFormat;
+    if (existingCustomPanel) cancelTrainingLogAutosaves(existingCustomPanel);
     storeCustomWorkoutDraft(draft);
 
     const storedDraft = activeCustomWorkoutDraft();
-    if (storedDraft?.copiedFrom?.sessionKey !== sessionKey) {
+    if (storedDraft?.copiedFrom?.sessionKey !== sessionKey || storedDraft.workoutTitle !== workoutTitle) {
       setClientWorkoutCopyStatus("The Custom Workout draft could not be created on this device.");
       return;
     }
 
     activeCustomWorkoutFormat = draft.format;
-    storeCustomWorkoutFormat(draft.format);
-
-    if (endSavedTimer) {
-      finishWorkoutElapsedTimer();
-    }
-
-    setClientDashboardTab("workouts");
 
     const customPanelIndex = clientCustomWorkoutPanelIndex();
-    const customPanel = replaceCustomWorkoutPanelFromDraft(customPanelIndex);
-
-    if (!customPanel) {
-      setClientWorkoutCopyStatus("The Custom Workout could not be opened. Refresh the page and try again.");
+    let customPanel;
+    try {
+      customPanel = replaceCustomWorkoutPanelFromDraft(customPanelIndex);
+      if (!customPanel) throw new Error("Workout panel unavailable.");
+    } catch {
+      const failedPanel = document.querySelector(".client-workout-panel-custom");
+      if (failedPanel && existingCustomPanel && failedPanel !== existingCustomPanel) failedPanel.replaceWith(existingCustomPanel);
+      if (existingDraft) storeCustomWorkoutDraft(existingDraft);
+      else clearCustomWorkoutDraft();
+      activeCustomWorkoutFormat = previousFormat;
+      setClientWorkoutCopyStatus("The workout could not be opened. Refresh the page and try again.");
       return;
     }
+    storeCustomWorkoutFormat(draft.format);
 
+    setClientDashboardTab("workouts");
     activateClientWorkoutPanel(customPanelIndex, { scroll: false, focus: false });
     startCustomWorkoutOnEntry(customPanel);
     const heading = customPanel?.querySelector("#custom-workout-panel-title");
@@ -19693,7 +19765,7 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
     onKeepOriginal() {
       assertCurrent();
       clientPreviewProgramSelected = currentClientPersonalTrainingAccess().programs.some(item => item.id === program?.id);
-      selectClientWorkoutHubSection(clientPreviewProgramSelected ? "personal" : "routines");
+      selectClientWorkoutHubSection(clientPreviewProgramSelected ? "trainer" : "routines");
       renderClientWorkoutTabs(program.workouts);
       setClientDashboardTab("workouts");
       showClientWorkoutPicker({ scroll: true });
@@ -20062,7 +20134,7 @@ function handleClientSummaryActions() {
         return;
       }
       const section = startNext.dataset.clientHomeNextSection;
-      selectClientWorkoutHubSection(["personal", "trainer"].includes(section) ? section : "routines");
+      selectClientWorkoutHubSection(["personal", "trainer"].includes(section) ? "trainer" : "routines");
       setClientDashboardTab("workouts");
       if (clientPreviewProgramSelected) {
         clientPreviewProgramSelected = false;
@@ -21201,7 +21273,7 @@ function handleWorkoutInteractions() {
         generateWorkoutButton.dataset.generatorPreset === "today" ? { focus: "full_body", minutes: 30 } : undefined);
       return;
     }
-    const exerciseJump = event.target.closest("[data-workout-exercise-jump]");
+    const exerciseJump = event.target.closest("[data-workout-exercise-jump], [data-workout-duo-exercise]");
     if (exerciseJump) {
       jumpToWorkoutExercise(exerciseJump);
       return;
@@ -21367,7 +21439,7 @@ function handleWorkoutInteractions() {
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
-    const floatingWorkoutFinishAction = event.target.closest("[data-floating-workout-finish-action]");
+    const floatingWorkoutFinishAction = event.target.closest("[data-floating-workout-finish-action], [data-workout-duo-finish]");
     const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
     const cancelActiveWorkoutButton = event.target.closest("[data-cancel-active-workout]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
@@ -22154,6 +22226,7 @@ function handleWorkoutInteractions() {
             hiddenDate.value = sharedDate;
           }
           updateExerciseLogField(newLogElement);
+          globalThis.ClientWorkoutDuo?.select(panel, newLogElement);
           exerciseNameInputForLog(newLogElement)?.focus();
         }
 
@@ -23516,6 +23589,7 @@ function showWorkoutFinishIssues(button, issues) {
     action.type = "button";
     action.textContent = message;
     action.addEventListener("click", () => {
+      globalThis.ClientWorkoutDuo?.revealTarget(section, target);
       const names = target?.closest?.("[data-custom-workout-group-name-section]");
       if (names) {
         const fields = names.querySelector("[data-custom-workout-group-name-fields]");
@@ -24058,6 +24132,52 @@ handleClientProgressPhotoDelete();
 handleClientDexaUpload();
 handleClientDexaReports();
 handleClientDexaReview();
+
+function openClientPersonalRecordLoads(trigger) {
+  const visibleRow = trigger.closest(".custom-workout-grouped-row");
+  const carousel = visibleRow?.closest('[data-custom-workout-grouped="true"]');
+  const row = visibleRow && carousel
+    ? customWorkoutGroupedCanonicalRow(carousel, visibleRow.dataset.customGroupedExerciseIndex,
+      visibleRow.dataset.customGroupedSetType, visibleRow.dataset.customGroupedSetNumber)
+    : trigger.closest("[data-set-row]");
+  const log = row?.closest("[data-exercise-log]");
+  if (!log || row.dataset.timedSet === "true") return;
+  const record = personalBestWeightLog(logsForExerciseDisplay(log));
+  if (!record) return;
+  const context = customWorkoutGroupedCopyContext(log);
+  const gym = workoutGymLocationForElement(log);
+  const rowNumber = row.dataset.setNumber;
+  const identity = visibleRow && customWorkoutGroupedRowIdentity(visibleRow);
+  const weightInput = row.querySelector("[data-set-weight]");
+  const canUse = () => row.isConnected && !row.classList.contains("is-complete") &&
+    row.querySelector("[data-complete-set]")?.getAttribute("aria-pressed") !== "true" &&
+    row.dataset.timedSet !== "true" && row.dataset.setNumber === rowNumber &&
+    weightInput && !weightInput.disabled && !weightInput.readOnly &&
+    context === customWorkoutGroupedCopyContext(log) && gym === workoutGymLocationForElement(log);
+  window.FWBOneRepMax?.openPersonalRecord(trigger, currentExerciseLabel(log), record, canUse() ? (weight) => {
+    if (!canUse()) return false;
+    if (carousel) {
+      const currentRow = Array.from(carousel.querySelectorAll(".custom-workout-grouped-row"))
+        .find((candidate) => customWorkoutGroupedRowIdentity(candidate) === identity);
+      const projected = currentRow?.querySelector('[data-custom-grouped-field="weight"]');
+      if (!projected || projected.disabled || projected.readOnly ||
+        customWorkoutGroupedCanonicalRow(carousel, currentRow.dataset.customGroupedExerciseIndex,
+          currentRow.dataset.customGroupedSetType, currentRow.dataset.customGroupedSetNumber) !== row) return false;
+      projected.value = String(weight);
+      syncCustomWorkoutGroupedField(projected);
+    } else {
+      weightInput.value = String(weight);
+      updateVisibleSetProgress(log);
+      persistCustomWorkoutDraftForElement(log);
+    }
+    return true;
+  } : null);
+}
+
+document.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-client-pr-loads]");
+  if (trigger && !trigger.disabled) openClientPersonalRecordLoads(trigger);
+});
 
 // Suggestions only populate editable draft fields. Completion still uses the normal Log set action.
 document.addEventListener("click", (event) => {

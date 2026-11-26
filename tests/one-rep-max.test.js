@@ -94,13 +94,24 @@ test("calculator reads the assigned exercise rep range from workout metadata", (
   assert.equal(program.planned_sets, 3);
 });
 
-test("client workout logger keeps the PR calculator while removing it from Weight entry", () => {
+test("logged PR loads include native warm-up percentages and preserve small loads", () => {
+  const api = calculatorAPI();
+  const loads = api.personalRecordLoads("Hip Thrust Machine", { weight_used: 410, reps: 6 });
+  assert.equal(loads.oneRepMax, 492);
+  assert.deepEqual(Array.from(loads.warmUps, ({ percentage, weight }) => [percentage, weight]), [[40, 195], [50, 245], [60, 295]]);
+  assert.deepEqual(Array.from(loads.working, ({ weight }) => weight), [345, 370, 395, 420, 445]);
+  assert.equal(api.personalRecordLoads("Curl", { weight_used: 6, reps: 2 }).warmUps[0].weight, 2.56);
+  assert.match(api.personalRecordLoads("Assisted Pull-Up", { weight_used: 40, reps: 6 }).message, /machine assistance/);
+  assert.match(api.personalRecordLoads("Curl", { weight_used: 40, reps: 11 }).message, /1–10 reps/);
+});
+
+test("client PR cells open the set-specific calculator and coach retains its original entry point", () => {
   assert.doesNotMatch(clientSource, /<button class="one-rm-trigger"[^>]*data-one-rm-open aria-label="Open estimated 1RM calculator from this set"/);
   assert.match(coachSource, /class="one-rm-trigger"[^>]*data-one-rm-open/);
-  for (const source of [clientSource, coachSource]) {
-    assert.match(source, /class="one-rm-pr-trigger"[^>]*data-one-rm-open[^>]*data-one-rm-source="pr"/);
-    assert.match(source, /dataset\.oneRmSources = JSON\.stringify/);
-  }
+  assert.match(clientSource, /class="ios-log-previous"[^>]*data-client-pr-loads/);
+  assert.match(clientSource, /FWBOneRepMax\?\.openPersonalRecord\(trigger,/);
+  assert.match(coachSource, /class="one-rm-pr-trigger"[^>]*data-one-rm-open[^>]*data-one-rm-source="pr"/);
+  assert.match(coachSource, /dataset\.oneRmSources = JSON\.stringify/);
 });
 
 test("client web, installed mobile web app, and coach iOS web workspace load the shared calculator", () => {

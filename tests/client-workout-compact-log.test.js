@@ -203,6 +203,11 @@ test("grouped rows show the same personal record and letter badges for special s
       querySelector: () => null,
     }, "A4", 0, "working", 4, "Bench press");
     assert.match(markup, new RegExp(`Options for ${label}[^>]*>${marker}</button>`));
-    assert.match(markup, /class="ios-log-previous" aria-label="Personal record, 205 lb × 5 reps">205 lb × 5<\/span>/);
+    if (dataset.timedSet) {
+      assert.match(markup, /class="ios-log-previous" aria-label="Personal record, 205 lb × 5 reps">205 lb × 5<\/span>/);
+      assert.doesNotMatch(markup, /data-client-pr-loads/);
+    } else {
+      assert.match(markup, /class="ios-log-previous"[^>]*data-client-pr-loads[^>]*aria-label="Personal record, 205 lb × 5 reps">205 lb × 5<\/button>/);
+    }
   });
 });

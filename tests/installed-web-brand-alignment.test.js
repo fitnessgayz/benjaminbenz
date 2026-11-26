@@ -15,9 +15,9 @@ test("installed apps keep distinct product identities and useful launch shortcut
   assert.notEqual(client.id, coach.id);
   assert.notEqual(client.start_url, coach.start_url);
   assert.equal(client.background_color, "#050806");
-  assert.equal(coach.background_color, "#101113");
+  assert.equal(coach.background_color, "#f2f4f6");
   assert.equal(client.theme_color, "#050806");
-  assert.equal(coach.theme_color, "#101113");
+  assert.equal(coach.theme_color, "#f2f4f6");
   assert.ok(client.shortcuts.length >= 3);
   assert.ok(coach.shortcuts.length >= 3);
 });
@@ -41,8 +41,8 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
 
   for (const file of clientPages) {
     const html = read(file);
-    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=22e30eae"/);
-    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-22e30eae\/icon-180\.png"/);
+    assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=pulse-1380"/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
     assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
@@ -83,16 +83,17 @@ test("shared app styles use the approved palette beneath the color bridges", () 
   assert.ok(coachLinks.some((link) => /fwb-dark-theme\.css\?v=coach-blue-gold-1/.test(link[1])));
 });
 
-test("Coach workspace surfaces share GRUNTR's charcoal, gold, and blue", () => {
-  const css = read("css/coach-workspace.css");
+test("Coach workspace keeps its independent light and dark palettes", () => {
+  const css = read("css/coach-theme.css");
   for (const [token, value] of Object.entries({
-    canvas: "#101113",
-    surface: "#1d2227",
-    "brand-primary": "#ffd400",
-    "secondary-accent": "#72b8ef",
+    canvas: "#f2f4f6",
+    surface: "#fff",
+    "secondary-accent": "#21588a",
   })) {
     assert.match(css, new RegExp(`--${token}: ${value};`, "i"));
   }
+  assert.match(css, /--canvas: #101113;/i);
+  assert.match(read("css/coach-workspace.css"), /background: var\(--canvas\)/);
 
   for (const file of [
     "coach-login.html",
@@ -101,8 +102,8 @@ test("Coach workspace surfaces share GRUNTR's charcoal, gold, and blue", () => {
     "coach-exercise-library.html",
     "coach-community-wall.html",
   ]) {
-    assert.match(read(file), /coach-workspace\.css\?v=2/);
-    assert.match(read(file), /theme-color" content="#101113"/);
+    assert.match(read(file), /coach-workspace\.css\?v=[34]/);
+    assert.match(read(file), /theme-color" content="#f2f4f6"/);
   }
 });
 

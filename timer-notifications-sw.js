@@ -1,11 +1,18 @@
 const defaultTimerNotification = {
   title: "Rest complete",
   body: "Your next set is ready.",
-  icon: "/images/gruntr/client-22e30eae/icon-192.png",
-  badge: "/images/gruntr/client-22e30eae/notification-badge-96.png",
+  icon: "/images/gruntr/client-pulse-1380/icon-192.png",
+  badge: "/images/gruntr/client-pulse-1380/notification-badge-96.png",
   tag: "fwb-rest-timer-complete",
   url: "/client-dashboard.html?tab=workouts"
 };
+
+const coachNotificationArtwork = {
+  icon: "/images/gruntr/client-22e30eae/icon-192.png",
+  badge: "/images/gruntr/client-22e30eae/notification-badge-96.png"
+};
+
+const oldClientArtwork = new Set([coachNotificationArtwork.icon, coachNotificationArtwork.badge]);
 
 const retiredNotificationArtwork = new Set([
   "/fwb-brand-icon-gold-192-v5.png",
@@ -47,10 +54,13 @@ function timerNotificationContent(event) {
     return (text || fallback).slice(0, maximumLength);
   };
   const url = timerNotificationDestination(timerNotificationUrl(event));
+  const isCoachDestination = /^\/(?:coach-|fwb-coach-)/.test(new URL(url).pathname);
+  const artwork = isCoachDestination ? coachNotificationArtwork : defaultTimerNotification;
   const artworkPath = (candidate, fallback) => {
     if (typeof candidate !== "string" || !/^\/(?![/\\])/.test(candidate)) return fallback;
     const path = new URL(candidate, self.location.origin);
-    return path.origin === self.location.origin && !retiredNotificationArtwork.has(path.pathname)
+    return path.origin === self.location.origin && !retiredNotificationArtwork.has(path.pathname) &&
+      (isCoachDestination || !oldClientArtwork.has(path.pathname))
       ? candidate
       : fallback;
   };
@@ -58,8 +68,8 @@ function timerNotificationContent(event) {
   return {
     title: safeText(value?.title, defaultTimerNotification.title, 160),
     body: safeText(value?.body, defaultTimerNotification.body, 500),
-    icon: artworkPath(value?.icon, defaultTimerNotification.icon),
-    badge: artworkPath(value?.badge, defaultTimerNotification.badge),
+    icon: artworkPath(value?.icon, artwork.icon),
+    badge: artworkPath(value?.badge, artwork.badge),
     tag: safeText(value?.tag, defaultTimerNotification.tag, 300),
     url,
     notificationId: safeText(value?.data?.notificationId, "", 100)

@@ -257,6 +257,21 @@
   -webkit-text-fill-color: #000 !important;
 }
 .client-workout-plan-dialog .plan-primary { width: 100%; }
+.client-planned-routines-dialog .routine-editor { display: grid; min-width: 0; }
+.client-planned-routines-dialog .routine-editor > label { display: grid; gap: 5px; }
+.client-planned-routines-dialog .routine-editor input {
+  min-width: 0;
+  min-height: 43px;
+  padding: 8px 10px;
+  border: 1px solid currentColor;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.client-planned-routines-dialog .routine-editor li { margin-bottom: 6px; overflow-wrap: anywhere; }
+.client-planned-routines-dialog .routine-editor li button { margin-inline-start: 4px; min-height: 38px; }
+.client-planned-routines-dialog [data-routine-new] { margin-bottom: 12px; }
 .client-workout-plan-dialog button:disabled { opacity: .65; cursor: wait; }
 .client-workout-plan-dialog .saved-plan-detail { margin-top: 18px; }
 .client-workout-plan-dialog .saved-plan-detail h3 { margin: 0 0 4px; color: var(--client-neon); font-size: 20px; }

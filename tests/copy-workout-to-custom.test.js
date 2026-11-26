@@ -124,10 +124,14 @@ test("keeps incomplete superset groups separate and keeps one circuit together",
     buildDraft(logs, { format: "superset" }).exercises.map((exercise) => exercise.group),
     [0, 1, 1]
   );
+  assert.deepEqual(buildDraft(logs, { format: "superset" }).exercises.map(exercise => exercise.groupType),
+    ["single", "superset", "superset"]);
   assert.deepEqual(
     buildDraft(logs, { format: "circuit" }).exercises.map((exercise) => exercise.group),
     [0, 0, 0]
   );
+  assert.deepEqual(buildDraft(logs, { format: "circuit" }).exercises.map(exercise => exercise.groupType),
+    ["circuit", "circuit", "circuit"]);
   assert.equal(
     buildDraft(Array.from({ length: 9 }, (_, index) => ({
       exercise_code: "A",
@@ -168,6 +172,8 @@ test("infers older grouped formats and gives each copied session a unique storag
     { workout_title: "Custom workout", exercise_code: "CW01" },
     { workout_title: "Custom workout", exercise_code: "CW02" }
   ]), "single");
+  assert.equal(inferFormat(["C1", "C2", "C3"].map(exercise_code => ({ workout_title: "Custom workout", exercise_code }))), "circuit");
+  assert.equal(inferFormat(["A1", "A2"].map(exercise_code => ({ workout_title: "Custom workout", exercise_code }))), "superset");
   assert.notEqual(
     copyTitle([{ workout_title: "Lower Body" }], new Date(2026, 8, 11, 10, 11, 12)),
     copyTitle([{ workout_title: "Lower Body" }], new Date(2026, 8, 11, 10, 11, 13))
@@ -217,36 +223,35 @@ test("protects entered Custom Workout warm-up and cardio fields", () => {
   })), true);
 });
 
-test("renders an accessible per-workout copy action and never adds it to nutrition cards", () => {
+test("renders accessible repeat and routine actions on owned workouts", () => {
   const historySource = sourceForFunction("renderClientTrainingLogs");
   const nutritionSource = sourceForFunction("nutritionLogHistorySections");
 
   assert.match(historySource, /data-copy-workout-to-custom/);
-  assert.match(historySource, /Copy \$\{displayTitle\} from \$\{formatLogDate\(workout\.entry_date\)\} to Custom workout/);
-  assert.match(historySource, /workoutHistoryLogsForCopy\(workout\.history_key\)/);
+  assert.match(historySource, /Repeat \$\{displayTitle\} from \$\{formatLogDate\(workout\.entry_date\)\}/);
+  assert.match(historySource, /ownedWorkoutHistoryActionLogs\(workout\.history_key\)/);
+  assert.match(historySource, /Start a fresh session now\./);
+  assert.match(historySource, /data-save-workout-as-routine/);
   assert.doesNotMatch(nutritionSource, /data-copy-workout-to-custom/);
   assert.match(dashboard, /id="client-workout-copy-status" role="status" aria-live="polite"/);
   assert.match(portal, /data-custom-workout-copy-status role="status" aria-live="polite"/);
 });
 
-test("opens the copied draft in Custom Workout and restores focus visibly", () => {
+test("repeat offers to resume an active workout before starting a fresh draft", () => {
   const handlerSource = sourceForFunction("handleCopyWorkoutToCustom");
   const panelIndexSource = sourceForFunction("clientCustomWorkoutPanelIndex");
   const previousWeightsSource = sourceForFunction("logsForExerciseDisplay");
 
-  assert.match(handlerSource, /workoutHistoryLogsForCopy\(sessionKey\)/);
-  assert.match(handlerSource, /A workout timer is still saved on this device\. End it without saving its workout time and copy this workout\?/);
-  assert.match(handlerSource, /finishWorkoutElapsedTimer\(\)/);
-  assert.doesNotMatch(handlerSource, /Finish the active workout before copying/);
-  assert.match(handlerSource, /window\.confirm\("Replace your current Custom Workout draft/);
+  assert.match(handlerSource, /ownedWorkoutHistoryActionLogs\(sessionKey\)/);
+  assert.match(handlerSource, /Workout in progress\. Resume your current workout\?/);
+  assert.match(handlerSource, /resumeActiveWorkout\(\)/);
+  assert.doesNotMatch(handlerSource, /finishWorkoutElapsedTimer\(\)/);
+  assert.match(handlerSource, /window\.confirm\("Start a fresh session/);
   assert.ok(
-    handlerSource.indexOf("Replace your current Custom Workout draft") <
-    handlerSource.indexOf("A workout timer is still saved on this device")
+    handlerSource.indexOf("resumeActiveWorkout()") <
+    handlerSource.indexOf("storeCustomWorkoutDraft(draft)")
   );
-  assert.ok(
-    handlerSource.indexOf("storedDraft?.copiedFrom?.sessionKey !== sessionKey") <
-    handlerSource.indexOf("finishWorkoutElapsedTimer()")
-  );
+  assert.match(handlerSource, /storedDraft\.workoutTitle !== workoutTitle/);
   assert.match(handlerSource, /customWorkoutPanelHasAuxiliaryContent\(existingCustomPanel\)/);
   assert.match(handlerSource, /storeCustomWorkoutDraft\(draft\)/);
   assert.match(handlerSource, /const customPanelIndex = clientCustomWorkoutPanelIndex\(\)/);

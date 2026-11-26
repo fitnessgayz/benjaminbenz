@@ -291,7 +291,7 @@ test("keep original opens the full assigned program overview without choosing or
   state.calls.length = 0;
   assert.equal(state.dialog.onKeepOriginal(), true);
   assert.equal(context.clientPreviewProgramSelected, true);
-  assert.deepEqual(state.calls[0], ["section", "personal"]);
+  assert.deepEqual(state.calls[0], ["section", "trainer"]);
   assert.equal(state.calls[1][0], "render-program");
   assert.equal(state.calls[1][1], context.currentProgram.workouts);
   assert.deepEqual(state.calls.slice(2), [["tab", "workouts"], ["picker", { scroll: true }]]);
