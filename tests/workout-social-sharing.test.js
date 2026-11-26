@@ -121,6 +121,7 @@ function shareSheetFixture(image) {
     querySelector: (selector) => {
       if (!nodes.has(selector)) nodes.set(selector, {
         disabled: false,
+        dataset: {},
         classList: { toggle() {} },
         focus: () => focused.push(selector),
         closest: () => overlay
@@ -140,6 +141,7 @@ function shareSheetFixture(image) {
       share: (data) => { shares.push(data); return Promise.resolve(); }
     },
     isCoachDashboardPreview: false,
+    completedWorkoutAnalysisLogs: (historyKey) => historyKey ? [{}] : [],
     formatLogDate: (value) => `Date ${value}`,
     escapeHtml: String,
     randomWorkoutCompletionMessage: () => "Well done",
@@ -159,6 +161,8 @@ test("native sharing waits for the image and sends the prepared file on the next
   const preparing = deferred();
   const { context, nodes, shares, overlay, focused } = shareSheetFixture(() => preparing.promise);
   context.openWorkoutCompletionSharePrompt(summary());
+  assert.equal(nodes.get("[data-client-analyze-workout]").hidden, false);
+  assert.equal(nodes.get("[data-client-analyze-workout]").dataset.clientAnalyzeWorkout, "session:past-session");
   const button = nodes.get("[data-workout-share]");
   assert.match(nodes.get("[data-workout-share-atari-message]").textContent, /happy dance/);
   assert.equal(button.disabled, true);
@@ -200,6 +204,7 @@ test("an older image result cannot replace a newer preview or reenable its share
 test("image failures explicitly fall back to text and sharing an unfinished workout uses saved wording", async () => {
   const { context, nodes, shares } = shareSheetFixture(() => Promise.reject(new Error("Canvas unavailable")));
   context.openWorkoutCompletionSharePrompt(summary({ isComplete: false }));
+  assert.equal(nodes.get("[data-client-analyze-workout]").hidden, true);
   await flush();
   assert.equal(nodes.get("[data-workout-share-state]").textContent, "Workout saved");
   assert.match(nodes.get("[data-workout-share-atari-message]").textContent, /when you’re ready/);
