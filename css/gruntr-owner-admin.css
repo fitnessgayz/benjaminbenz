@@ -1,13 +1,16 @@
 :root {
-  color-scheme: dark;
-  --canvas: #101113;
-  --surface: #191c20;
-  --surface-soft: #242931;
-  --ink: #f4f6f9;
-  --muted: #b3bcc8;
-  --line: #353e4a;
-  --focus: #83c8ff;
-  --gold: #ffcf24;
+  color-scheme: light;
+  --canvas: #f2f4f6;
+  --surface: #fff;
+  --surface-soft: #f1f3f5;
+  --ink: #1c242d;
+  --muted: #4d5b68;
+  --line: #d8dee4;
+  --control-line: #818e9b;
+  --focus: #21588a;
+  --gold: #ffd400;
+  --gold-line: #a37c00;
+  --gold-ink: #151515;
 }
 
 * { box-sizing: border-box; }
@@ -66,26 +69,28 @@
 .owner-access { max-width: 520px; }
 .owner-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
 .owner-nav a {
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-line);
   border-radius: 8px;
   color: var(--ink);
+  background: var(--surface);
   padding: 9px 13px;
   text-decoration: none;
 }
-.owner-nav a[aria-current="page"] { color: #161100; border-color: var(--gold); background: var(--gold); font-weight: 700; }
+.owner-nav a[aria-current="page"] { color: var(--gold-ink); border-color: var(--gold-line); background: var(--gold); font-weight: 700; }
 .owner-panel > h1, .owner-panel > .owner-heading-row { margin-bottom: 14px; }
 .owner-groups { display: grid; grid-template-columns: minmax(205px, .8fr) minmax(0, 2fr); gap: 14px; align-items: start; }
 .owner-city-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-top: 13px; }
 .owner-city-search label { grid-column: 1 / -1; color: var(--muted); font-size: .85rem; }
 .gruntr-owner input, .gruntr-owner select {
   color: var(--ink);
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-line);
   border-radius: 7px;
-  background: var(--canvas);
+  background: var(--surface);
   min-height: 44px;
   padding: 6px 9px;
   min-width: 0;
 }
+.gruntr-owner input::placeholder { color: var(--muted); opacity: 1; }
 .owner-status { font-size: .93rem; color: var(--muted); margin: 9px 0; }
 .owner-status:empty { display: none; }
 .owner-list { margin: 10px 0; padding: 0; list-style: none; display: grid; gap: 8px; }
@@ -135,7 +140,7 @@
   text-decoration: none;
   cursor: pointer;
 }
-.gruntr-owner .button-dark { color: #161100; background: var(--gold); border-color: var(--gold); }
+.gruntr-owner .button-dark { color: var(--gold-ink); background: var(--gold); border-color: var(--gold-line); }
 .gruntr-owner .button:disabled { opacity: .55; cursor: default; }
 .gruntr-owner .coach-approvals-panel { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .gruntr-owner .coach-approval-card-actions .button { padding-inline: 4px; }

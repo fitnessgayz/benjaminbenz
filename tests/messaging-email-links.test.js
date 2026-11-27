@@ -57,12 +57,12 @@ test("client email destination survives a missing session and same-origin login"
   assert.equal(context.portalLoginDestination({ email: "client@example.com" }), "https://benjaminbenz.com/client-dashboard.html?messages=1");
 });
 
-test("coach notification destinations survive session restoration without putting client identity in the login URL", async () => {
+test("coach inbox and account approval links survive sign-in without forwarding client identity", async () => {
   const location = { origin: "https://benjaminbenz.com", pathname: "/coach-admin.html", search: "", hash: "" };
   const context = vm.createContext({
     URL, URLSearchParams, window: { location, FWB_AUTH_SESSION: { requiresLogin: () => true } },
     document: { getElementById: () => ({}), querySelector: () => null }, syncCoachAdminMobileNavigationMount() {},
-    coachAdminTabNames: new Set(["home", "inbox"]), coachLoginUrl: "coach-login.html?v=1",
+    coachAdminTabNames: new Set(["home", "inbox", "clients"]), coachLoginUrl: "coach-login.html?v=1",
     coachSupabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
     withRequestTimeout: promise => promise, showCoachAccessError: () => assert.fail("Should return to login"),
     isCoachPortalEmail: () => true, clientDashboardUrl: "client-dashboard.html"
@@ -75,6 +75,12 @@ test("coach notification destinations survive session restoration without puttin
   assert.doesNotMatch(location.href, /private|example|client%3D/);
   location.search = new URL(location.href, location.origin).search;
   assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/coach-admin.html?tab=inbox");
+  location.search = "?tab=clients&client=private%40example.com";
+  location.hash = "#coach-access-requests-title";
+  await context.restoreCoachAdminUser();
+  assert.doesNotMatch(location.href, /private|example|client%3D/);
+  location.search = new URL(location.href, location.origin).search;
+  assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/coach-admin.html?tab=clients#coach-access-requests-title");
   context.sendToCoachLogin();
   assert.equal(location.href, "coach-login.html?v=1", "An explicit sign-out keeps the ordinary login destination");
 });

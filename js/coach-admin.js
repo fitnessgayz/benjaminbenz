@@ -235,9 +235,14 @@ function sendToCoachLogin({ preserveDestination = false } = {}) {
   if (workspace) workspace.hidden = true;
   syncCoachAdminMobileNavigationMount();
   const tab = preserveDestination ? requestedCoachAdminTab() : "";
-  const returnTo = document.querySelector(".coach-exercise-library-page")
-    ? "/coach-exercise-library.html"
-    : (tab === "inbox" ? "/coach-admin.html?tab=inbox" : "");
+  let returnTo = "";
+  if (document.querySelector(".coach-exercise-library-page")) {
+    returnTo = "/coach-exercise-library.html";
+  } else if (tab === "inbox") {
+    returnTo = "/coach-admin.html?tab=inbox";
+  } else if (tab === "clients" && window.location.hash === "#coach-access-requests-title") {
+    returnTo = "/coach-admin.html?tab=clients#coach-access-requests-title";
+  }
   window.location.href = returnTo
     ? `${coachLoginUrl}${coachLoginUrl.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(returnTo)}`
     : coachLoginUrl;
@@ -6420,6 +6425,14 @@ async function showAdminWorkspace(user) {
   if (workspace) {
     workspace.hidden = false;
     syncCoachAdminMobileNavigationMount();
+  }
+
+  if (activeAdminTab === "clients" && window.location.hash === "#coach-access-requests-title") {
+    const heading = document.getElementById("coach-access-requests-title");
+    const disclosure = heading?.closest("details");
+    if (disclosure) disclosure.open = true;
+    heading?.focus({ preventScroll: true });
+    heading?.scrollIntoView({ block: "start" });
   }
 
   if (signOutButton) {
