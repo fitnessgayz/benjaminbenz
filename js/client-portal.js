@@ -22887,11 +22887,18 @@ function portalLoginDestination(user) {
   if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
     const destination = new URL(returnTo, window.location.origin);
     if (destination.origin === window.location.origin && !destination.pathname.endsWith("/client-login.html")) {
+      if (
+        destination.pathname === "/coach-admin.html" &&
+        destination.searchParams.get("tab") === "clients" &&
+        (destination.searchParams.get("section") === "approvals" || destination.hash === "#coach-access-requests-title")
+      ) {
+        return new URL("/coach-admin.html?tab=clients&section=approvals", destination.origin).href;
+      }
       return destination.href;
     }
   }
   return isCoachPortalEmail(user?.email)
-    ? "coach-admin.html?v=invite-list-layout-fix-1"
+    ? "/coach-admin.html?tab=home"
     : clientDashboardUrl;
 }
 

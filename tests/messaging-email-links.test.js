@@ -67,7 +67,7 @@ test("coach inbox and account approval links survive sign-in without forwarding 
     withRequestTimeout: promise => promise, showCoachAccessError: () => assert.fail("Should return to login"),
     isCoachPortalEmail: () => true, clientDashboardUrl: "client-dashboard.html"
   });
-  vm.runInContext(["requestedCoachAdminTab", "sendToCoachLogin", "restoreCoachAdminUser"].map(name => functionSource(coach, name)).join("\n") + functionSource(portal, "portalLoginDestination"), context);
+  vm.runInContext(["requestedCoachAdminTab", "requestedCoachClientsSection", "sendToCoachLogin", "restoreCoachAdminUser"].map(name => functionSource(coach, name)).join("\n") + functionSource(portal, "portalLoginDestination"), context);
   location.search = "?tab=inbox&client=private%40example.com";
   assert.equal(context.requestedCoachAdminTab(), "inbox");
   await context.restoreCoachAdminUser();
@@ -75,14 +75,42 @@ test("coach inbox and account approval links survive sign-in without forwarding 
   assert.doesNotMatch(location.href, /private|example|client%3D/);
   location.search = new URL(location.href, location.origin).search;
   assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/coach-admin.html?tab=inbox");
-  location.search = "?tab=clients&client=private%40example.com";
-  location.hash = "#coach-access-requests-title";
-  await context.restoreCoachAdminUser();
-  assert.doesNotMatch(location.href, /private|example|client%3D/);
-  location.search = new URL(location.href, location.origin).search;
-  assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/coach-admin.html?tab=clients#coach-access-requests-title");
+  for (const [search, hash] of [
+    ["?tab=clients&client=private%40example.com", "#coach-access-requests-title"],
+    ["?tab=clients&section=approvals&client=private%40example.com", ""]
+  ]) {
+    location.search = search;
+    location.hash = hash;
+    await context.restoreCoachAdminUser();
+    assert.doesNotMatch(location.href, /private|example|client%3D/);
+    const login = new URL(location.href, location.origin);
+    assert.equal(login.searchParams.get("return_to"), "/coach-admin.html?tab=clients&section=approvals");
+    location.search = login.search;
+    assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/coach-admin.html?tab=clients&section=approvals");
+  }
   context.sendToCoachLogin();
   assert.equal(location.href, "coach-login.html?v=1", "An explicit sign-out keeps the ordinary login destination");
+});
+
+test("ordinary coach sign-in opens Home and valid approval destinations return to their Clients section", () => {
+  const location = { origin: "https://benjaminbenz.com", search: "" };
+  const context = vm.createContext({
+    URL, URLSearchParams, window: { location },
+    isCoachPortalEmail: email => email === "coach@example.com", clientDashboardUrl: "client-dashboard.html"
+  });
+  vm.runInContext(functionSource(portal, "portalLoginDestination"), context);
+  const coachUser = { email: "coach@example.com" };
+  assert.equal(context.portalLoginDestination(coachUser), "/coach-admin.html?tab=home");
+  assert.equal(context.portalLoginDestination({ email: "client@example.com" }), "client-dashboard.html");
+  for (const returnTo of [
+    "/coach-admin.html?tab=clients&section=approvals",
+    "/coach-admin.html?tab=clients&client=private%40example.com#coach-access-requests-title"
+  ]) {
+    location.search = `?return_to=${encodeURIComponent(returnTo)}`;
+    assert.equal(context.portalLoginDestination(coachUser), "https://benjaminbenz.com/coach-admin.html?tab=clients&section=approvals");
+  }
+  location.search = `?return_to=${encodeURIComponent("//untrusted.example/coach-admin.html?tab=clients&section=approvals")}`;
+  assert.equal(context.portalLoginDestination(coachUser), "/coach-admin.html?tab=home");
 });
 
 test("authenticated coach inbox links activate the messaging controller", () => {

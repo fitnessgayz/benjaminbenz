@@ -21,15 +21,15 @@ function javascriptFunction(name) {
   return adminSource.slice(start, end);
 }
 
-test("Coach Home remains first in the sidebar and Activity is the default view", () => {
+test("Coach Home remains first in the sidebar and is the default view", () => {
   const navStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navigation = adminHtml.slice(navStart, navEnd);
 
   assert.ok(navigation.indexOf('data-admin-tab="home"') < navigation.indexOf('href="coach-workout-log.html"'));
-  assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"/);
-  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Activity"[^>]*aria-current="page"/);
-  assert.match(adminSource, /get\("tab"\) \|\| "notifications"/);
+  assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
+  assert.doesNotMatch(navigation, /data-admin-tab="notifications"[^>]*aria-current="page"/);
+  assert.match(adminSource, /get\("tab"\) \|\| "home"/);
   assert.match(adminSource, /coachAdminTabNames\.has\(tabName\) \? tabName : "home"/);
 });
 
@@ -41,7 +41,16 @@ test("Home keeps the quick actions and summary while Clients and Sessions own th
   assert.match(home, /data-coach-home-shortcut="workouts"/);
   assert.match(home, /id="new-client-button"/);
   assert.doesNotMatch(home, /<summary>|coach-exercise-library\.html|coach-community-wall\.html|coach-home-destination/);
-  assert.match(clients, /<summary>Client follow-ups and requests<\/summary>/);
+  assert.match(clients, /<summary>Client follow-ups<\/summary>/);
+  const roster = clients.slice(clients.indexOf('id="coach-clients-roster-panel"'), clients.indexOf('id="coach-clients-sessions-panel"'));
+  const lowSessions = clients.slice(clients.indexOf('id="coach-clients-sessions-panel"'), clients.indexOf('id="coach-clients-approvals-panel"'));
+  const approvals = clients.slice(clients.indexOf('id="coach-clients-approvals-panel"'));
+  assert.match(roster, /id="coach-client-roster"/);
+  assert.match(lowSessions, /id="coach-home-session-alert-list"/);
+  assert.match(approvals, /id="coach-access-request-list"/);
+  assert.doesNotMatch(roster, /id="coach-access-request-list"|id="coach-home-session-alert-list"/);
+  assert.doesNotMatch(approvals, /id="coach-client-roster"|id="coach-home-session-alert-list"/);
+  assert.match(home, /data-coach-home-shortcut="approvals" hidden/);
   assert.match(clients, /id="coach-home-session-alert-list"/);
   assert.match(clients, /id="coach-home-inactive-list"/);
   assert.match(clients, /id="coach-access-request-list"/);
@@ -117,25 +126,28 @@ test("summary metrics are four keyboard-accessible shortcuts", () => {
 test("summary shortcuts select active clients or open and focus the matching section", () => {
   const calls = [];
   const nodes = {};
-  for (const id of ["client-search-input", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
+  for (const id of ["client-search-input", "coach-home-sheets-title", "coach-home-session-alert-title", "coach-access-requests-title", "coach-home-membership-title"]) {
     const disclosure = { open: false };
+    const insideDisclosure = id === "coach-home-sheets-title" || id === "coach-home-membership-title";
     nodes[id] = {
+      id,
       value: "Old search",
-      closest: (selector) => selector === "details" ? disclosure : null,
+      closest: (selector) => selector === "details" && insideDisclosure ? disclosure : null,
       focus: () => calls.push(["focus", id, disclosure.open]),
       scrollIntoView: options => calls.push(["scroll", id, options.behavior])
     };
   }
   let reducedMotion = false;
+  let hasMembershipRequests = false;
   const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", "openCoachActivity", `
     let showingArchivedClients = true;
     let clientSearchTerm = "Old search";
     ${javascriptFunction("openCoachHomeShortcut")}
     return {openCoachHomeShortcut, state: () => ({showingArchivedClients, clientSearchTerm})};
   `)(
-    {getElementById: id => nodes[id]},
+    {getElementById: id => nodes[id], querySelector: () => hasMembershipRequests},
     {matchMedia: () => ({matches: reducedMotion})},
-    () => calls.push(["close"]), () => calls.push(["render"]), tab => calls.push(["tab", tab]), () => calls.push(["activity"])
+    () => calls.push(["close"]), () => calls.push(["render"]), (tab, options = {}) => calls.push(["tab", tab, options.clientSection]), () => calls.push(["activity"])
   );
   api.openCoachHomeShortcut("clients");
   assert.deepEqual(api.state(), {showingArchivedClients:false, clientSearchTerm:""});
@@ -144,11 +156,20 @@ test("summary shortcuts select active clients or open and focus the matching sec
   calls.length = 0;
   api.openCoachHomeShortcut("workouts");
   assert.deepEqual(calls, [["activity"]]);
-  for (const [destination,id,tab] of [["sessions","coach-home-sheets-title","session-counts"],["attention","coach-home-session-alert-title","clients"]]) {
+  const cases = [
+    ["sessions", "coach-home-sheets-title", "session-counts", undefined, true],
+    ["attention", "coach-home-session-alert-title", "clients", "sessions", false],
+    ["approvals", "coach-access-requests-title", "clients", "approvals", false]
+  ];
+  for (const [destination, id, tab, section, expands] of cases) {
     calls.length = 0;
     api.openCoachHomeShortcut(destination);
-    assert.deepEqual(calls, [["tab",tab],["focus",id,true],["scroll",id,"smooth"]]);
+    assert.deepEqual(calls, [["tab", tab, section], ["focus", id, expands], ["scroll", id, "smooth"]]);
   }
+  hasMembershipRequests = true;
+  calls.length = 0;
+  api.openCoachHomeShortcut("attention");
+  assert.deepEqual(calls, [["tab", "clients", "roster"], ["focus", "coach-home-membership-title", true], ["scroll", "coach-home-membership-title", "smooth"]]);
   reducedMotion = true;
   calls.length = 0;
   api.openCoachHomeShortcut("sessions");
