@@ -8,7 +8,12 @@ create table spotter_private.profile_details (
     height_inches integer check (height_inches between 36 and 96),
     weight_lb numeric check (weight_lb between 40 and 900),
     share_measurements boolean not null default false,
-    check (jsonb_typeof(shared_stats) = 'object')
+    availability_schedule jsonb not null default '[]',
+    gym_names jsonb not null default '[]',
+    share_gyms boolean not null default false,
+    check (jsonb_typeof(shared_stats) = 'object'),
+    check (jsonb_typeof(availability_schedule) = 'array'),
+    check (jsonb_typeof(gym_names) = 'array')
 );
 
 create table spotter_private.profile_photos (
@@ -57,7 +62,8 @@ create function spotter_private.photo_is_public_to_member(viewer uuid, photo spo
 returns boolean language sql stable set search_path = '' as $$
     select photo.status = 'approved'
         and community_private.viewer_can_see_content('spotter_photo', photo.upload_id::text)
-        and spotter_private.contactable(viewer, photo.member_id);
+        and spotter_private.contactable(viewer, photo.member_id)
+        and (photo.slot = 0 or spotter_private.accepted_connection(viewer, photo.member_id));
 $$;
 
 -- Existing clients keep the same profile keys. New grids can use the approved primary image directly.
@@ -94,6 +100,10 @@ returns jsonb language sql stable set search_path = '' as $$
         'weight_lb', case when access.is_owner or (details.share_measurements and access.is_accepted)
             then details.weight_lb end,
         'share_measurements', case when access.is_owner then coalesce(details.share_measurements, false) end,
+        'availability_schedule', coalesce(details.availability_schedule, '[]'::jsonb),
+        'gym_names', case when access.is_owner or details.share_gyms
+            then coalesce(details.gym_names, '[]'::jsonb) else '[]'::jsonb end,
+        'share_gyms', case when access.is_owner then coalesce(details.share_gyms, false) else false end,
         'photos', coalesce((
             select jsonb_agg(jsonb_build_object(
                 'slot', photo.slot, 'path', photo.path,
@@ -146,9 +156,102 @@ begin
 end;
 $$;
 
+create function spotter_private.checked_availability_schedule(p_schedule jsonb)
+returns jsonb language plpgsql immutable set search_path = '' as $$
+declare
+    weekday_order text[] := array['mon','tue','wed','thu','fri','sat','sun'];
+    period_order text[] := array['morning','afternoon','evening'];
+    seen_days text[] := '{}';
+    day_entry jsonb;
+    day_code text;
+    periods jsonb;
+    start_value jsonb;
+    end_value jsonb;
+    checked jsonb := '[]';
+begin
+    if p_schedule is null then return null; end if;
+    if jsonb_typeof(p_schedule) is distinct from 'array' then
+        raise exception 'Choose weekdays for your Spotter availability.' using errcode = '22023';
+    end if;
+    if jsonb_array_length(p_schedule) > cardinality(weekday_order) then
+        raise exception 'Choose at most seven availability days.' using errcode = '22023';
+    end if;
+
+    for day_entry in select value from jsonb_array_elements(p_schedule) loop
+        day_code := day_entry ->> 'day';
+        if jsonb_typeof(day_entry) <> 'object' or day_code is null
+            or not (day_code = any(weekday_order)) or day_code = any(seen_days) then
+            raise exception 'Choose each availability day only once.' using errcode = '22023';
+        end if;
+        periods := spotter_private.check_choices(day_entry -> 'periods', period_order);
+        if jsonb_array_length(periods) <> jsonb_array_length(day_entry -> 'periods') then
+            raise exception 'Choose each availability period only once.' using errcode = '22023';
+        end if;
+        select jsonb_agg(period order by array_position(period_order, period #>> '{}'))
+        into periods from jsonb_array_elements(periods) period;
+
+        start_value := nullif(day_entry -> 'start_minute', 'null'::jsonb);
+        end_value := nullif(day_entry -> 'end_minute', 'null'::jsonb);
+        if (start_value is null) <> (end_value is null) then
+            raise exception 'Enter both an availability start and end time.' using errcode = '22023';
+        end if;
+        if start_value is not null then
+            if jsonb_typeof(start_value) <> 'number' or jsonb_typeof(end_value) <> 'number'
+                or start_value::text !~ '^[0-9]{1,4}$' or end_value::text !~ '^[0-9]{1,4}$' then
+                raise exception 'Enter availability times in whole minutes.' using errcode = '22023';
+            end if;
+            if start_value::text::integer >= end_value::text::integer or end_value::text::integer > 1439 then
+                raise exception 'Choose an end time after the start time on the same day.' using errcode = '22023';
+            end if;
+        end if;
+        checked := checked || jsonb_build_array(jsonb_build_object(
+            'day', day_code, 'periods', periods, 'start_minute', start_value, 'end_minute', end_value
+        ));
+        seen_days := array_append(seen_days, day_code);
+    end loop;
+
+    return (select coalesce(jsonb_agg(entry order by array_position(weekday_order, entry ->> 'day')), '[]'::jsonb)
+        from jsonb_array_elements(checked) entry);
+end;
+$$;
+
+create function spotter_private.checked_gym_names(p_names jsonb)
+returns jsonb language plpgsql immutable set search_path = '' as $$
+declare
+    entry jsonb;
+    cleaned text;
+    names text[] := '{}';
+    seen text[] := '{}';
+begin
+    if p_names is null then return null; end if;
+    if jsonb_typeof(p_names) is distinct from 'array' then
+        raise exception 'Choose gym names for your Spotter profile.' using errcode = '22023';
+    end if;
+    if jsonb_array_length(p_names) > 5 then
+        raise exception 'Choose no more than five gyms.' using errcode = '22023';
+    end if;
+
+    for entry in select value from jsonb_array_elements(p_names) loop
+        if jsonb_typeof(entry) <> 'string' then
+            raise exception 'Enter a valid gym name.' using errcode = '22023';
+        end if;
+        cleaned := spotter_private.clean_text(entry #>> '{}', 80);
+        if cleaned ~ '[[:cntrl:]]' then
+            raise exception 'Enter a gym name on one line.' using errcode = '22023';
+        end if;
+        if cleaned <> '' and not (lower(cleaned) = any(seen)) then
+            names := array_append(names, cleaned);
+            seen := array_append(seen, lower(cleaned));
+        end if;
+    end loop;
+    return to_jsonb(names);
+end;
+$$;
+
 create function spotter_private.save_profile_details(
     p_body_type text, p_supplements text, p_current_program text, p_shared_stats jsonb,
-    p_height_inches integer, p_weight_lb numeric, p_share_measurements boolean
+    p_height_inches integer, p_weight_lb numeric, p_share_measurements boolean,
+    p_availability_schedule jsonb, p_gym_names jsonb, p_share_gyms boolean
 )
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
@@ -157,7 +260,11 @@ declare
     supplements_text text := spotter_private.clean_text(p_supplements, 240);
     program_text text := spotter_private.clean_text(p_current_program, 120);
     stats jsonb := spotter_private.checked_shared_stats(p_shared_stats);
+    schedule_items jsonb := spotter_private.checked_availability_schedule(p_availability_schedule);
+    gym_list jsonb := spotter_private.checked_gym_names(p_gym_names);
+    legacy_availability jsonb;
 begin
+    perform pg_advisory_xact_lock(hashtextextended(actor::text, 713));
     if not exists (select 1 from spotter_private.profiles where user_id = actor) then
         raise exception 'Set up your Spotter profile first.' using errcode = '42501';
     end if;
@@ -170,15 +277,33 @@ begin
     if p_weight_lb is not null and p_weight_lb not between 40 and 900 then
         raise exception 'Enter weight from 40 to 900 pounds or leave it blank.' using errcode = '22023';
     end if;
-    insert into spotter_private.profile_details (
-        member_id, body_type, supplements, current_program, shared_stats, height_inches, weight_lb, share_measurements
+    insert into spotter_private.profile_details as previous (
+        member_id, body_type, supplements, current_program, shared_stats, height_inches, weight_lb, share_measurements,
+        availability_schedule, gym_names, share_gyms
     ) values (
-        actor, body, supplements_text, program_text, stats, p_height_inches, p_weight_lb, coalesce(p_share_measurements, false)
+        actor, body, supplements_text, program_text, stats, p_height_inches, p_weight_lb, coalesce(p_share_measurements, false),
+        coalesce(schedule_items, '[]'::jsonb), coalesce(gym_list, '[]'::jsonb), coalesce(p_share_gyms, false)
     )
     on conflict (member_id) do update set body_type = excluded.body_type,
         supplements = excluded.supplements, current_program = excluded.current_program,
         shared_stats = excluded.shared_stats, height_inches = excluded.height_inches,
-        weight_lb = excluded.weight_lb, share_measurements = excluded.share_measurements;
+        weight_lb = excluded.weight_lb, share_measurements = excluded.share_measurements,
+        availability_schedule = coalesce(schedule_items, previous.availability_schedule),
+        gym_names = coalesce(gym_list, previous.gym_names),
+        share_gyms = coalesce(p_share_gyms, previous.share_gyms);
+
+    if schedule_items is not null and jsonb_array_length(schedule_items) > 0 then
+        select jsonb_agg(label order by label) into legacy_availability
+        from (
+            select distinct (case when day_entry ->> 'day' in ('sat', 'sun') then 'Weekend ' else 'Weekday ' end)
+                || period || 's' as label
+            from jsonb_array_elements(schedule_items) day_entry
+            cross join lateral jsonb_array_elements_text(day_entry -> 'periods') period
+        ) choices;
+        update spotter_private.profiles
+        set preferences = jsonb_set(preferences, '{availability}', legacy_availability), updated_at = now()
+        where user_id = actor;
+    end if;
     return spotter_private.profile_details_payload(actor, actor);
 end;
 $$;
@@ -373,10 +498,12 @@ create function public.spotter_profile_details(p_member_id uuid default null) re
 language sql stable set search_path = '' as $$ select spotter_private.get_profile_details(p_member_id); $$;
 create function public.spotter_save_profile_details(
     p_body_type text, p_supplements text, p_current_program text, p_shared_stats jsonb,
-    p_height_inches integer default null, p_weight_lb numeric default null, p_share_measurements boolean default false
+    p_height_inches integer default null, p_weight_lb numeric default null, p_share_measurements boolean default false,
+    p_availability_schedule jsonb default null, p_gym_names jsonb default null, p_share_gyms boolean default null
 ) returns jsonb language sql set search_path = '' as $$
     select spotter_private.save_profile_details(
-        p_body_type, p_supplements, p_current_program, p_shared_stats, p_height_inches, p_weight_lb, p_share_measurements
+        p_body_type, p_supplements, p_current_program, p_shared_stats, p_height_inches, p_weight_lb, p_share_measurements,
+        p_availability_schedule, p_gym_names, p_share_gyms
     );
 $$;
 create function public.spotter_reserve_photo(p_slot integer, p_upload_id uuid) returns jsonb
@@ -404,27 +531,32 @@ $$;
 revoke execute on function spotter_private.accepted_connection(uuid, uuid),
     spotter_private.photo_is_public_to_member(uuid, spotter_private.profile_photos),
     spotter_private.profile_details_payload(uuid, uuid), spotter_private.checked_shared_stats(jsonb),
+    spotter_private.checked_availability_schedule(jsonb), spotter_private.checked_gym_names(jsonb),
     spotter_private.lock_photo_slots(uuid), spotter_private.storage_viewer(),
-    spotter_private.get_profile_details(uuid), spotter_private.save_profile_details(text, text, text, jsonb, integer, numeric, boolean),
+    spotter_private.get_profile_details(uuid),
+    spotter_private.save_profile_details(text, text, text, jsonb, integer, numeric, boolean, jsonb, jsonb, boolean),
     spotter_private.reserve_photo(integer, uuid), spotter_private.submit_photo(uuid),
     spotter_private.remove_photo(integer), spotter_private.report_photo(text, text),
     spotter_private.can_upload_photo(text, text), spotter_private.can_download_photo(text, text),
     spotter_private.can_clean_photo(text, text)
 from public, anon, authenticated;
 grant execute on function spotter_private.get_profile_details(uuid),
-    spotter_private.save_profile_details(text, text, text, jsonb, integer, numeric, boolean), spotter_private.reserve_photo(integer, uuid),
+    spotter_private.save_profile_details(text, text, text, jsonb, integer, numeric, boolean, jsonb, jsonb, boolean),
+    spotter_private.reserve_photo(integer, uuid),
     spotter_private.submit_photo(uuid), spotter_private.remove_photo(integer), spotter_private.report_photo(text, text),
     spotter_private.can_upload_photo(text, text), spotter_private.can_download_photo(text, text),
     spotter_private.can_clean_photo(text, text)
 to authenticated;
 
 revoke execute on function public.spotter_profile_details(uuid),
-    public.spotter_save_profile_details(text, text, text, jsonb, integer, numeric, boolean), public.spotter_reserve_photo(integer, uuid),
+    public.spotter_save_profile_details(text, text, text, jsonb, integer, numeric, boolean, jsonb, jsonb, boolean),
+    public.spotter_reserve_photo(integer, uuid),
     public.spotter_submit_photo(uuid), public.spotter_remove_photo(integer), public.spotter_report_photo(text, text),
     public.resolve_spotter_photo_review(uuid, boolean)
 from public, anon, authenticated;
 grant execute on function public.spotter_profile_details(uuid),
-    public.spotter_save_profile_details(text, text, text, jsonb, integer, numeric, boolean), public.spotter_reserve_photo(integer, uuid),
+    public.spotter_save_profile_details(text, text, text, jsonb, integer, numeric, boolean, jsonb, jsonb, boolean),
+    public.spotter_reserve_photo(integer, uuid),
     public.spotter_submit_photo(uuid), public.spotter_remove_photo(integer), public.spotter_report_photo(text, text)
 to authenticated;
 grant execute on function public.resolve_spotter_photo_review(uuid, boolean) to service_role;
