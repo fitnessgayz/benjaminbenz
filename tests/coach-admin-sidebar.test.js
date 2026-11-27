@@ -8,7 +8,6 @@ const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "u
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 const workspaceStyles = fs.readFileSync(path.join(projectRoot, "css/coach-workspace.css"), "utf8");
-const approvalsStyles = fs.readFileSync(path.join(projectRoot, "css/coach-spotter-approvals.css"), "utf8");
 
 test("puts Home first in the coach admin sidebar", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
@@ -61,10 +60,11 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
-  const approvalsMarkup = navMarkup.match(/<button[^>]+data-admin-tab="approvals"[\s\S]*?<\/button>/)?.[0];
-  assert.match(approvalsMarkup || "", /data-spotter-approvals-access[^>]*aria-label="Approvals"[^>]*hidden/);
-  assert.equal((navMarkup.replace(approvalsMarkup, "").match(/<svg class="admin-nav-icon/g) || []).length, 8);
-  assert.match(approvalsStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \[data-admin-tab="approvals"\]\s*\{[^}]*display: none !important/);
+  const ownerToolsMarkup = navMarkup.match(/<a[^>]+admin-tab-owner-tools[\s\S]*?<\/a>/)?.[0];
+  assert.match(ownerToolsMarkup || "", /href="\/gruntr-admin\.html"[^>]*aria-label="GRUNTR Admin"/);
+  assert.match(ownerToolsMarkup, /src="\/images\/gruntr\/client-pulse-1380\/icon-32\.png"/);
+  assert.match(navMarkup, /data-admin-tab="home"[\s\S]*?admin-tab-owner-tools[\s\S]*?data-admin-tab="notifications"/);
+  assert.equal((navMarkup.replace(ownerToolsMarkup, "").match(/<svg class="admin-nav-icon/g) || []).length, 8);
   assert.match(navMarkup, /data-admin-tab="inbox"[^>]*aria-label="Inbox"/);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
@@ -112,17 +112,17 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile dock exposes Sessions and a direct Exercise Library destination", () => {
+test("mobile dock exposes Sessions and puts Inbox and Exercise Library in More", () => {
   assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?admin-tab-exercise-library" href="coach-exercise-library\.html\?v=coach-workspace-2"[\s\S]*?data-coach-mobile-more-open/);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger\s*\{[^}]*display: none !important/);
-  assert.doesNotMatch(workspaceStyles, /admin-tab-exercise-library[^{}]*\{[^}]*display: none/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger,\s*[^{}]*\.admin-tabs \.admin-tab-exercise-library,\s*[^{}]*\.admin-tabs \.admin-tab\[data-admin-tab="inbox"\]\s*\{[^}]*display: none !important/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
   const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));
   for (const file of ["coach-workout-log.html", "coach-community-wall.html"]) {
     assert.ok(tools.includes(`href="${file}"`));
   }
-  assert.doesNotMatch(tools, /coach-exercise-library\.html/);
-  assert.match(tools, /data-coach-mobile-approvals data-spotter-approvals-access hidden/);
+  assert.match(tools, /href="coach-exercise-library\.html\?v=coach-workspace-2"[\s\S]*?Exercise Library/);
+  assert.match(tools, /data-admin-tab="inbox" data-coach-mobile-inbox[\s\S]*?data-coach-message-unread/);
+  assert.match(adminSource, /querySelector\("\[data-coach-mobile-inbox\]"\)\?\.addEventListener\("click", \(\) => \{\s*closeMoreDialog\(\{ restoreFocus: false \}\)/);
   assert.match(tools, /data-coach-mobile-settings/);
 });
 

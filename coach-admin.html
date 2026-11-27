@@ -38,10 +38,9 @@
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=theme-1" />
   <script defer src="/js/coach-install.js?v=1"></script>
-  <link rel="stylesheet" href="css/coach-workspace.css?v=4&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=1" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=4&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=2&amp;owner-admin=2" />
   <link rel="stylesheet" href="css/coach-clients.css?v=alex-packs-2" />
   <link rel="stylesheet" href="/css/coach-theme.css?v=2" />
-  <link rel="stylesheet" href="css/coach-spotter-approvals.css?v=3" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <a class="coach-skip" href="#coach-main">Skip to workspace</a>
@@ -99,6 +98,10 @@
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
             <span class="admin-nav-label">Home</span>
           </button>
+          <a class="admin-tab admin-tab-link admin-tab-owner-tools" href="/gruntr-admin.html" aria-label="GRUNTR Admin">
+            <img class="admin-nav-icon admin-nav-brand-icon" src="/images/gruntr/client-pulse-1380/icon-32.png" width="32" height="32" alt="" />
+            <span class="admin-nav-label"><span class="coach-admin-nav-full">GRUNTR Admin</span><span class="coach-admin-nav-short">Admin</span></span>
+          </a>
           <button class="admin-tab is-active" type="button" data-admin-tab="notifications" aria-label="Activity" aria-current="page">
             <svg class="admin-nav-icon admin-nav-activity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
             <span class="admin-nav-label">Activity</span>
@@ -123,17 +126,14 @@
             <span class="admin-nav-label">Inbox</span>
             <span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span>
           </button>
-          <button class="admin-tab" type="button" data-admin-tab="approvals" data-spotter-approvals-access aria-label="Approvals" aria-controls="coach-approvals-panel" hidden>
-            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 12l2 2 4-4M9 4V3h6v1"/></svg>
-            <span class="admin-nav-label">Approvals</span>
-          </button>
           <a class="admin-tab admin-tab-link admin-tab-exercise-library" href="coach-exercise-library.html?v=coach-workspace-2" aria-label="Exercise library">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg>
-            <span class="admin-nav-label"><span class="coach-library-nav-full">Exercise Library</span><span class="coach-library-nav-short">Library</span></span>
+            <span class="admin-nav-label">Exercise Library</span>
           </a>
           <button class="admin-tab admin-tab-mobile-more" type="button" aria-label="More coach tools" aria-haspopup="dialog" data-coach-mobile-more-open>
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
             <span class="admin-nav-label">More</span>
+            <span class="admin-nav-unread-count" data-coach-message-unread hidden aria-label="0 unread messages">0</span>
           </button>
         </nav>
       </aside>
@@ -151,10 +151,22 @@
           <input type="checkbox" role="switch" data-coach-theme-toggle />
         </label>
         <nav class="coach-mobile-more-menu" aria-label="Additional coach tools">
+          <button type="button" data-admin-tab="inbox" data-coach-mobile-inbox>
+            <strong class="coach-mobile-tool-label">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 1 1 19 0Z"/><path d="M7 9h9M7 13h6"/></svg>
+              Inbox
+            </strong>
+            <span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span>
+          </button>
+          <a href="coach-exercise-library.html?v=coach-workspace-2">
+            <strong class="coach-mobile-tool-label">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg>
+              Exercise Library
+            </strong>
+          </a>
           <a href="coach-workout-log.html"><strong>Workout logger</strong><span>Record an in-person session</span></a>
           <button type="button" data-coach-install hidden><strong>Install GRUNTR Coach</strong><span>Add the coach app to your device</span></button>
           <a href="coach-community-wall.html"><strong>GRUNTR FEED</strong></a>
-          <button type="button" aria-controls="coach-approvals-panel" data-coach-mobile-approvals data-spotter-approvals-access hidden><strong>Approvals</strong><span>Review Spotter photos</span></button>
           <button type="button" aria-controls="coach-settings-panel" data-coach-mobile-settings><strong>Coach settings</strong><span>Appearance and browser alerts</span></button>
         </nav>
       </dialog>
@@ -350,7 +362,7 @@
           </div>
         </section>
 
-        <section class="admin-card" data-admin-panel="inbox" data-coach-messages aria-label="Coach inbox" hidden></section>
+        <section class="admin-card" data-admin-panel="inbox" data-coach-messages aria-label="Coach inbox" tabindex="-1" hidden></section>
 
         <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context data-client-in-view="false" hidden>
           <div class="selected-client-copy">
@@ -415,39 +427,6 @@
             <p class="web-notification-empty" data-coach-activity-filter-empty role="status" hidden></p>
             <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
           </section>
-        </section>
-
-        <section class="admin-card coach-approvals-panel" id="coach-approvals-panel" data-admin-panel="approvals" aria-labelledby="coach-approvals-title" hidden>
-          <div class="admin-section-heading">
-            <div>
-              <h2 id="coach-approvals-title" tabindex="-1">Approvals</h2>
-              <p>Review Spotter photos before they’re shared.</p>
-            </div>
-            <div class="coach-approval-toolbar">
-              <button class="button button-ghost" type="button" data-spotter-approvals-refresh>Refresh</button>
-              <button class="button button-dark" type="button" data-spotter-screen-photos disabled>Screen photos</button>
-              <button class="button button-dark" type="button" data-spotter-approve-unflagged hidden disabled>Approve all unflagged</button>
-            </div>
-          </div>
-          <p class="coach-approval-screening-note">AI screening runs in your browser. Batch approval includes photos with no explicit signal.</p>
-          <p class="coach-approvals-status" data-spotter-screening-status role="status" aria-live="polite"></p>
-          <p class="coach-approvals-status" data-spotter-approvals-status role="status" aria-live="polite"></p>
-          <ul class="coach-approvals-queue" data-spotter-approvals-list aria-label="Pending Spotter photos"></ul>
-          <dialog class="coach-approval-dialog" data-spotter-approval-dialog aria-labelledby="coach-approval-title">
-            <div class="coach-approval-dialog-heading">
-              <div>
-                <h3 id="coach-approval-title" data-spotter-approval-title>Review Spotter photo</h3>
-                <p data-spotter-approval-scope></p>
-              </div>
-              <button class="button button-ghost" type="button" data-spotter-approval-close>Close</button>
-            </div>
-            <p class="coach-approvals-status" data-spotter-approval-status role="status" aria-live="polite"></p>
-            <img class="coach-approval-image" data-spotter-approval-image alt="Spotter photo submitted for review" hidden />
-            <div class="coach-approval-actions">
-              <button class="button button-ghost" type="button" data-spotter-approval-reject disabled>Reject photo</button>
-              <button class="button button-dark" type="button" data-spotter-approval-approve disabled>Approve photo</button>
-            </div>
-          </dialog>
         </section>
 
         <section class="admin-card coach-settings-panel" id="coach-settings-panel" data-admin-panel="settings" aria-labelledby="coach-settings-title" hidden>
@@ -1301,8 +1280,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-spotter-screening.js?v=1"></script>
-  <script src="js/coach-spotter-approvals.js?v=3"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=2&amp;spotter-approvals=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=2&amp;owner-admin=2"></script>
 </body>
 </html>

@@ -63,7 +63,6 @@
   color: var(--secondary-accent);
 }
 :root body.coach-admin-page .admin-tabs .admin-tab-mobile-more { display: flex; }
-.coach-library-nav-short { display: none; }
 :root body.coach-admin-page .admin-tabs .admin-tab.is-active {
   border-color: transparent;
   background: var(--selected-surface);
@@ -241,15 +240,25 @@
   background: var(--surface);
 }
 
+:root body.coach-admin-page .admin-nav-brand-icon { object-fit: contain; }
+.coach-admin-nav-short { display: none; }
+.coach-mobile-more-menu .coach-mobile-tool-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 900px) {
   :root body.coach-admin-page .admin-shell {
     width: min(800px, calc(100% - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right))));
   }
-  :root body.coach-admin-page .admin-tabs .admin-tab-session-logger {
+  :root body.coach-admin-page .admin-tabs .admin-tab-session-logger,
+  :root body.coach-admin-page .admin-tabs .admin-tab-exercise-library,
+  :root body.coach-admin-page .admin-tabs .admin-tab[data-admin-tab="inbox"] {
     display: none !important;
   }
-  .coach-library-nav-full { display: none; }
-  .coach-library-nav-short { display: inline; }
+  .coach-admin-nav-full { display: none; }
+  .coach-admin-nav-short { display: inline; }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab[data-admin-tab="notifications"] {
     padding-inline: 4px !important;
   }
