@@ -1,0 +1,104 @@
+.coach-admin-page [data-spotter-approvals-access][hidden],
+.coach-approvals-panel[hidden],
+.coach-approval-image[hidden] {
+  display: none !important;
+}
+
+.coach-approvals-panel .admin-section-heading p,
+.coach-approval-dialog p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.coach-approvals-status {
+  color: var(--muted);
+}
+
+.coach-approvals-status:empty {
+  display: none;
+}
+
+.coach-approvals-queue {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.coach-approvals-queue > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-block: 12px;
+  border-block-start: 1px solid var(--line);
+}
+
+.coach-approvals-queue > li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.coach-approvals-queue p {
+  margin: 4px 0 0;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.coach-approval-dialog {
+  width: min(100% - 24px, 600px);
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: clamp(16px, 4vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  overflow: auto;
+}
+
+.coach-approval-dialog[open] {
+  display: grid;
+  gap: 16px;
+}
+
+.coach-approval-dialog::backdrop {
+  background: rgb(0 0 0 / .58);
+}
+
+.coach-approval-dialog-heading,
+.coach-approval-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.coach-approval-dialog-heading {
+  justify-content: space-between;
+}
+
+.coach-approval-dialog-heading h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.coach-approval-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.coach-approval-image {
+  display: block;
+  width: 100%;
+  max-height: min(56dvh, 520px);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  object-fit: contain;
+}
+
+@media (max-width: 900px) {
+  :root body.coach-admin-page .admin-tabs [data-admin-tab="approvals"] {
+    display: none !important;
+  }
+}

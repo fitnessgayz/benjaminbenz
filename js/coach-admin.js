@@ -36,6 +36,7 @@ const coachAdminTabNames = new Set([
   "workouts",
   "library",
   "notifications",
+  "approvals",
   "settings",
   "nutrition",
   "progress",
@@ -89,6 +90,7 @@ let clientSearchTerm = "";
 let clientSuggestionsOpen = false;
 let activeClientSuggestion = -1;
 let activeAdminTab = requestedCoachAdminTab();
+let coachSpotterApprovals = null;
 let pendingProgramCopy = null;
 let exerciseLibraryRecords = [];
 let selectedExerciseLibraryId = "";
@@ -230,13 +232,14 @@ async function insertCopiedProgram(payload) {
   return result;
 }
 
-function sendToCoachLogin({ preserveInbox = false } = {}) {
+function sendToCoachLogin({ preserveDestination = false } = {}) {
   const workspace = document.getElementById("coach-admin-workspace");
   if (workspace) workspace.hidden = true;
   syncCoachAdminMobileNavigationMount();
+  const tab = preserveDestination ? requestedCoachAdminTab() : "";
   const returnTo = document.querySelector(".coach-exercise-library-page")
     ? "/coach-exercise-library.html"
-    : (preserveInbox && requestedCoachAdminTab() === "inbox" ? "/coach-admin.html?tab=inbox" : "");
+    : (["inbox", "approvals"].includes(tab) ? `/coach-admin.html?tab=${tab}` : "");
   window.location.href = returnTo
     ? `${coachLoginUrl}${coachLoginUrl.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(returnTo)}`
     : coachLoginUrl;
@@ -275,11 +278,11 @@ async function restoreCoachAdminUser() {
     if (error) throw error;
 
     const user = data?.session?.user;
-    if (!user) sendToCoachLogin({ preserveInbox: true });
+    if (!user) sendToCoachLogin({ preserveDestination: true });
     return user || null;
   } catch (error) {
     if (window.FWB_AUTH_SESSION.requiresLogin(error)) {
-      sendToCoachLogin({ preserveInbox: true });
+      sendToCoachLogin({ preserveDestination: true });
     } else {
       showCoachAccessError();
     }
@@ -1002,14 +1005,16 @@ function setAdminTab(tabName) {
   });
 
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
-    panel.hidden = panel.dataset.adminPanel !== nextTab;
+    panel.hidden = panel.dataset.adminPanel !== nextTab ||
+      (nextTab === "approvals" && !coachSpotterApprovals?.authorized);
   });
 
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
-    panel.hidden = ["notifications", "settings", "home", "inbox", "session-counts"].includes(nextTab);
+    panel.hidden = ["notifications", "approvals", "settings", "home", "inbox", "session-counts"].includes(nextTab);
   });
 
   coachMessagesController?.setActive(nextTab === "inbox");
+  coachSpotterApprovals?.setActive(nextTab === "approvals");
 
   if (nextTab === "home") {
     renderCoachHome();
@@ -6401,8 +6406,28 @@ async function showAdminWorkspace(user) {
     loadPrograms(),
     loadClientAccessRequests(),
     loadExerciseLibrary(),
-    initializeCoachNotifications(user)
+    initializeCoachNotifications(user),
+    initializeCoachSpotterApprovals(user)
   ]);
+}
+
+async function initializeCoachSpotterApprovals(user) {
+  const root = document.getElementById("coach-approvals-panel");
+  if (root && user?.id && coachSupabase && window.FWBSpotterApprovals) {
+    coachSpotterApprovals = window.FWBSpotterApprovals.create({
+      root,
+      client: coachSupabase,
+      userId: user.id,
+      onAccessLost() {
+        if (activeAdminTab === "approvals") setAdminTab("notifications");
+      }
+    });
+    await coachSpotterApprovals.checkAccess();
+  }
+  if (activeAdminTab === "approvals") {
+    if (coachSpotterApprovals?.authorized) openCoachApprovals();
+    else setAdminTab("notifications");
+  }
 }
 
 function initializeCoachMessages(user) {
@@ -6497,6 +6522,7 @@ function handleAdminTabs() {
     button.addEventListener("click", () => {
       closeCoachAdminSidebarDrawer({ restoreFocus: true });
       if (button.dataset.adminTab === "notifications") openCoachActivity();
+      else if (button.dataset.adminTab === "approvals") openCoachApprovals();
       else if (button.dataset.adminTab === "session-counts") {
         setAdminTab("session-counts");
         const heading = document.getElementById("coach-session-count-title");
@@ -6532,6 +6558,14 @@ function openCoachHomeClientSection(email, tabName) {
 function openCoachActivity() {
   if (activeAdminTab !== "notifications") setAdminTab("notifications");
   const heading = document.getElementById("coach-notification-title");
+  heading?.focus({ preventScroll: true });
+  heading?.scrollIntoView({ block: "start" });
+}
+
+function openCoachApprovals() {
+  if (!coachSpotterApprovals?.authorized) return;
+  setAdminTab("approvals");
+  const heading = document.getElementById("coach-approvals-title");
   heading?.focus({ preventScroll: true });
   heading?.scrollIntoView({ block: "start" });
 }
@@ -6675,6 +6709,10 @@ function handleCoachMobileNavigation() {
   moreDialog?.querySelector("[data-coach-mobile-settings]")?.addEventListener("click", () => {
     closeMoreDialog({ restoreFocus: false });
     openCoachSettings();
+  });
+  moreDialog?.querySelector("[data-coach-mobile-approvals]")?.addEventListener("click", () => {
+    closeMoreDialog({ restoreFocus: false });
+    openCoachApprovals();
   });
 
   settingsButton?.addEventListener("click", openCoachSettings);
@@ -8239,6 +8277,8 @@ async function handleCoachSignOut() {
   button.addEventListener("click", async () => {
     coachMessagesController?.destroy();
     coachMessagesController = null;
+    coachSpotterApprovals?.destroy();
+    coachSpotterApprovals = null;
     if (coachNotificationsController) {
       try {
         await coachNotificationsController.prepareForSignOut();

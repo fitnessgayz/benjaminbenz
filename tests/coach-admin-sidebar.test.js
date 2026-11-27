@@ -8,6 +8,7 @@ const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "u
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 const workspaceStyles = fs.readFileSync(path.join(projectRoot, "css/coach-workspace.css"), "utf8");
+const approvalsStyles = fs.readFileSync(path.join(projectRoot, "css/coach-spotter-approvals.css"), "utf8");
 
 test("puts Home first in the coach admin sidebar", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
@@ -60,7 +61,10 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
-  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 8);
+  const approvalsMarkup = navMarkup.match(/<button[^>]+data-admin-tab="approvals"[\s\S]*?<\/button>/)?.[0];
+  assert.match(approvalsMarkup || "", /data-spotter-approvals-access[^>]*aria-label="Approvals"[^>]*hidden/);
+  assert.equal((navMarkup.replace(approvalsMarkup, "").match(/<svg class="admin-nav-icon/g) || []).length, 8);
+  assert.match(approvalsStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \[data-admin-tab="approvals"\]\s*\{[^}]*display: none !important/);
   assert.match(navMarkup, /data-admin-tab="inbox"[^>]*aria-label="Inbox"/);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
@@ -118,6 +122,7 @@ test("mobile dock exposes Sessions and a direct Exercise Library destination", (
     assert.ok(tools.includes(`href="${file}"`));
   }
   assert.doesNotMatch(tools, /coach-exercise-library\.html/);
+  assert.match(tools, /data-coach-mobile-approvals data-spotter-approvals-access hidden/);
   assert.match(tools, /data-coach-mobile-settings/);
 });
 
