@@ -27,6 +27,7 @@
 
   function create({ root, client, userId, onAccessLost }) {
     const refreshButton = root.querySelector("[data-spotter-approvals-refresh]");
+    const approveUnflaggedButton = root.querySelector("[data-spotter-approve-unflagged]");
     const screenButton = root.querySelector("[data-spotter-screen-photos]");
     const screeningStatus = root.querySelector("[data-spotter-screening-status]");
     const queueStatus = root.querySelector("[data-spotter-approvals-status]");
@@ -47,6 +48,8 @@
     let queueVersion = 0;
     let screeningVersion = 0;
     let screening = false;
+    let completedScan = false;
+    let bulkApproval = null;
     let queueRows = [];
     let selected = null;
 
@@ -94,7 +97,11 @@
       screeningVersion++;
       queueRows = [];
       screening = false;
+      completedScan = false;
+      bulkApproval = null;
       screenButton.disabled = true;
+      approveUnflaggedButton.hidden = true;
+      approveUnflaggedButton.disabled = true;
       screeningStatus.textContent = "";
       closeReview();
       for (const card of cards.values()) removeCard(card);
@@ -122,7 +129,7 @@
     }
 
     function updateActions(card) {
-      const disabled = card.state !== "ready" || card.saving;
+      const disabled = card.state !== "ready" || card.saving || Boolean(bulkApproval);
       card.approve.disabled = disabled;
       card.reject.disabled = disabled;
       if (selected === card) {
@@ -225,9 +232,23 @@
       }
     }
 
-    function updateScreenButton() {
-      screenButton.disabled = screening || typeof window.FWBSpotterScreening?.screen !== "function" ||
+    function unflaggedCards() {
+      if (!completedScan) return [];
+      return Array.from(cards.values()).filter((card) =>
+        card.result === "no_signal" && card.state === "ready" && !card.saving
+      );
+    }
+
+    function updateToolbar() {
+      screenButton.disabled = screening || Boolean(bulkApproval) ||
+        typeof window.FWBSpotterScreening?.screen !== "function" ||
         !Array.from(cards.values()).some((card) => !card.result);
+      const count = unflaggedCards().length;
+      approveUnflaggedButton.hidden = !bulkApproval && !count;
+      approveUnflaggedButton.disabled = !count || screening || Boolean(bulkApproval) ||
+        refreshButton.disabled || Array.from(cards.values()).some((card) => card.saving);
+      approveUnflaggedButton.textContent = bulkApproval ? `Approving (${bulkApproval.count})…` :
+        `Approve all unflagged (${count})`;
     }
 
     function renderQueue(rows) {
@@ -250,17 +271,17 @@
         }
       });
       if (focused?.isConnected && focused !== document.activeElement) focused.focus({ preventScroll: true });
-      updateScreenButton();
+      updateToolbar();
     }
 
     async function screenPhotos() {
       const engine = window.FWBSpotterScreening;
-      if (!authorized || !active || screening || !engine) return;
+      if (!authorized || !active || screening || bulkApproval || !engine) return;
       const version = ++screeningVersion;
       const toScreen = Array.from(cards.values()).filter((card) => !card.result);
       if (!toScreen.length) return;
       screening = true;
-      updateScreenButton();
+      updateToolbar();
       screeningStatus.textContent = "Screening pending photos…";
       let screened = 0;
       let needsReview = 0;
@@ -300,6 +321,7 @@
         const count = `${screened} ${screened === 1 ? "photo" : "photos"} screened.`;
         const followUp = needsReview ? ` ${needsReview} flagged for a closer look and shown first.` : "";
         const retry = unavailable ? ` ${unavailable} couldn’t be screened.` : "";
+        completedScan = true;
         screeningStatus.textContent = count + followUp + retry;
       } catch {
         if (version !== screeningVersion) return;
@@ -313,9 +335,10 @@
     }
 
     async function refresh(message = "") {
-      if (!active || !authorized) return;
+      if (!active || !authorized || bulkApproval) return;
       const version = ++queueVersion;
       refreshButton.disabled = true;
+      updateToolbar();
       queueStatus.textContent = message || "Loading pending photos…";
       try {
         const { data, error } = await client.rpc("spotter_list_pending_photo_reviews");
@@ -330,9 +353,12 @@
         queueStatus.textContent = [message, summary].filter(Boolean).join(" ");
       } catch {
         if (version !== queueVersion) return;
-        queueStatus.textContent = "Couldn’t refresh pending photos. Try again.";
+        queueStatus.textContent = [message, "Couldn’t refresh pending photos. Try again."].filter(Boolean).join(" ");
       } finally {
-        if (version === queueVersion) refreshButton.disabled = false;
+        if (version === queueVersion) {
+          refreshButton.disabled = false;
+          updateToolbar();
+        }
       }
     }
 
@@ -349,32 +375,90 @@
       closeButton.focus();
     }
 
+    async function saveDecision(card, approve) {
+      const { data, error } = await client.rpc("spotter_review_photo", {
+        p_upload_id: card.row.upload_id,
+        p_approve: approve
+      });
+      if (error || typeof data !== "boolean") throw error || new Error("Unexpected photo review response");
+      return data;
+    }
+
+    function forgetDecision(card) {
+      queueRows = queueRows.filter((row) => row.upload_id !== card.row.upload_id);
+      if (cards.get(card.row.upload_id) === card) removeCard(card, true);
+    }
+
     async function decide(card, approve) {
-      if (!authorized || !active || !card || card.saving || card.state !== "ready") return;
+      if (!authorized || !active || bulkApproval || !card || card.saving || card.state !== "ready") return;
       const focusWasInCard = card.item.contains(document.activeElement);
       card.saving = true;
       updateActions(card);
+      updateToolbar();
       if (selected === card) reviewStatus.textContent = "Saving your decision…";
       try {
-        const { data, error } = await client.rpc("spotter_review_photo", {
-          p_upload_id: card.row.upload_id,
-          p_approve: approve
-        });
+        const saved = await saveDecision(card, approve);
+        if (!active || !authorized) return;
+        if (focusWasInCard && document.activeElement === document.body) card.thumb.focus();
+        forgetDecision(card);
+        await refresh(saved ? (approve ? "Photo approved." : "Photo rejected.") : "This photo has already been reviewed or replaced.");
+      } catch (error) {
         if (!active || !authorized) return;
         if (error?.code === "42501") return revokeAccess();
-        if (error || typeof data !== "boolean") throw error || new Error();
-        queueRows = queueRows.filter((row) => row.upload_id !== card.row.upload_id);
-        if (cards.get(card.row.upload_id) === card) {
-          if (focusWasInCard && document.activeElement === document.body) card.thumb.focus();
-          removeCard(card, true);
-        }
-        await refresh(data ? (approve ? "Photo approved." : "Photo rejected.") : "This photo has already been reviewed or replaced.");
-      } catch {
         if (cards.get(card.row.upload_id) !== card) return;
         card.saving = false;
         updateActions(card);
+        updateToolbar();
         const status = selected === card ? reviewStatus : queueStatus;
         status.textContent = "Couldn’t save your decision. Try again.";
+      }
+    }
+
+    async function approveUnflagged() {
+      if (!active || !authorized || approveUnflaggedButton.disabled) return;
+      const photos = unflaggedCards();
+      if (!photos.length) return;
+
+      const startedFromButton = document.activeElement === approveUnflaggedButton;
+      const batch = { count: photos.length };
+      bulkApproval = batch;
+      refreshButton.disabled = true;
+      for (const card of cards.values()) updateActions(card);
+      updateToolbar();
+      queueStatus.textContent = `Approving ${photos.length} unflagged ${photos.length === 1 ? "photo" : "photos"}…`;
+      let approved = 0;
+      let alreadyReviewed = 0;
+      let unconfirmed = 0;
+      for (const card of photos) {
+        if (bulkApproval !== batch) return;
+        try {
+          const saved = await saveDecision(card, true);
+          if (bulkApproval !== batch) return;
+          if (saved) approved++;
+          else alreadyReviewed++;
+          forgetDecision(card);
+        } catch (error) {
+          if (bulkApproval !== batch) return;
+          if (error?.code === "42501") return revokeAccess();
+          unconfirmed++;
+        }
+      }
+
+      bulkApproval = null;
+      for (const card of cards.values()) updateActions(card);
+      const message = [
+        `Approved ${approved} ${approved === 1 ? "photo" : "photos"}.`,
+        alreadyReviewed ? `${alreadyReviewed} already reviewed or replaced.` : "",
+        unconfirmed ? `Couldn’t confirm ${unconfirmed}. You can retry any photos still in the queue.` : ""
+      ].filter(Boolean).join(" ");
+      const refreshed = refresh(message);
+      const version = queueVersion;
+      await refreshed;
+      if (!active || !authorized || queueVersion !== version) return;
+      if (startedFromButton && (document.activeElement === document.body ||
+          document.activeElement === approveUnflaggedButton)) {
+        const target = approveUnflaggedButton.hidden ? root.querySelector("h2") : approveUnflaggedButton;
+        target?.focus();
       }
     }
 
@@ -397,6 +481,7 @@
     window.addEventListener("pageshow", restorePage);
     refreshButton.addEventListener("click", () => refresh());
     screenButton.addEventListener("click", screenPhotos);
+    approveUnflaggedButton.addEventListener("click", approveUnflagged);
     closeButton.addEventListener("click", () => closeReview(true));
     dialog.addEventListener("cancel", (event) => {
       event.preventDefault();
