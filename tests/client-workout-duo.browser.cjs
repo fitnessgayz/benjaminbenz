@@ -23,6 +23,7 @@ const workingSetType = 'working';
 const warmUpSetType = 'warm_up';
 const warmUpSetNumberBase = 1000;
 function normalizedSetType(type, number) { return type || workingSetType; }
+function autoCollapseCompletedExercises() { return true; }
 function exerciseNameInputForLog(log) { return log.querySelector('[data-exercise-name-input]'); }
 ${functions}
 function refreshCustomWorkoutGroupedCompletion(carousel) {

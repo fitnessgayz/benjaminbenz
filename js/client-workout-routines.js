@@ -170,17 +170,26 @@
   ];
 
   const filters = [["level", "Level"], ["goal", "Goal"], ["equipment", "Equipment"]];
+  const categories = [
+    ["benjamin", "Benjamin’s Routine", "Intermediate and advanced sessions", "benjamin-full-body"],
+    ["training", "Training Programs", "Browse by level, goal, and equipment", "upper-lower"],
+    ["sports", "Sports Training", "Warm-up, mobility, and strength by sport", "power-hypertrophy"],
+    ["targeted", "Targeted Routines", "Focus on arms, shoulders, abs, or glutes", "abs-core"],
+    ["at-home", "At-Home Routines", "Bodyweight and dumbbell workouts", "full-body"]
+  ];
   const programCoverFamilies = ["full-body", "upper-lower", "push-pull-legs"];
   const initialPrograms = 3;
   const mountedCatalogs = new WeakSet();
+  const mountedNavigation = new WeakSet();
 
-  function programs() {
-    if (typeof module === "object" && module.exports) return require("./client-explore-programs.js").programs;
-    return root.FWB_CLIENT_EXPLORE_PROGRAMS?.programs || [];
+  function catalog() {
+    if (typeof module === "object" && module.exports) return require("./client-explore-programs.js");
+    return root.FWB_CLIENT_EXPLORE_PROGRAMS || { programs: [], sportPrograms: [] };
   }
 
   function find(id) {
-    return [...benjaminLevels, ...programs(), targeted, { routines: atHome }, ...legacyGroups]
+    const { programs, sportPrograms } = catalog();
+    return [...benjaminLevels, ...programs, ...sportPrograms, targeted, { routines: atHome }, ...legacyGroups]
       .flatMap(group => group.routines).find(routine => routine.id === id);
   }
 
@@ -195,12 +204,15 @@
   }
 
   function routineMarkup(routine, escape) {
+    const metadata = [`${routine.exercises.length} exercises`, routine.detail ? `About ${routine.minutes} min` : ""].filter(Boolean);
     return `<details class="client-routine">
       <summary class="client-explore-routine-summary">
         ${coverMarkup(routine.cover, escape)}
-        <span class="client-explore-program-title"><strong>${escape(routine.title)}</strong><small>${routine.exercises.length} exercises</small></span>
+        <span class="client-explore-program-title"><strong>${escape(routine.title)}</strong><small>${escape(metadata.join(" · "))}</small></span>
       </summary>
-      <ol>${routine.exercises.map(exercise => `<li><span>${escape(exercise.name)}</span><small>${escape(exercise.prescription)}</small></li>`).join("")}</ol>
+      ${routine.detail ? `<p>${escape(routine.detail)}</p>` : ""}
+      <ol>${routine.exercises.map(exercise => `<li><span>${escape(exercise.name)}</span><small>${escape(exercise.prescription)}${routine.detail ? ` · Rest ${escape(exercise.rest)}` : ""}</small>
+        ${routine.detail && exercise.instructions ? `<small>${escape(exercise.instructions.join(" "))}</small>` : ""}</li>`).join("")}</ol>
       <button type="button" class="button" data-client-explore-routine="${escape(routine.id)}">Open workout</button>
     </details>`;
   }
@@ -219,10 +231,13 @@
     </details>`;
   }
 
-  function programMarkup(program, escape, index = 0) {
+  function programMarkup(program, escape, index = 0, sport = false) {
     const metadata = filters.map(([key]) => program[key]).filter(Boolean);
     const workoutCount = `${program.routines.length} ${program.routines.length === 1 ? "workout" : "workouts"}`;
-    return `<details class="client-explore-program"${program.id ? ` data-client-explore-program="${escape(program.id)}"${filters.map(([key]) => ` data-${key}="${escape(program[key] || "")}"`).join("")}` : ""}${index >= initialPrograms ? " hidden" : ""}>
+    const kind = sport ? ` data-client-sport-program="${escape(program.id)}"` : program.id
+      ? ` data-client-explore-program="${escape(program.id)}"${filters.map(([key]) => ` data-${key}="${escape(program[key] || "")}"`).join("")}`
+      : "";
+    return `<details class="client-explore-program"${kind}${!sport && index >= initialPrograms ? " hidden" : ""}>
       <summary>
         ${coverMarkup(programCover(program.id), escape)}
         <span class="client-explore-program-title"><strong>${escape(program.title)}</strong><small>${escape([...metadata, workoutCount].join(" · "))}</small></span>
@@ -234,15 +249,10 @@
     </details>`;
   }
 
-  function markup(escape) {
-    const available = programs();
-    return `<section class="client-routine-group" aria-label="Benjamin’s Routine">
-      <h4>Benjamin’s Routine</h4>
-      ${benjaminLevels.map(level => programMarkup(level, escape)).join("")}
-    </section>
-    ${available.length ? `<section class="client-routine-group" data-client-explore-catalog aria-label="Programs">
-      <h4>Programs</h4>
-      <div class="client-explore-filters" role="group" aria-label="Filter programs">
+  function trainingMarkup(available, escape) {
+    if (!available.length) return "<p>Training programs are unavailable. Refresh to try again.</p>";
+    return `<div class="client-routine-group" data-client-explore-catalog>
+      <div class="client-explore-filters" role="group" aria-label="Filter training programs">
         ${filters.map(([key, label]) => `<label>${label}
           <select data-client-explore-filter="${key}">
             <option value="">All</option>
@@ -256,18 +266,69 @@
       <p data-client-explore-empty hidden>No programs match these filters.</p>
       <button type="button" class="button button-ghost" data-client-explore-reset hidden>Clear filters</button>
       ${available.length > initialPrograms ? `<button type="button" class="button button-ghost" data-client-explore-more aria-expanded="false">Show all ${available.length} programs</button>` : ""}
-    </section>` : ""}
-    <section class="client-routine-group" aria-label="${targeted.title}">
-      <h4>${targeted.title}</h4>
-      ${targeted.routines.map(routine => routineMarkup(routine, escape)).join("")}
-    </section>
-    <section class="client-routine-group" aria-label="At-home routines">
-      <h4>At-home routines</h4>
-      <div class="client-at-home-grid">${atHome.map(routine => atHomeMarkup(routine, escape)).join("")}</div>
-    </section>`;
+    </div>`;
+  }
+
+  function markup(escape) {
+    const { programs, sportPrograms } = catalog();
+    const content = [
+      benjaminLevels.map(level => programMarkup(level, escape)).join(""),
+      trainingMarkup(programs, escape),
+      `<div class="client-sport-grid">${sportPrograms.map(program => programMarkup(program, escape, 0, true)).join("")}</div>`,
+      targeted.routines.map(routine => routineMarkup(routine, escape)).join(""),
+      `<div class="client-at-home-grid">${atHome.map(routine => atHomeMarkup(routine, escape)).join("")}</div>`
+    ];
+    return `<div data-client-explore-navigation>
+      <nav class="client-explore-category-list" data-client-explore-landing aria-label="Explore Routines categories">
+        ${categories.map(([id, title, description]) => `<button type="button" class="client-explore-category" data-client-explore-category="${id}" aria-controls="client-explore-${id}">
+          <span><strong>${escape(title)}</strong><small>${escape(description)}</small></span>
+        </button>`).join("")}
+      </nav>
+      ${categories.map(([id, title, , cover], index) => `<section id="client-explore-${id}" class="client-routine-group client-explore-category-panel" aria-label="${escape(title)}" data-client-explore-category-panel="${id}" hidden>
+        <button type="button" class="button button-ghost client-explore-back" data-client-explore-back>Back to Explore Routines</button>
+        <h4 tabindex="-1">${escape(title)}</h4>
+        <div class="client-explore-category-art">${coverMarkup(cover, escape)}</div>
+        ${content[index]}
+      </section>`).join("")}
+    </div>`;
+  }
+
+  function bindNavigation(container) {
+    const navigation = container?.querySelector("[data-client-explore-navigation]");
+    if (!navigation || mountedNavigation.has(navigation)) return;
+    mountedNavigation.add(navigation);
+    const landing = navigation.querySelector("[data-client-explore-landing]");
+    const panels = Array.from(navigation.querySelectorAll("[data-client-explore-category-panel]"));
+    let origin;
+
+    function back(restoreFocus) {
+      for (const panel of panels) panel.hidden = true;
+      landing.hidden = false;
+      container.scrollTop = 0;
+      if (restoreFocus) origin?.focus();
+      origin = null;
+    }
+
+    navigation.addEventListener("click", event => {
+      if (event.target.closest("[data-client-explore-back]")) {
+        back(true);
+        return;
+      }
+      const choice = event.target.closest("[data-client-explore-category]");
+      if (!choice) return;
+      const panel = panels.find(item => item.dataset.clientExploreCategoryPanel === choice.dataset.clientExploreCategory);
+      if (!panel) return;
+      origin = choice;
+      landing.hidden = true;
+      for (const item of panels) item.hidden = item !== panel;
+      container.scrollTop = 0;
+      panel.querySelector("h4")?.focus();
+    });
+    container.addEventListener("close", () => back(false));
   }
 
   function bind(container) {
+    bindNavigation(container);
     const catalog = container?.querySelector("[data-client-explore-catalog]");
     if (!catalog || mountedCatalogs.has(catalog)) return;
     mountedCatalogs.add(catalog);

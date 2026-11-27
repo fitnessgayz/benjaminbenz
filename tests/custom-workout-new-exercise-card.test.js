@@ -15,7 +15,9 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
-test("starts straight custom exercises with zero warm-ups and three working sets", () => {
+const workingSetDefault = Number(portal.match(/const customWorkoutDefaultWorkingSetCount = (\d+);/)?.[1]);
+
+test("starts custom exercises with one working set and no automatic warm-up", () => {
   const helpers = [
     "repTargetsFromPrescription",
     "normalizedSetType",
@@ -33,18 +35,19 @@ test("starts straight custom exercises with zero warm-ups and three working sets
     "autoRestTimerEnabled",
     `${helpers}; return setRows;`
   )("warm_up", "working", 1000, (value) => String(value || ""), require("../js/workout-layout.js"), () => true);
-  const markup = setRows({ prescription: "Custom sets" }, 3, { includeWarmUp: false });
+  assert.equal(workingSetDefault, 1);
+  const markup = setRows({ prescription: "Custom sets" }, workingSetDefault, { includeWarmUp: false });
   const assignedMarkup = setRows({ prescription: "Custom sets" }, 3);
   const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
 
-  assert.equal((markup.match(/data-set-row/g) || []).length, 3);
+  assert.equal((markup.match(/data-set-row/g) || []).length, 1);
   assert.equal((markup.match(/data-set-type="warm_up"/g) || []).length, 0);
-  assert.equal((markup.match(/data-set-type="working"/g) || []).length, 3);
+  assert.equal((markup.match(/data-set-type="working"/g) || []).length, 1);
   assert.equal((assignedMarkup.match(/data-set-type="warm_up"/g) || []).length, 1);
-  assert.match(markup, /data-set-number="1"[\s\S]*data-set-number="2"[\s\S]*data-set-number="3"/);
-  assert.match(cardMarkup, /0 \/ \$\{customWorkoutDefaultWorkingSetCount\} working sets completed/);
-  assert.match(cardMarkup, /setCount: customWorkoutDefaultWorkingSetCount/);
-  assert.match(cardMarkup, /includeWarmUp: cardFormat !== "single"/);
+  assert.match(markup, /data-set-number="1"/);
+  assert.match(cardMarkup, /0 \/ \$\{workingSetCount\} working sets completed/);
+  assert.match(cardMarkup, /setCount: workingSetCount/);
+  assert.match(cardMarkup, /includeWarmUp: Boolean\(exercise.generated\) && cardFormat !== "single"/);
 });
 
 test("upgrades an untouched legacy draft without overwriting entered sets", () => {
@@ -57,7 +60,7 @@ test("upgrades an untouched legacy draft without overwriting entered sets", () =
     "customWorkoutDefaultWorkingSetCount",
     "customWorkoutDraftVersion",
     `${normalize}; ${upgrade}; return upgradeCustomWorkoutDraft;`
-  )("warm_up", "working", 1000, 3, 2);
+  )("warm_up", "working", 1000, workingSetDefault, 2);
   const blankLegacy = upgradeDraft({
     version: 1,
     exercises: [{ sets: [{ label: "W", setType: "warm_up", weight: "", reps: "" }] }]
@@ -69,11 +72,16 @@ test("upgrades an untouched legacy draft without overwriting entered sets", () =
       { label: "1", setType: "working", weight: "40", reps: "8" }
     ] }]
   });
+  const previouslyPlanned = upgradeDraft({
+    version: 1, copiedFrom: { historyKey: "session:fixture" },
+    exercises: [{ sets: [1, 2, 3].map(label => ({ label: String(label), setType: "working" })) }]
+  });
 
   assert.equal(blankLegacy.version, 2);
-  assert.equal(blankLegacy.exercises[0].sets.length, 4);
-  assert.equal(blankLegacy.exercises[0].sets.filter((set) => set.setType === "working").length, 3);
+  assert.equal(blankLegacy.exercises[0].sets.length, 2);
+  assert.equal(blankLegacy.exercises[0].sets.filter((set) => set.setType === "working").length, 1);
   assert.equal(enteredLegacy.exercises[0].sets.length, 2);
+  assert.equal(previouslyPlanned.exercises[0].sets.length, 3);
 });
 
 test("empty grouped workouts show no phantom exercise cards", () => {

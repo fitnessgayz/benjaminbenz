@@ -38,19 +38,28 @@ test("uses the 480w branded card in lists and keeps the 768w card for the full d
   assert.match(portal, /data-exercise-media-static="\$\{escapeHtml\(fullUrl\)\}"/);
 });
 
-test("keeps both poses visible in branded workout thumbnails", () => {
+test("crops verified pose pairs without cropping single poses or uncertain artwork", () => {
   assert.match(portal, /exercise-media-button-branded-crop/);
-  assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 176 \/ 117/);
-  assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
-  assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
-  const crop = compactSetupCss.match(/#client-workouts-panel \.exercise-media-button-branded-crop > img\s*\{([^}]*)\}/)?.[1] || "";
-  const scale = Number(crop.match(/width:\s*([\d.]+)% !important/)?.[1]) / 100;
-  // Both 480 × 209 and 480 × 240 cards put both photos in the first 345 pixels.
-  assert.ok(Math.abs(480 / scale - 345) < 2);
-  assert.match(crop, /top: 0 !important;[\s\S]*left: 0 !important;/);
-  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop\.is-wide-branded-card > img\s*\{[^}]*width: 139\.13% !important;/);
-  assert.match(compactSetupCss, /\.ios-log-exercise-image:has\(\.exercise-media-button-branded-crop > img\)\s*\{[^}]*aspect-ratio: 345 \/ 240 !important;/);
-  assert.match(compactSetupCss, /\.ios-log-exercise-image:has\(\.exercise-media-button-branded-crop\.is-wide-branded-card > img\)\s*\{[^}]*aspect-ratio: 345 \/ 209 !important;/);
+  assert.match(compactSetupCss, /\.exercise-media-compact-pose:has\(\.exercise-first-pose\) > img/);
+  const detectorSource = portal.slice(portal.indexOf("function largestExercisePhotoSpan("), portal.indexOf("function updateExerciseFirstPoseThumbnail("));
+  const detect = Function(`${detectorSource}\nreturn exerciseFirstPoseBounds;`)();
+  const width = 120;
+  const height = 60;
+  const pixels = (...rects) => {
+    const image = new Uint8ClampedArray(width * height * 4).fill(255);
+    for (const [left, top, right, bottom] of rects) {
+      for (let y = top; y < bottom; y++) {
+        for (let x = left; x < right; x++) image.fill(80, (y * width + x) * 4, (y * width + x) * 4 + 3);
+      }
+    }
+    return image;
+  };
+  assert.deepEqual(detect(pixels([18, 8, 45, 52], [75, 8, 103, 52]), width, height, 2, false), [0, 0, 0.5, 1]);
+  assert.equal(detect(pixels([18, 8, 45, 52]), width, height, 2, false), null);
+  assert.equal(detect(pixels([29, 8, 92, 52]), width, height, 2, false), null);
+  const branded = detect(pixels([5, 8, 41, 52], [43, 8, 78, 52], [93, 8, 110, 52]), width, height, 2.3, true);
+  assert.deepEqual(branded, [5 / 120, 8 / 60, 36 / 120, 44 / 60]);
+  assert.equal(detect(pixels([5, 8, 78, 52]), width, height, 2.3, true), null);
 });
 
 test("recognizes approved cards served from both storage and the website", () => {
@@ -81,15 +90,16 @@ test("loads both static artwork and instructions from the approved exercise libr
 
 test("reuses the photo-rich exercise key in grouped custom and assigned workouts", () => {
   assert.match(portal, /function customWorkoutGroupedExerciseKeyMarkup/);
-  assert.match(portal, /exerciseMediaButtonMarkup\(\{ name: exerciseName \}, \{ compact: true \}\)/);
+  assert.match(portal, /exerciseMediaButtonMarkup\(exercise, \{ compact: true, defaultArtwork: true \}\)/);
   assert.match(portal, /customWorkoutCarouselGroupMarkup\(format, exercises/);
   assert.match(portal, /assignedWorkoutCarouselMarkup[\s\S]*customWorkoutCarouselGroupMarkup/);
   assert.match(css, /grid-template-columns: clamp\(116px, 34%, 210px\) minmax\(0, 1fr\) 28px/);
 });
 
-test("uses branded exercise cards in the editable workout-plan list", () => {
+test("uses branded exercise cards without the info badge in the editable workout-plan list", () => {
   assert.match(portal, /class="workout-preview-exercise-card"/);
-  assert.match(portal, /workout-preview-exercise-media[^\n]*exerciseMediaButtonMarkup\(exercise, \{ compact: true \}\)/);
+  assert.match(portal, /workout-preview-exercise-media[^\n]*exerciseMediaButtonMarkup\(exercise, \{ compact: true, defaultArtwork: true, hideInfo: true, firstPose: true \}\)/);
+  assert.match(portal, /slot.innerHTML = exerciseMediaButtonMarkup\(exercise, \{ compact: true, defaultArtwork: true, hideInfo: true, firstPose: true \}\)/);
   assert.match(workoutCss, /\.workout-preview-exercises \.workout-preview-exercise-card/);
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button/);
 });

@@ -148,6 +148,10 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   color: #f7f8fa !important;
 }
 
+body.client-dashboard-page #client-workout-panels input[data-history-weight-suggestion="true"]::placeholder {
+  opacity: .25;
+}
+
 :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row.is-complete {
   background: #1e2d38 !important;
 }
@@ -928,33 +932,11 @@ body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exe
 }
 
 @media (max-width: 760px) {
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
-    grid-template-columns: minmax(0, 1fr) 44px !important;
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
+    --ios-log-image-size: clamp(48px, 16vw, 68px);
+    grid-template-columns: var(--ios-log-image-size) minmax(0, 1fr) 44px;
     align-items: center;
-    gap: 8px 6px;
     min-height: 0;
-  }
-
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    width: 100% !important;
-    min-width: 0 !important;
-    height: clamp(112px, 39vw, 160px) !important;
-    min-height: 0 !important;
-    aspect-ratio: 11 / 5 !important;
-    border-radius: 11px;
-  }
-
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-heading-copy {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: start;
-  }
-
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-menu {
-    grid-column: 2;
-    grid-row: 2;
   }
 
   body.client-dashboard-page #client-workout-panels .workout-card-drag-handle span {

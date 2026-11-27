@@ -71,108 +71,33 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   gap: 20px;
 }
 
-/* Frame the Start/End photos inside approved exercise art, leaving the label
-   strip and the right-hand text panel outside the workout thumbnail. */
-:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop {
-  aspect-ratio: 345 / 240;
-  border: 0;
-  background: #111;
+/* Compact workout photos only crop when the image has a verified pose pair. */
+:root body.client-dashboard-page #client-workouts-panel .exercise-media-compact-pose {
+  position: relative;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  padding: 0 !important;
+  background: var(--surface-soft, #23262b);
 }
-:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop > img {
-  position: absolute;
-  top: 0 !important;
-  left: 0 !important;
-  width: 139.13% !important;
-  max-width: none !important;
-  height: auto !important;
-  max-height: none !important;
-  object-fit: fill;
-}
-:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop.is-wide-branded-card {
-  aspect-ratio: 345 / 209;
-}
-:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop.is-wide-branded-card > img {
-  top: 0 !important;
-  left: 0 !important;
-  width: 139.13% !important;
-}
-/* List thumbnails use one frame height; center the shorter, newer artwork. */
-:root body.client-dashboard-page #client-workouts-panel .workout-preview-exercise-media .exercise-media-button-branded-crop.is-wide-branded-card {
-  aspect-ratio: 345 / 240;
-}
-:root body.client-dashboard-page #client-workouts-panel .workout-preview-exercise-media .exercise-media-button-branded-crop.is-wide-branded-card > img {
-  top: 50% !important;
-  transform: translateY(-50%);
-}
-@media (max-width: 700px) {
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
-    grid-template-columns: minmax(0, 1fr) 44px !important;
-    min-height: 0;
-  }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {
-    width: 100% !important;
-    min-width: 0 !important;
-    height: clamp(160px, 49vw, 205px) !important;
-    min-height: 0 !important;
-    aspect-ratio: 11 / 5 !important;
-    border: 0 !important;
-    background: #111;
-  }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop {
-    width: 100% !important;
-    height: 100% !important;
-    aspect-ratio: auto !important;
-  }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(.exercise-media-button-branded-crop) { aspect-ratio: 11 / 5 !important; }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img {
-    top: -20% !important;
-    left: -7% !important;
-    width: 180% !important;
-    max-width: none !important;
-    height: auto !important;
-  }
-  /* Wide branded cards reserve their right side for printed instructions.
-     Fill the logger image with the two exercise photos instead. */
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop.is-wide-branded-card > img {
-    top: -21% !important;
-    left: -8% !important;
-    width: 215% !important;
-  }
-  /* The newer card artwork uses wider exercise photos than the original set. */
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(img[src*="/2026-11-04/"]),
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(img[src*="dual-45-hip-extension.webp"]) {
-    height: clamp(112px, 39vw, 160px) !important;
-  }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img[src*="/2026-11-04/"] {
-    top: -2% !important;
-    left: -1% !important;
-    width: 142% !important;
-  }
-  /* This dual-pose card already fills most of the source image. Keep both
-     positions in frame while trimming only its printed border and side panel. */
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img[src*="dual-45-hip-extension.webp"] {
-    top: -12% !important;
-    left: -4% !important;
-    width: 150% !important;
-  }
 
-  /* The approved cards place Start and End in the left 72% of a 480:209
-     image. Match that panel's aspect ratio instead of zooming into one pose. */
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(.exercise-media-button-branded-crop > img) {
-    height: auto !important;
-    aspect-ratio: 345 / 240 !important;
-  }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(.exercise-media-button-branded-crop.is-wide-branded-card > img) {
-    aspect-ratio: 345 / 209 !important;
-  }
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img,
-  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop.is-wide-branded-card > img {
-    top: 0 !important;
-    left: 0 !important;
-    width: 139.13% !important;
-    height: auto !important;
-    max-height: none !important;
-  }
+:root body.client-dashboard-page #client-workouts-panel .exercise-media-compact-pose > :is(img, .exercise-first-pose) {
+  position: absolute;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain;
+}
+
+.exercise-media-compact-pose:has(.exercise-first-pose) > img { visibility: hidden; }
+.exercise-first-pose { pointer-events: none; }
+
+.workout-setup-help {
+  margin: 0 0 6px;
+  color: var(--muted, #aeb8c3);
+  font-size: .88rem;
 }
 
 body.client-dashboard-page .workout-compact-source { display: grid; gap: 8px; }

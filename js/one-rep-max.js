@@ -164,8 +164,16 @@
       <form class="one-rm-card" method="dialog">
         <header class="one-rm-heading">
           <div><p class="kicker">Training tool</p><h2 id="one-rm-title">Estimated 1RM</h2></div>
-          <button class="one-rm-close" type="button" data-one-rm-close aria-label="Close 1RM calculator">×</button>
+          <button class="one-rm-close" type="button" data-one-rm-close aria-label="Close calculator">×</button>
         </header>
+        <div class="workout-calculator-tabs" role="tablist" aria-label="Calculator" hidden>
+          <button type="button" role="tab" id="workout-calculator-plates-tab" aria-controls="workout-calculator-plates" data-calculator-tab="plates">Plates</button>
+          <button type="button" role="tab" id="workout-calculator-1rm-tab" aria-controls="workout-calculator-1rm" data-calculator-tab="one-rm">1RM</button>
+        </div>
+        <section class="client-plate-calculator" id="workout-calculator-plates" role="tabpanel" aria-labelledby="workout-calculator-plates-tab" hidden>
+          <div data-plate-calculator-fields></div>
+        </section>
+        <div class="workout-calculator-one-rm" id="workout-calculator-1rm">
         <p class="one-rm-intro">Estimate your one-rep max from a completed set. This is a guide, not a tested maximum.</p>
         <label class="one-rm-source" data-one-rm-source-field hidden>
           <span>Exercise</span>
@@ -194,6 +202,7 @@
           <button type="button" data-one-rm-use-weight>Use for empty sets</button>
           <small>Estimate only. Equipment, fatigue, technique, and training experience can change the appropriate load. Stop if form breaks down or you feel pain.</small>
         </section>
+        </div>
         <button class="one-rm-done" type="button" data-one-rm-close>Done</button>
       </form>
     `;
@@ -205,6 +214,18 @@
       populate(activeSources[Number(event.target.value)] || {});
     });
     dialog.querySelector("[data-one-rm-use-weight]").addEventListener("click", useRecommendedWeight);
+    const tabs = dialog.querySelector(".workout-calculator-tabs");
+    tabs.addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-calculator-tab]");
+      if (tab) selectCalculatorTab(tab.dataset.calculatorTab, true);
+    });
+    tabs.addEventListener("keydown", (event) => {
+      const tab = event.target.closest("[data-calculator-tab]");
+      if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const plates = event.key === "Home" || (event.key !== "End" && tab.dataset.calculatorTab === "one-rm");
+      selectCalculatorTab(plates ? "plates" : "one-rm", true);
+    });
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) close();
     });
@@ -213,6 +234,17 @@
       returnFocus = null;
     });
     return dialog;
+  }
+
+  function selectCalculatorTab(mode, focus = false) {
+    dialog.querySelectorAll("[data-calculator-tab]").forEach((tab) => {
+      const selected = tab.dataset.calculatorTab === mode;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected && focus) tab.focus();
+    });
+    dialog.querySelector("#workout-calculator-plates").hidden = mode !== "plates";
+    dialog.querySelector("#workout-calculator-1rm").hidden = mode === "plates";
   }
 
   function sourceLabel(row, index) {
@@ -274,9 +306,30 @@
     }
   }
 
+  function calculatorWorkoutPanel(trigger) {
+    return trigger?.matches?.("[data-workout-calculators-open]")
+      ? trigger.closest("#client-workouts-panel")?.querySelector(".client-workout-panel.is-active:not([hidden])")
+      : null;
+  }
+
   function sourcesNear(trigger) {
     const stored = parsedSources(trigger);
     if (stored.length) return stored;
+    const panel = calculatorWorkoutPanel(trigger);
+    if (panel) {
+      const logs = [...panel.querySelectorAll("[data-exercise-log]:not([data-cardio-log]):not([data-warmup-log])")];
+      const estimates = logs.flatMap((log) => {
+        const recent = [...workingRows(log)].reverse().find((row) => {
+          const weight = row.querySelector(weightSelector)?.value;
+          const reps = row.querySelector(repsSelector)?.value;
+          return estimate(weight, reps) !== null;
+        });
+        if (!recent) return [];
+        const source = rowSource(recent, 0);
+        return [{ ...source, label: source.exerciseName }];
+      });
+      return estimates.length ? estimates : [{}];
+    }
     const scope = trigger.closest(
       "[data-custom-grouped-round], [data-coach-grouped-round], .set-table, .coach-workout-set-table"
     ) || trigger.closest("[data-custom-workout-grouped], [data-coach-workout-group-card], [data-exercise-log], [data-coach-workout-exercise]");
@@ -336,6 +389,18 @@
     const calculator = ensureDialog();
     returnFocus = trigger || document.activeElement;
     activeTrigger = trigger;
+    const hasPlates = Boolean(trigger?.matches?.("[data-workout-calculators-open]") && global.FWBPlateCalculator);
+    const tabs = calculator.querySelector(".workout-calculator-tabs");
+    const oneRepMaxPanel = calculator.querySelector("#workout-calculator-1rm");
+    tabs.hidden = !hasPlates;
+    calculator.querySelector("#one-rm-title").textContent = hasPlates ? "Workout Calculators" : "Estimated 1RM";
+    if (hasPlates) {
+      oneRepMaxPanel.setAttribute("role", "tabpanel");
+      oneRepMaxPanel.setAttribute("aria-labelledby", "workout-calculator-1rm-tab");
+    } else {
+      oneRepMaxPanel.removeAttribute("role");
+      oneRepMaxPanel.removeAttribute("aria-labelledby");
+    }
     const directLog = trigger?.closest?.("[data-exercise-log]");
     activeSources = (suppliedSources?.length ? suppliedSources : sourcesNear(trigger)).filter(Boolean)
       .map((source, index) => withProgram(source, directLog, source.exerciseIndex ?? index));
@@ -348,9 +413,12 @@
     )).join("");
     sourceSelect.value = "0";
     populate(activeSources[0]);
+    selectCalculatorTab(hasPlates ? "plates" : "one-rm");
+    if (hasPlates) global.FWBPlateCalculator.mount(calculator, activeSources[0]?.weight);
     if (typeof calculator.showModal === "function") calculator.showModal();
     else calculator.setAttribute("open", "");
-    calculator.querySelector(resultIsReady() ? "[data-one-rm-output]" : "[data-one-rm-weight]")?.focus();
+    const focusTarget = hasPlates ? "#workout-calculator-plates-tab" : resultIsReady() ? "[data-one-rm-output]" : "[data-one-rm-weight]";
+    calculator.querySelector(focusTarget)?.focus();
   }
 
   function resultIsReady() {
@@ -373,9 +441,11 @@
   function targetLogForSource(source) {
     const direct = activeTrigger?.closest?.("[data-exercise-log]");
     if (direct && (!source.exerciseCode || direct.dataset.exerciseCode === source.exerciseCode)) return direct;
-    const scope = activeTrigger?.closest?.("[data-custom-workout-grouped], [data-coach-workout-group-card], [data-custom-workout-carousel]")
+    const panel = calculatorWorkoutPanel(activeTrigger);
+    const scope = panel || activeTrigger?.closest?.("[data-custom-workout-grouped], [data-coach-workout-group-card], [data-custom-workout-carousel]")
       || activeTrigger?.closest?.(".client-workout-panel, .coach-workout-panel") || document;
     const logs = Array.from(scope?.querySelectorAll?.("[data-exercise-log]") || []);
+    if (panel) return logs.find((log) => source.exerciseCode && log.dataset.exerciseCode === source.exerciseCode) || null;
     if (Number.isInteger(Number(source.exerciseIndex)) && logs[Number(source.exerciseIndex)]) return logs[Number(source.exerciseIndex)];
     return logs.find((log) => source.exerciseCode && log.dataset.exerciseCode === source.exerciseCode)
       || logs.find((log) => (log.dataset.exerciseName || "").trim().toLowerCase() === String(source.exerciseName || source.label || "").trim().toLowerCase())
@@ -410,7 +480,7 @@
     if (event.target?.matches?.(`${weightSelector},${repsSelector}`)) lastEditedInput = event.target;
   });
   document.addEventListener("click", (event) => {
-    const trigger = event.target?.closest?.("[data-one-rm-open]");
+    const trigger = event.target?.closest?.("[data-one-rm-open], [data-workout-calculators-open]");
     if (!trigger || trigger.disabled) return;
     event.preventDefault();
     open(trigger);

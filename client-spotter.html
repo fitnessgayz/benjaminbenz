@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#101113">
+  <title>Spotter | GRUNTR</title>
+  <link rel="icon" type="image/png" href="/images/gruntr/client-pulse-1380/icon-32.png">
+  <link rel="apple-touch-icon" href="/images/gruntr/client-pulse-1380/icon-180.png">
+  <link rel="manifest" href="/client.webmanifest?v=pulse-1380">
+  <script src="/js/client-theme.js?v=1"></script>
+  <link rel="stylesheet" href="/css/client-spotter.css?v=1">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="/js/supabase-config.js?v=manual-sessions-1"></script>
+  <script defer src="/js/auth-session.js?v=remember-login-2"></script>
+  <script defer src="/js/profile-photo-processor.js?v=1"></script>
+  <script defer src="/js/client-spotter-profile.js?v=1"></script>
+  <script defer src="/js/client-spotter-connections.js?v=1"></script>
+  <script defer src="/js/client-spotter.js?v=1"></script>
+</head>
+<body class="spotter-page">
+  <a class="spotter-skip" href="#spotter-content">Skip to Spotter</a>
+  <header class="spotter-header">
+    <a class="spotter-secondary spotter-back" href="/client-dashboard.html?tab=home">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg><span>Back</span>
+    </a>
+    <h1><img alt="" width="32" height="32" src="/images/gruntr/client-pulse-1380/icon-192.png"> GRUNTR Spotter</h1>
+  </header>
+  <main id="spotter-content" class="spotter-content" tabindex="-1">
+    <p class="spotter-feedback" data-spotter-notice role="status" aria-live="polite"></p>
+    <p class="spotter-muted" data-spotter-loading role="status">Loading Spotter…</p>
+    <nav aria-label="Spotter sections" class="spotter-navigation" data-spotter-navigation hidden>
+      <button type="button" aria-controls="spotter-discover" data-spotter-tab="discover">Discover</button>
+      <button type="button" aria-controls="spotter-network" data-spotter-tab="groups">Groups</button>
+      <button type="button" aria-controls="spotter-network" data-spotter-tab="matches">Matches</button>
+      <button type="button" aria-controls="spotter-profile" data-spotter-tab="profile">Profile</button>
+      <button type="button" aria-controls="spotter-network" data-spotter-tab="inbox">Inbox</button>
+    </nav>
+    <section id="spotter-discover" class="spotter-stack" data-spotter-discover hidden aria-label="Discover"></section>
+    <section id="spotter-network" class="spotter-stack" data-spotter-network hidden aria-label="Spotter connections"></section>
+    <section id="spotter-profile" class="spotter-stack" data-spotter-profile hidden aria-label="Spotter profile"></section>
+  </main>
+  <dialog class="spotter-dialog" aria-labelledby="spotter-dialog-title" data-spotter-dialog>
+    <header class="spotter-heading-row">
+      <h2 id="spotter-dialog-title" data-spotter-dialog-title></h2>
+      <form method="dialog"><button class="spotter-secondary" type="submit">Close</button></form>
+    </header>
+    <div class="spotter-stack" data-spotter-dialog-content></div>
+  </dialog>
+</body>
+</html>

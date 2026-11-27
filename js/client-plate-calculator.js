@@ -56,13 +56,14 @@
     };
   }
 
-  function renderFields(fields, unit) {
+  function renderFields(fields, unit, initialTarget) {
     const preset = units[unit];
+    const target = Number.isFinite(Number(initialTarget)) && Number(initialTarget) > 0 ? Number(initialTarget) : preset.target;
     const options = (presets, kind) => presets.map(([label, weight]) =>
       `<button type="button" data-plate-preset="${kind}" value="${weight}">${label}</button>`).join('');
     fields.innerHTML = `
       <label>Weight unit <select data-plate-unit><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select></label>
-      <label>Target weight (${unit}) <input type="number" inputmode="decimal" step="any" min="0" data-plate-target value="${preset.target}" /></label>
+      <label>Target weight (${unit}) <input type="number" inputmode="decimal" step="any" min="0" data-plate-target value="${target}" /></label>
       <div class="client-plate-presets" role="group" aria-label="Common target weights">${options(preset.targets.map(weight => [`${weight} ${unit}`, weight]), 'target')}</div>
       <label>Bar weight (${unit}) <input type="number" inputmode="decimal" step="any" min="0" data-plate-bar value="${preset.bar}" /></label>
       <div class="client-plate-presets" role="group" aria-label="Bar presets">${options(preset.bars.map(([label, weight]) => [`${label} · ${weight} ${unit}`, weight]), 'bar')}</div>
@@ -95,10 +96,10 @@
     result.textContent = `${load.exact ? 'Exact load' : 'Nearest available load'} ${total}. ${breakdown ? `Per side: ${breakdown}.` : 'Bar only.'}`;
   }
 
-  function mount(container) {
+  function mount(container, initialTarget) {
     const fields = container.querySelector('[data-plate-calculator-fields]');
     if (!fields || fields.firstElementChild) return;
-    renderFields(fields, 'lb');
+    renderFields(fields, 'lb', initialTarget);
     fields.addEventListener('input', event => {
       if (event.target.matches('input')) renderResult(fields);
     });
@@ -120,9 +121,5 @@
   }
 
   if (typeof module !== 'undefined') module.exports = { calculate, units };
-  if (typeof document !== 'undefined') {
-    document.addEventListener('toggle', event => {
-      if (event.target.matches?.('[data-client-plate-calculator][open]')) mount(event.target);
-    }, true);
-  }
+  if (typeof window !== 'undefined') window.FWBPlateCalculator = { mount };
 }());

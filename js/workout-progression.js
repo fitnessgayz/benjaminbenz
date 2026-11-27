@@ -150,5 +150,6 @@
     }
     return result("hold", "Repeat these targets until you consistently reach the upper rep target with the planned effort.", latest.targets);
   }
-  return { exerciseKey, normalizeConfig, deriveConfig, defaultConfig: deriveConfig, recommend };
+  return { exerciseKey, normalizeConfig, deriveConfig, defaultConfig: deriveConfig, recommend,
+    supportsExercise: (name) => Boolean(text(name)) && !unsupported(name) };
 }));

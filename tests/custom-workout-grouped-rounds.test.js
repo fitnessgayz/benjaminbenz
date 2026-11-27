@@ -198,7 +198,7 @@ test("custom straight sets, supersets, and circuits use compact warm-up and sets
   assert.match(groupedMarkup, /Array\.from\(\{ length: 4 \}/);
   assert.match(groupedMarkup, /data-custom-grouped-working-count/);
   assert.match(groupedMarkup, /Array\.from\(\{ length: 10 \}/);
-  assert.match(cardMarkup, /includeWarmUp: cardFormat !== "single"/);
+  assert.match(cardMarkup, /includeWarmUp: Boolean\(exercise.generated\) && cardFormat !== "single"/);
   assert.match(logFields, /data-omit-warmup="true"/);
   assert.match(rowMarkup, /options\.includeWarmUp === false \? \[\]/);
   assert.match(interactions, /changeCustomWorkoutGroupedSetCount\(groupedSetCount\)/);

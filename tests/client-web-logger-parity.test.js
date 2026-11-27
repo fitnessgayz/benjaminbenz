@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const source = fs.readFileSync(path.join(__dirname, "../js/client-portal.js"), "utf8");
+const compactStyles = fs.readFileSync(path.join(__dirname, "../css/client-workout-compact-log.css"), "utf8");
 function functionSource(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `${name} exists`);
@@ -40,6 +41,8 @@ test("recent matched sets supply gray weight and rep hints, with prescription fa
     [["50", "10"], ["55", "9"], ["55", "9"]]);
   assert.deepEqual(api.map((item) => item.dataset.personalRecordLabel), ["100 lb × 4", "100 lb × 4", "100 lb × 4"]);
   assert.ok(api.every((item) => item.weight.value === "" && item.reps.value === ""));
+  assert.ok(api.every((item) => item.weight.dataset.historyWeightSuggestion === "true"));
+  assert.match(compactStyles, /input\[data-history-weight-suggestion="true"\]::placeholder\s*\{\s*opacity:\s*\.25;/);
   logs.length = 0;
   // A new exercise still shows the assigned/generated rep prescription.
   Function("logs", "log", `
@@ -55,6 +58,7 @@ test("recent matched sets supply gray weight and rep hints, with prescription fa
   `)(logs, log);
   assert.equal(rows[0].reps.placeholder, "8–12");
   assert.equal(rows[0].weight.placeholder, "0");
+  assert.equal(rows[0].weight.dataset.historyWeightSuggestion, "false");
   assert.equal(rows[0].dataset.personalRecordDescription, "No personal record");
 });
 

@@ -75,7 +75,7 @@ test("moving a custom card preserves its live set fields and persists the new or
   assert.equal(saved, true);
 });
 
-test("completed exercises minimize automatically and expand on request", () => {
+test("completed exercises minimize only when enabled, while manual controls still work", () => {
   const state = new Set();
   const progress = { textContent: "" };
   const button = { textContent: "" };
@@ -85,7 +85,8 @@ test("completed exercises minimize automatically and expand on request", () => {
     querySelector: (selector) => selector === "[data-ios-log-exercise-progress]" ? progress : button };
   const log = { dataset: {}, name: "Squat" };
   const rows = [{ classList: { contains: () => true } }, { classList: { contains: () => true } }];
-  const context = vm.createContext({ currentExerciseLabel: (value) => value.name });
+  let preference = true;
+  const context = vm.createContext({ autoCollapseCompletedExercises: () => preference });
   vm.runInContext(declaration("syncGroupedExerciseCollapse"), context);
   carousel.dataset.customGroupedRowSaving = "true";
   context.syncGroupedExerciseCollapse(block, log, rows);
@@ -95,8 +96,49 @@ test("completed exercises minimize automatically and expand on request", () => {
   assert.equal(state.has("is-exercise-collapsed"), true);
   assert.equal(button.textContent, "Expand exercise");
   assert.equal(progress.textContent, "2 / 2 complete");
+  preference = false;
+  context.syncGroupedExerciseCollapse(block, log, rows);
+  assert.equal(state.has("is-exercise-collapsed"), false);
+  log.dataset.exerciseManuallyCollapsed = "true";
+  context.syncGroupedExerciseCollapse(block, log, rows);
+  assert.equal(state.has("is-exercise-collapsed"), true);
+  delete log.dataset.exerciseManuallyCollapsed;
+  preference = true;
   log.dataset.exerciseManuallyExpanded = "true";
   context.syncGroupedExerciseCollapse(block, log, rows);
   assert.equal(state.has("is-exercise-collapsed"), false);
   assert.equal(button.textContent, "Minimize exercise");
+});
+
+test("workout auto-collapse switch defaults to on and saves the choice immediately", () => {
+  const storage = new Map();
+  const listeners = {};
+  const toggles = [{ checked: true }, { checked: true }];
+  const carousel = {};
+  const seen = [];
+  const context = vm.createContext({
+    document: {
+      addEventListener(event, handler) { listeners[event] = handler; },
+      querySelectorAll(selector) {
+        return selector === "[data-auto-collapse-exercises]" ? toggles : [carousel];
+      }
+    },
+    window: {
+      localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
+      addEventListener(event, handler) { listeners[event] = handler; }
+    },
+    refreshCustomWorkoutGroupedCompletion: (item) => seen.push(item)
+  });
+  vm.runInContext(`const autoCollapseCompletedExercisesStorageKey = "auto"; let autoCollapseCompletedExercisesFallback = true;
+    ${["autoCollapseCompletedExercises", "syncWorkoutAutoCollapsePreference", "configureWorkoutAutoCollapsePreference"].map(declaration).join("\n")}
+    configureWorkoutAutoCollapsePreference();`, context);
+  assert.equal(context.autoCollapseCompletedExercises(), true);
+  listeners.change({ target: { matches: () => true, checked: false } });
+  assert.equal(context.autoCollapseCompletedExercises(), false);
+  assert.equal(storage.get("auto"), "false");
+  assert.deepEqual(toggles.map((item) => item.checked), [false, false]);
+  assert.deepEqual(seen, [carousel]);
+  storage.set("auto", "true");
+  listeners.storage({ key: "auto" });
+  assert.ok(toggles.every((item) => item.checked));
 });

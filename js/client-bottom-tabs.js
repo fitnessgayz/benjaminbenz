@@ -1,8 +1,8 @@
 (function (root) {
   "use strict";
 
-  const defaults = ["home", "workouts", "community", "profile"];
-  const labels = { home: "Home", workouts: "Workout", community: "Social", profile: "Profile" };
+  const defaults = ["home", "workouts", "spotter", "community", "profile"];
+  const labels = { home: "Home", workouts: "Workout", spotter: "Spotter", community: "Social", profile: "Profile" };
   const storagePrefix = "fwb_client_bottom_tabs_v1:";
   let state = normalize();
   let accountId = "";
@@ -14,7 +14,11 @@
     if (!value || typeof value !== "object") value = {};
     const requestedOrder = Array.isArray(value.order) ? value.order : defaults;
     const order = [...new Set(requestedOrder.filter((id) => defaults.includes(id)))];
-    defaults.forEach((id) => { if (!order.includes(id)) order.push(id); });
+    defaults.forEach((id) => {
+      if (order.includes(id)) return;
+      if (id === "spotter") order.splice(order.indexOf("workouts") + 1, 0, id);
+      else order.push(id);
+    });
     const requestedHidden = Array.isArray(value.hidden) ? value.hidden : [];
     const hidden = [...new Set(requestedHidden.filter((id) => defaults.includes(id) && id !== "profile"))];
     return { order, hidden };
