@@ -1,6 +1,8 @@
 {
   "version": 1,
   "migrations": [
+    "20261127004612_spotter_local_clubs.sql",
+    "20261127004155_spotter_discover_filters.sql",
     "20261126235823_spotter_profile_details.sql",
     "20261126235824_spotter_chat_unread.sql",
     "20261126235825_spotter_discover_nearest.sql",
