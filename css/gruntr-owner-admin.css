@@ -54,7 +54,6 @@
   gap: 9px;
 }
 .owner-header-actions { justify-content: flex-end; }
-.owner-header-actions a { font-size: .9rem; }
 .owner-main { width: min(100% - 36px, 1160px); margin: 24px auto 72px; }
 .owner-card {
   min-width: 0;
@@ -149,7 +148,6 @@
   .owner-header { align-items: flex-start; padding-inline: 12px; }
   .owner-header .owner-brand { font-size: 1rem; }
   .owner-header-actions { gap: 4px; }
-  .owner-header-actions a { font-size: .78rem; }
   .owner-report-controls { gap: 6px; }
   .gruntr-owner .coach-approval-card-actions .button { font-size: .82rem; }
 }
