@@ -1,6 +1,7 @@
 {
   "version": 1,
   "migrations": [
+    "20261127092806_spotter_coach_photo_approvals.sql",
     "20261127011331_spotter_club_waivers_and_posts.sql",
     "20261127004612_spotter_local_clubs.sql",
     "20261127004155_spotter_discover_filters.sql",
