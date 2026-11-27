@@ -2,7 +2,8 @@
 .coach-approvals-panel[hidden],
 .coach-approval-image[hidden],
 .coach-approval-thumb img[hidden],
-.coach-approval-thumb span[hidden] {
+.coach-approval-thumb span[hidden],
+.coach-approval-toolbar button[hidden] {
   display: none !important;
 }
 
