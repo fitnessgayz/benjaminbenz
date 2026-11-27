@@ -62,21 +62,19 @@ test("coach notification destinations survive session restoration without puttin
   const context = vm.createContext({
     URL, URLSearchParams, window: { location, FWB_AUTH_SESSION: { requiresLogin: () => true } },
     document: { getElementById: () => ({}), querySelector: () => null }, syncCoachAdminMobileNavigationMount() {},
-    coachAdminTabNames: new Set(["home", "inbox", "approvals"]), coachLoginUrl: "coach-login.html?v=1",
+    coachAdminTabNames: new Set(["home", "inbox"]), coachLoginUrl: "coach-login.html?v=1",
     coachSupabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
     withRequestTimeout: promise => promise, showCoachAccessError: () => assert.fail("Should return to login"),
     isCoachPortalEmail: () => true, clientDashboardUrl: "client-dashboard.html"
   });
   vm.runInContext(["requestedCoachAdminTab", "sendToCoachLogin", "restoreCoachAdminUser"].map(name => functionSource(coach, name)).join("\n") + functionSource(portal, "portalLoginDestination"), context);
-  for (const tab of ["inbox", "approvals"]) {
-    location.search = `?tab=${tab}&client=private%40example.com`;
-    assert.equal(context.requestedCoachAdminTab(), tab);
-    await context.restoreCoachAdminUser();
-    assert.equal(location.href, `coach-login.html?v=1&return_to=%2Fcoach-admin.html%3Ftab%3D${tab}`);
-    assert.doesNotMatch(location.href, /private|example|client%3D/);
-    location.search = new URL(location.href, location.origin).search;
-    assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), `https://benjaminbenz.com/coach-admin.html?tab=${tab}`);
-  }
+  location.search = "?tab=inbox&client=private%40example.com";
+  assert.equal(context.requestedCoachAdminTab(), "inbox");
+  await context.restoreCoachAdminUser();
+  assert.equal(location.href, "coach-login.html?v=1&return_to=%2Fcoach-admin.html%3Ftab%3Dinbox");
+  assert.doesNotMatch(location.href, /private|example|client%3D/);
+  location.search = new URL(location.href, location.origin).search;
+  assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/coach-admin.html?tab=inbox");
   context.sendToCoachLogin();
   assert.equal(location.href, "coach-login.html?v=1", "An explicit sign-out keeps the ordinary login destination");
 });
@@ -93,4 +91,23 @@ test("authenticated coach inbox links activate the messaging controller", () => 
   vm.runInContext(functionSource(coach, "initializeCoachMessages"), context);
   context.initializeCoachMessages({ id: "coach-1", email: "coach@example.com" });
   assert.deepEqual(events, [true]);
+});
+
+
+test("old Coach photo approval links forward to the owner workspace across sign-in", () => {
+  let redirected;
+  const location = {
+    origin: "https://benjaminbenz.com", search: "?tab=approvals&client=private%40example.com",
+    replace: (value) => { redirected = value; }
+  };
+  const context = vm.createContext({
+    URL, URLSearchParams, window: { location },
+    document: { getElementById: () => ({}) },
+    isCoachPortalEmail: () => true, clientDashboardUrl: "client-dashboard.html"
+  });
+  vm.runInContext(functionSource(coach, "forwardLegacyCoachApprovals") + "\n" + functionSource(portal, "portalLoginDestination"), context);
+  assert.equal(context.forwardLegacyCoachApprovals(), true);
+  assert.equal(redirected, "/gruntr-admin.html?tab=approvals");
+  location.search = `?return_to=${encodeURIComponent(redirected)}`;
+  assert.equal(context.portalLoginDestination({ email: "coach@example.com" }), "https://benjaminbenz.com/gruntr-admin.html?tab=approvals");
 });

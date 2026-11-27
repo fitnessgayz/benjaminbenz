@@ -245,6 +245,9 @@
   :root body.coach-admin-page .admin-shell {
     width: min(800px, calc(100% - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right))));
   }
+  :root body.coach-admin-page .admin-tabs .admin-tab-owner-tools {
+    display: none !important;
+  }
   :root body.coach-admin-page .admin-tabs .admin-tab-session-logger {
     display: none !important;
   }

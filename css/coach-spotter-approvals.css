@@ -162,12 +162,6 @@
   object-fit: contain;
 }
 
-@media (max-width: 900px) {
-  :root body.coach-admin-page .admin-tabs [data-admin-tab="approvals"] {
-    display: none !important;
-  }
-}
-
 .coach-approval-toolbar {
   display: flex;
   flex-wrap: wrap;

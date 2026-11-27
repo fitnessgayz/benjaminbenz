@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="theme-color" content="#101113">
+  <title>GRUNTR Admin</title>
+  <link rel="icon" type="image/png" href="/images/gruntr/client-22e30eae/icon-32.png">
+  <link rel="stylesheet" href="/css/gruntr-owner-admin.css?v=1">
+  <link rel="stylesheet" href="/css/coach-spotter-approvals.css?v=4">
+</head>
+<body class="gruntr-owner">
+  <a class="owner-skip" href="#owner-main">Skip to workspace</a>
+  <header class="owner-header">
+    <a class="owner-brand" href="/gruntr-admin.html">
+      <img src="/images/gruntr/client-22e30eae/icon-192.png" width="40" height="40" alt="">
+      <span>GRUNTR Admin</span>
+    </a>
+    <div class="owner-header-actions">
+      <a href="/coach-admin.html?tab=home">Coach workspace</a>
+      <button type="button" class="button button-ghost" data-owner-sign-out hidden>Sign out</button>
+    </div>
+  </header>
+  <main id="owner-main" class="owner-main">
+    <section class="owner-card owner-access" data-owner-access aria-labelledby="owner-access-title">
+      <h1 id="owner-access-title">GRUNTR Admin</h1>
+      <p role="status" data-owner-access-status>Checking owner access…</p>
+      <a class="button button-dark" data-owner-login hidden>Sign in</a>
+      <button class="button button-ghost" type="button" data-owner-retry-access hidden>Try again</button>
+    </section>
+    <div class="owner-workspace" data-owner-workspace hidden>
+      <nav class="owner-nav" aria-label="Admin sections">
+        <a href="/gruntr-admin.html?tab=groups" data-owner-tab="groups">City groups</a>
+        <a href="/gruntr-admin.html?tab=reports" data-owner-tab="reports">Reported posts</a>
+        <a href="/gruntr-admin.html?tab=approvals" data-owner-tab="approvals" data-spotter-approvals-access hidden>Photo approvals</a>
+      </nav>
+      <section class="owner-panel" data-owner-panel="groups" aria-labelledby="owner-groups-title" hidden>
+        <h1 id="owner-groups-title" tabindex="-1">City groups</h1>
+        <div class="owner-groups">
+          <section class="owner-card owner-city-browser" aria-labelledby="owner-city-title">
+            <h2 id="owner-city-title">Cities</h2>
+            <form class="owner-city-search" data-owner-city-search>
+              <label for="owner-city-query">Find a city</label>
+              <input id="owner-city-query" name="query" type="search" placeholder="City or state" autocomplete="off" maxlength="80">
+              <button class="button button-ghost" type="submit">Search</button>
+            </form>
+            <p class="owner-status" role="status" data-owner-city-status></p>
+            <ul class="owner-list" data-owner-city-list></ul>
+            <button class="button button-ghost" type="button" data-owner-more-cities hidden>More cities</button>
+          </section>
+          <section class="owner-card owner-boards" aria-labelledby="owner-board-title">
+            <h2 id="owner-board-title" data-owner-board-title>Club boards</h2>
+            <p class="owner-status" role="status" data-owner-group-status>Choose a city to see its clubs.</p>
+            <div class="owner-club-list" data-owner-group-list></div>
+            <section class="owner-posts-panel" data-owner-board hidden aria-labelledby="owner-post-title">
+              <div class="owner-heading-row">
+                <h3 id="owner-post-title" data-owner-post-title>Posts</h3>
+                <button class="button button-ghost" type="button" data-owner-refresh-posts>Refresh</button>
+              </div>
+              <p class="owner-status" role="status" data-owner-post-status></p>
+              <ul class="owner-list owner-post-list" data-owner-post-list></ul>
+              <button class="button button-ghost" type="button" data-owner-more-posts hidden>More posts</button>
+            </section>
+          </section>
+        </div>
+      </section>
+      <section class="owner-panel" data-owner-panel="reports" aria-labelledby="owner-reports-title" hidden>
+        <div class="owner-heading-row">
+          <h1 id="owner-reports-title" tabindex="-1">Reported posts</h1>
+          <div class="owner-report-controls">
+            <label for="owner-report-filter">Status</label>
+            <select data-owner-report-filter id="owner-report-filter">
+              <option value="open">Open</option>
+              <option value="resolved">Resolved</option>
+              <option value="dismissed">Dismissed</option>
+              <option value="all">All reports</option>
+            </select>
+            <button class="button button-ghost" type="button" data-owner-refresh-reports>Refresh</button>
+          </div>
+        </div>
+        <p class="owner-status" role="status" data-owner-report-status></p>
+        <ul class="owner-list owner-post-list" data-owner-report-list></ul>
+        <button class="button button-ghost" type="button" data-owner-more-reports hidden>More reports</button>
+      </section>
+        <section class="admin-card coach-approvals-panel" id="coach-approvals-panel" data-owner-panel="approvals" aria-labelledby="coach-approvals-title" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <h2 id="coach-approvals-title" tabindex="-1">Photo approvals</h2>
+              <p>Review Spotter photos before they’re shared.</p>
+            </div>
+            <div class="coach-approval-toolbar">
+              <button class="button button-ghost" type="button" data-spotter-approvals-refresh>Refresh</button>
+              <button class="button button-dark" type="button" data-spotter-screen-photos disabled>Screen photos</button>
+              <button class="button button-dark" type="button" data-spotter-approve-unflagged hidden disabled>Approve all unflagged</button>
+            </div>
+          </div>
+          <p class="coach-approval-screening-note">AI screening runs in your browser. Batch approval includes photos with no explicit signal.</p>
+          <p class="coach-approvals-status" data-spotter-screening-status role="status" aria-live="polite"></p>
+          <p class="coach-approvals-status" data-spotter-approvals-status role="status" aria-live="polite"></p>
+          <ul class="coach-approvals-queue" data-spotter-approvals-list aria-label="Pending Spotter photos"></ul>
+          <dialog class="coach-approval-dialog" data-spotter-approval-dialog aria-labelledby="coach-approval-title">
+            <div class="coach-approval-dialog-heading">
+              <div>
+                <h3 id="coach-approval-title" data-spotter-approval-title>Review Spotter photo</h3>
+                <p data-spotter-approval-scope></p>
+              </div>
+              <button class="button button-ghost" type="button" data-spotter-approval-close>Close</button>
+            </div>
+            <p class="coach-approvals-status" data-spotter-approval-status role="status" aria-live="polite"></p>
+            <img class="coach-approval-image" data-spotter-approval-image alt="Spotter photo submitted for review" hidden />
+            <div class="coach-approval-actions">
+              <button class="button button-ghost" type="button" data-spotter-approval-reject disabled>Reject photo</button>
+              <button class="button button-dark" type="button" data-spotter-approval-approve disabled>Approve photo</button>
+            </div>
+          </dialog>
+        </section>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js?v=client-session-link-1"></script>
+  <script src="/js/auth-session.js?v=remember-login-2"></script>
+  <script src="/js/coach-spotter-screening.js?v=1"></script>
+  <script src="/js/coach-spotter-approvals.js?v=3"></script>
+  <script src="/js/gruntr-owner-admin.js?v=1"></script>
+</body>
+</html>
