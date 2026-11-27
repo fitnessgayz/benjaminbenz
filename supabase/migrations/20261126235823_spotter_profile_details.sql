@@ -5,6 +5,9 @@ create table spotter_private.profile_details (
     supplements text not null default '' check (char_length(supplements) <= 240),
     current_program text not null default '' check (char_length(current_program) <= 120),
     shared_stats jsonb not null default '{}',
+    height_inches integer check (height_inches between 36 and 96),
+    weight_lb numeric check (weight_lb between 40 and 900),
+    share_measurements boolean not null default false,
     check (jsonb_typeof(shared_stats) = 'object')
 );
 
@@ -84,8 +87,13 @@ returns jsonb language sql stable set search_path = '' as $$
         'body_type', coalesce(details.body_type, ''),
         'supplements', coalesce(details.supplements, ''),
         'current_program', coalesce(details.current_program, ''),
-        'shared_stats', case when viewer = member or spotter_private.accepted_connection(viewer, member)
+        'shared_stats', case when access.is_owner or access.is_accepted
             then coalesce(details.shared_stats, '{}'::jsonb) else '{}'::jsonb end,
+        'height_inches', case when access.is_owner or (details.share_measurements and access.is_accepted)
+            then details.height_inches end,
+        'weight_lb', case when access.is_owner or (details.share_measurements and access.is_accepted)
+            then details.weight_lb end,
+        'share_measurements', case when access.is_owner then coalesce(details.share_measurements, false) end,
         'photos', coalesce((
             select jsonb_agg(jsonb_build_object(
                 'slot', photo.slot, 'path', photo.path,
@@ -100,7 +108,10 @@ returns jsonb language sql stable set search_path = '' as $$
         ), '[]'::jsonb)
     )
     from (values (member)) subject(user_id)
-    left join spotter_private.profile_details details on details.member_id = subject.user_id;
+    left join spotter_private.profile_details details on details.member_id = subject.user_id
+    cross join lateral (
+        select viewer = member as is_owner, spotter_private.accepted_connection(viewer, member) as is_accepted
+    ) access;
 $$;
 
 create function spotter_private.get_profile_details(p_member_id uuid)
@@ -136,7 +147,8 @@ end;
 $$;
 
 create function spotter_private.save_profile_details(
-    p_body_type text, p_supplements text, p_current_program text, p_shared_stats jsonb
+    p_body_type text, p_supplements text, p_current_program text, p_shared_stats jsonb,
+    p_height_inches integer, p_weight_lb numeric, p_share_measurements boolean
 )
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
@@ -152,11 +164,21 @@ begin
     if body not in ('', 'ectomorph', 'mesomorph', 'endomorph', 'mixed') then
         raise exception 'Choose a listed body type.' using errcode = '22023';
     end if;
-    insert into spotter_private.profile_details (member_id, body_type, supplements, current_program, shared_stats)
-    values (actor, body, supplements_text, program_text, stats)
+    if p_height_inches is not null and p_height_inches not between 36 and 96 then
+        raise exception 'Enter height from 36 to 96 inches or leave it blank.' using errcode = '22023';
+    end if;
+    if p_weight_lb is not null and p_weight_lb not between 40 and 900 then
+        raise exception 'Enter weight from 40 to 900 pounds or leave it blank.' using errcode = '22023';
+    end if;
+    insert into spotter_private.profile_details (
+        member_id, body_type, supplements, current_program, shared_stats, height_inches, weight_lb, share_measurements
+    ) values (
+        actor, body, supplements_text, program_text, stats, p_height_inches, p_weight_lb, coalesce(p_share_measurements, false)
+    )
     on conflict (member_id) do update set body_type = excluded.body_type,
         supplements = excluded.supplements, current_program = excluded.current_program,
-        shared_stats = excluded.shared_stats;
+        shared_stats = excluded.shared_stats, height_inches = excluded.height_inches,
+        weight_lb = excluded.weight_lb, share_measurements = excluded.share_measurements;
     return spotter_private.profile_details_payload(actor, actor);
 end;
 $$;
@@ -350,9 +372,12 @@ $$;
 create function public.spotter_profile_details(p_member_id uuid default null) returns jsonb
 language sql stable set search_path = '' as $$ select spotter_private.get_profile_details(p_member_id); $$;
 create function public.spotter_save_profile_details(
-    p_body_type text, p_supplements text, p_current_program text, p_shared_stats jsonb
+    p_body_type text, p_supplements text, p_current_program text, p_shared_stats jsonb,
+    p_height_inches integer default null, p_weight_lb numeric default null, p_share_measurements boolean default false
 ) returns jsonb language sql set search_path = '' as $$
-    select spotter_private.save_profile_details(p_body_type, p_supplements, p_current_program, p_shared_stats);
+    select spotter_private.save_profile_details(
+        p_body_type, p_supplements, p_current_program, p_shared_stats, p_height_inches, p_weight_lb, p_share_measurements
+    );
 $$;
 create function public.spotter_reserve_photo(p_slot integer, p_upload_id uuid) returns jsonb
 language sql set search_path = '' as $$ select spotter_private.reserve_photo(p_slot, p_upload_id); $$;
@@ -380,26 +405,26 @@ revoke execute on function spotter_private.accepted_connection(uuid, uuid),
     spotter_private.photo_is_public_to_member(uuid, spotter_private.profile_photos),
     spotter_private.profile_details_payload(uuid, uuid), spotter_private.checked_shared_stats(jsonb),
     spotter_private.lock_photo_slots(uuid), spotter_private.storage_viewer(),
-    spotter_private.get_profile_details(uuid), spotter_private.save_profile_details(text, text, text, jsonb),
+    spotter_private.get_profile_details(uuid), spotter_private.save_profile_details(text, text, text, jsonb, integer, numeric, boolean),
     spotter_private.reserve_photo(integer, uuid), spotter_private.submit_photo(uuid),
     spotter_private.remove_photo(integer), spotter_private.report_photo(text, text),
     spotter_private.can_upload_photo(text, text), spotter_private.can_download_photo(text, text),
     spotter_private.can_clean_photo(text, text)
 from public, anon, authenticated;
 grant execute on function spotter_private.get_profile_details(uuid),
-    spotter_private.save_profile_details(text, text, text, jsonb), spotter_private.reserve_photo(integer, uuid),
+    spotter_private.save_profile_details(text, text, text, jsonb, integer, numeric, boolean), spotter_private.reserve_photo(integer, uuid),
     spotter_private.submit_photo(uuid), spotter_private.remove_photo(integer), spotter_private.report_photo(text, text),
     spotter_private.can_upload_photo(text, text), spotter_private.can_download_photo(text, text),
     spotter_private.can_clean_photo(text, text)
 to authenticated;
 
 revoke execute on function public.spotter_profile_details(uuid),
-    public.spotter_save_profile_details(text, text, text, jsonb), public.spotter_reserve_photo(integer, uuid),
+    public.spotter_save_profile_details(text, text, text, jsonb, integer, numeric, boolean), public.spotter_reserve_photo(integer, uuid),
     public.spotter_submit_photo(uuid), public.spotter_remove_photo(integer), public.spotter_report_photo(text, text),
     public.resolve_spotter_photo_review(uuid, boolean)
 from public, anon, authenticated;
 grant execute on function public.spotter_profile_details(uuid),
-    public.spotter_save_profile_details(text, text, text, jsonb), public.spotter_reserve_photo(integer, uuid),
+    public.spotter_save_profile_details(text, text, text, jsonb, integer, numeric, boolean), public.spotter_reserve_photo(integer, uuid),
     public.spotter_submit_photo(uuid), public.spotter_remove_photo(integer), public.spotter_report_photo(text, text)
 to authenticated;
 grant execute on function public.resolve_spotter_photo_review(uuid, boolean) to service_role;
