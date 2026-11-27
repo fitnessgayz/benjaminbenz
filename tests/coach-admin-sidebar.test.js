@@ -112,16 +112,15 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile dock exposes Sessions and a direct Exercise Library destination", () => {
+test("mobile dock exposes Sessions and puts Inbox and Exercise Library in More", () => {
   assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?admin-tab-exercise-library" href="coach-exercise-library\.html\?v=coach-workspace-2"[\s\S]*?data-coach-mobile-more-open/);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger,\s*[^{}]*\.admin-tabs \.admin-tab\[data-admin-tab="inbox"\]\s*\{[^}]*display: none !important/);
-  assert.doesNotMatch(workspaceStyles, /admin-tab-exercise-library[^{}]*\{[^}]*display: none/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger,\s*[^{}]*\.admin-tabs \.admin-tab-exercise-library,\s*[^{}]*\.admin-tabs \.admin-tab\[data-admin-tab="inbox"\]\s*\{[^}]*display: none !important/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
   const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));
   for (const file of ["coach-workout-log.html", "coach-community-wall.html"]) {
     assert.ok(tools.includes(`href="${file}"`));
   }
-  assert.doesNotMatch(tools, /coach-exercise-library\.html/);
+  assert.match(tools, /href="coach-exercise-library\.html\?v=coach-workspace-2"[\s\S]*?Exercise Library/);
   assert.match(tools, /data-admin-tab="inbox" data-coach-mobile-inbox[\s\S]*?data-coach-message-unread/);
   assert.match(adminSource, /querySelector\("\[data-coach-mobile-inbox\]"\)\?\.addEventListener\("click", \(\) => \{\s*closeMoreDialog\(\{ restoreFocus: false \}\)/);
   assert.match(tools, /data-coach-mobile-settings/);
