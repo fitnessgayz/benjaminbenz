@@ -6673,6 +6673,12 @@ function handleCoachMobileNavigation() {
   moreDialog?.addEventListener("click", (event) => {
     if (event.target === moreDialog) closeMoreDialog();
   });
+  moreDialog?.querySelector("[data-coach-mobile-inbox]")?.addEventListener("click", () => {
+    closeMoreDialog({ restoreFocus: false });
+    const inbox = document.querySelector('[data-admin-panel="inbox"]');
+    inbox?.focus({ preventScroll: true });
+    inbox?.scrollIntoView({ block: "start" });
+  });
   moreDialog?.querySelector("[data-coach-mobile-settings]")?.addEventListener("click", () => {
     closeMoreDialog({ restoreFocus: false });
     openCoachSettings();

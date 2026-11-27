@@ -62,8 +62,9 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
 
   const ownerToolsMarkup = navMarkup.match(/<a[^>]+admin-tab-owner-tools[\s\S]*?<\/a>/)?.[0];
   assert.match(ownerToolsMarkup || "", /href="\/gruntr-admin\.html"[^>]*aria-label="GRUNTR Admin"/);
+  assert.match(ownerToolsMarkup, /src="\/images\/gruntr\/client-pulse-1380\/icon-32\.png"/);
+  assert.match(navMarkup, /data-admin-tab="home"[\s\S]*?admin-tab-owner-tools[\s\S]*?data-admin-tab="notifications"/);
   assert.equal((navMarkup.replace(ownerToolsMarkup, "").match(/<svg class="admin-nav-icon/g) || []).length, 8);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-owner-tools\s*\{[^}]*display: none !important/);
   assert.match(navMarkup, /data-admin-tab="inbox"[^>]*aria-label="Inbox"/);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
@@ -113,7 +114,7 @@ test("desktop navigation stays light and keeps client tools only in the selected
 
 test("mobile dock exposes Sessions and a direct Exercise Library destination", () => {
   assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="notifications"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="session-counts" aria-label="Sessions"[\s\S]*?data-admin-tab="inbox"[\s\S]*?admin-tab-exercise-library" href="coach-exercise-library\.html\?v=coach-workspace-2"[\s\S]*?data-coach-mobile-more-open/);
-  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger\s*\{[^}]*display: none !important/);
+  assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-session-logger,\s*[^{}]*\.admin-tabs \.admin-tab\[data-admin-tab="inbox"\]\s*\{[^}]*display: none !important/);
   assert.doesNotMatch(workspaceStyles, /admin-tab-exercise-library[^{}]*\{[^}]*display: none/);
   assert.match(workspaceStyles, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs \.admin-tab-mobile-more\s*\{[^}]*display: flex !important/);
   const tools = adminHtml.slice(adminHtml.indexOf('data-coach-mobile-more-dialog'), adminHtml.indexOf("</dialog>"));
@@ -121,7 +122,8 @@ test("mobile dock exposes Sessions and a direct Exercise Library destination", (
     assert.ok(tools.includes(`href="${file}"`));
   }
   assert.doesNotMatch(tools, /coach-exercise-library\.html/);
-  assert.match(tools, /href="\/gruntr-admin\.html" data-coach-owner-admin/);
+  assert.match(tools, /data-admin-tab="inbox" data-coach-mobile-inbox[\s\S]*?data-coach-message-unread/);
+  assert.match(adminSource, /querySelector\("\[data-coach-mobile-inbox\]"\)\?\.addEventListener\("click", \(\) => \{\s*closeMoreDialog\(\{ restoreFocus: false \}\)/);
   assert.match(tools, /data-coach-mobile-settings/);
 });
 

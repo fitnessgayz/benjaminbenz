@@ -241,18 +241,24 @@
   background: var(--surface);
 }
 
+:root body.coach-admin-page .admin-nav-brand-icon { object-fit: contain; }
+.coach-admin-nav-short { display: none; }
+.coach-mobile-more-menu .coach-mobile-inbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 900px) {
   :root body.coach-admin-page .admin-shell {
     width: min(800px, calc(100% - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right))));
   }
-  :root body.coach-admin-page .admin-tabs .admin-tab-owner-tools {
+  :root body.coach-admin-page .admin-tabs .admin-tab-session-logger,
+  :root body.coach-admin-page .admin-tabs .admin-tab[data-admin-tab="inbox"] {
     display: none !important;
   }
-  :root body.coach-admin-page .admin-tabs .admin-tab-session-logger {
-    display: none !important;
-  }
-  .coach-library-nav-full { display: none; }
-  .coach-library-nav-short { display: inline; }
+  .coach-library-nav-full, .coach-admin-nav-full { display: none; }
+  .coach-library-nav-short, .coach-admin-nav-short { display: inline; }
   :root body.coach-admin-page #coach-admin-sidebar-nav .admin-tab[data-admin-tab="notifications"] {
     padding-inline: 4px !important;
   }
