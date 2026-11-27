@@ -32,8 +32,10 @@
   background: var(--lime);
 }
 .coach-client-section-tabs,
-.coach-client-views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.coach-client-views { display: grid; gap: 4px; }
+.coach-client-views { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .coach-client-section-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 12px;

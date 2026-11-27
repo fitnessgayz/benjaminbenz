@@ -39,7 +39,7 @@
   <link rel="stylesheet" href="/css/coach-brand.css?v=theme-1" />
   <script defer src="/js/coach-install.js?v=1"></script>
   <link rel="stylesheet" href="css/coach-workspace.css?v=4&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=2&amp;owner-admin=2&amp;spotter-summary=1" />
-  <link rel="stylesheet" href="css/coach-clients.css?v=alex-packs-2&amp;sections=1" />
+  <link rel="stylesheet" href="css/coach-clients.css?v=alex-packs-2&amp;sections=2" />
   <link rel="stylesheet" href="/css/coach-theme.css?v=2" />
 </head>
 <body class="dashboard-page coach-admin-page">
@@ -187,7 +187,6 @@
           </div>
           <div class="coach-client-section-tabs" role="tablist" aria-label="Clients sections">
             <button type="button" role="tab" id="coach-clients-section-roster" data-coach-clients-section="roster" aria-controls="coach-clients-roster-panel" aria-selected="true">Client list</button>
-            <button type="button" role="tab" id="coach-clients-section-sessions" data-coach-clients-section="sessions" aria-controls="coach-clients-sessions-panel" aria-selected="false" tabindex="-1">Low on sessions</button>
             <button type="button" role="tab" id="coach-clients-section-approvals" data-coach-clients-section="approvals" aria-controls="coach-clients-approvals-panel" aria-selected="false" tabindex="-1">Approval requests</button>
           </div>
           <section class="coach-client-section" id="coach-clients-roster-panel" role="tabpanel" aria-labelledby="coach-clients-section-roster">
@@ -239,18 +238,6 @@
               <p class="coach-client-empty" data-coach-client-empty hidden></p>
             </section>
           </section>
-          <section class="coach-client-section" id="coach-clients-sessions-panel" role="tabpanel" aria-labelledby="coach-clients-section-sessions" tabindex="0" hidden>
-            <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
-              <div class="coach-home-module-heading">
-                <div>
-                  <h3 id="coach-home-session-alert-title" tabindex="-1">Low or out of sessions</h3>
-                </div>
-              </div>
-              <div class="coach-home-list" id="coach-home-session-alert-list">
-                <p class="empty-state">No session packages need attention.</p>
-              </div>
-            </section>
-          </section>
           <section class="coach-client-section" id="coach-clients-approvals-panel" role="tabpanel" aria-labelledby="coach-clients-section-approvals" hidden>
             <section class="coach-home-module coach-access-requests" aria-labelledby="coach-access-requests-title">
               <div class="coach-home-module-heading">
@@ -283,6 +270,14 @@
                 <p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>
               </div>
             </section>
+          </details>
+          <details class="coach-home-disclosure coach-workspace-disclosure">
+            <summary id="coach-home-session-alert-title">Low or out of sessions</summary>
+            <div class="coach-home-module">
+              <div class="coach-home-list" id="coach-home-session-alert-list">
+                <p class="empty-state">No session packages need attention.</p>
+              </div>
+            </div>
           </details>
           <div class="coach-client-views coach-session-views" role="tablist" aria-label="Session views">
             <button type="button" role="tab" id="coach-sessions-fwb-tab" data-coach-session-view="fwb" aria-controls="coach-sessions-fwb" aria-selected="true">FWB sessions</button>
@@ -1303,6 +1298,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=2&amp;owner-admin=2&amp;spotter-summary=1&amp;signup-queue-link=2&amp;home-default=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=2&amp;owner-admin=2&amp;spotter-summary=1&amp;signup-queue-link=2&amp;home-default=1&amp;sessions-alert-location=1"></script>
 </body>
 </html>

@@ -45,14 +45,16 @@ const coachAdminTabNames = new Set([
 ]);
 
 function requestedCoachAdminTab() {
-  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "home";
+  const params = new URLSearchParams(window.location.search);
+  const requestedTab = params.get("tab") || "home";
+  if (requestedTab === "clients" && params.get("section") === "sessions") return "session-counts";
   return coachAdminTabNames.has(requestedTab) ? requestedTab : "home";
 }
 
 function requestedCoachClientsSection() {
   const section = new URLSearchParams(window.location.search).get("section");
   if (section === "approvals" || window.location.hash === "#coach-access-requests-title") return "approvals";
-  return section === "sessions" ? "sessions" : "roster";
+  return "roster";
 }
 
 function isWarmUpWorkoutSet(set) {
@@ -6703,13 +6705,10 @@ function openCoachHomeShortcut(destination) {
   };
   const target = document.getElementById(targetIds[destination]);
   if (!target) return;
-  if (destination === "sessions") {
+  if (destination === "sessions" || target.id === "coach-home-session-alert-title") {
     setAdminTab("session-counts");
   } else {
-    const clientSection = destination === "approvals" ? "approvals"
-      : target.id === "coach-home-session-alert-title" ? "sessions"
-        : "roster";
-    setAdminTab("clients", { clientSection });
+    setAdminTab("clients", { clientSection: destination === "approvals" ? "approvals" : "roster" });
   }
   const disclosure = target.closest("details");
   if (disclosure) disclosure.open = true;
