@@ -1014,6 +1014,7 @@ function setAdminTab(tabName) {
 
   if (nextTab === "home") {
     renderCoachHome();
+    void loadCoachSpotterSummary();
   }
 
   if (["notifications", "settings"].includes(nextTab) && coachNotificationsController) {
@@ -3945,6 +3946,36 @@ function coachHomeInactiveClients(latestByEmail = latestWorkoutByClient()) {
     });
 }
 
+async function loadCoachSpotterSummary() {
+  const workspace = document.getElementById("coach-admin-workspace");
+  const summary = workspace?.querySelector("[data-coach-spotter-summary]");
+  if (!coachSupabase || workspace?.hidden || !summary || summary.hidden || summary.getAttribute("aria-busy") === "true") return;
+
+  const metrics = [...summary.querySelectorAll("[data-spotter-count]")];
+  const status = summary.querySelector("[data-spotter-summary-status]");
+  summary.setAttribute("aria-busy", "true");
+  status.hidden = true;
+
+  try {
+    const { data, error } = await coachSupabase.rpc("gruntr_admin_spotter_summary");
+    if (error?.code === "42501") {
+      summary.hidden = true;
+      return;
+    }
+    const values = metrics.map((metric) => data?.[metric.dataset.spotterCount]);
+    if (error || !values.every((value) => Number.isSafeInteger(value) && value >= 0)) {
+      throw new Error("Spotter summary unavailable");
+    }
+    metrics.forEach((metric, index) => { metric.textContent = values[index].toLocaleString(); });
+  } catch {
+    for (const metric of metrics) metric.textContent = "—";
+    status.textContent = "Spotter summary is unavailable.";
+    status.hidden = false;
+  } finally {
+    summary.removeAttribute("aria-busy");
+  }
+}
+
 function renderCoachHome() {
   const activeClients = activeClientPrograms();
   const pendingMembershipRequests = activeClients.filter((program) =>
@@ -6396,6 +6427,7 @@ async function showAdminWorkspace(user) {
   }
 
   initializeCoachMessages(user);
+  if (activeAdminTab === "home") void loadCoachSpotterSummary();
   if (activeAdminTab === "session-counts") refreshSelectedCoachSessions();
 
   await Promise.all([
