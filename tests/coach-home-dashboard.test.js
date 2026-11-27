@@ -42,21 +42,31 @@ test("Home keeps the quick actions and summary while Clients and Sessions own th
   assert.match(home, /id="new-client-button"/);
   assert.doesNotMatch(home, /<summary>|coach-exercise-library\.html|coach-community-wall\.html|coach-home-destination/);
   assert.match(clients, /<summary>Client follow-ups<\/summary>/);
-  const roster = clients.slice(clients.indexOf('id="coach-clients-roster-panel"'), clients.indexOf('id="coach-clients-sessions-panel"'));
-  const lowSessions = clients.slice(clients.indexOf('id="coach-clients-sessions-panel"'), clients.indexOf('id="coach-clients-approvals-panel"'));
+  const roster = clients.slice(clients.indexOf('id="coach-clients-roster-panel"'), clients.indexOf('id="coach-clients-approvals-panel"'));
   const approvals = clients.slice(clients.indexOf('id="coach-clients-approvals-panel"'));
   assert.match(roster, /id="coach-client-roster"/);
-  assert.match(lowSessions, /id="coach-home-session-alert-list"/);
   assert.match(approvals, /id="coach-access-request-list"/);
   assert.doesNotMatch(roster, /id="coach-access-request-list"|id="coach-home-session-alert-list"/);
   assert.doesNotMatch(approvals, /id="coach-client-roster"|id="coach-home-session-alert-list"/);
   assert.match(home, /data-coach-home-shortcut="approvals" hidden/);
-  assert.match(clients, /id="coach-home-session-alert-list"/);
+  assert.deepEqual([...clients.matchAll(/data-coach-clients-section="([^"]+)"/g)].map(match => match[1]), ["roster", "approvals"]);
+  assert.doesNotMatch(clients, /coach-clients-sessions-panel|coach-home-session-alert-list/);
+  assert.match(sessions, /<summary id="coach-home-session-alert-title">Low or out of sessions<\/summary>[\s\S]*?id="coach-home-session-alert-list"/);
   assert.match(clients, /id="coach-home-inactive-list"/);
   assert.match(clients, /id="coach-access-request-list"/);
   assert.match(sessions, /<summary>Session sheets<\/summary>/);
   assert.match(sessions, /id="coach-home-sheet-list"/);
   assert.match(sessions, /Alex Fitness, B2 Master Session/);
+});
+
+test("old Clients session links open the dedicated Sessions tab", () => {
+  const requestedTab = Function("window", "coachAdminTabNames", `
+    ${javascriptFunction("requestedCoachAdminTab")}
+    return requestedCoachAdminTab();
+  `);
+  const tabs = new Set(["home", "clients", "session-counts"]);
+  assert.equal(requestedTab({ location: { search: "?tab=clients&section=sessions" } }, tabs), "session-counts");
+  assert.equal(requestedTab({ location: { search: "?tab=clients&section=approvals" } }, tabs), "clients");
 });
 
 test("home summaries come from current programs and bounded workout-log history", () => {
@@ -128,7 +138,7 @@ test("summary shortcuts select active clients or open and focus the matching sec
   const nodes = {};
   for (const id of ["client-search-input", "coach-home-sheets-title", "coach-home-session-alert-title", "coach-access-requests-title", "coach-home-membership-title"]) {
     const disclosure = { open: false };
-    const insideDisclosure = id === "coach-home-sheets-title" || id === "coach-home-membership-title";
+    const insideDisclosure = ["coach-home-sheets-title", "coach-home-membership-title", "coach-home-session-alert-title"].includes(id);
     nodes[id] = {
       id,
       value: "Old search",
@@ -158,7 +168,7 @@ test("summary shortcuts select active clients or open and focus the matching sec
   assert.deepEqual(calls, [["activity"]]);
   const cases = [
     ["sessions", "coach-home-sheets-title", "session-counts", undefined, true],
-    ["attention", "coach-home-session-alert-title", "clients", "sessions", false],
+    ["attention", "coach-home-session-alert-title", "session-counts", undefined, true],
     ["approvals", "coach-access-requests-title", "clients", "approvals", false]
   ];
   for (const [destination, id, tab, section, expands] of cases) {
