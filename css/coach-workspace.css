@@ -172,6 +172,29 @@
 :root body.coach-admin-page .coach-home-panel .coach-home-metrics .coach-home-attention-metric strong { color: var(--coach-gold-ink); }
 :root body.coach-admin-page .coach-home-shortcut small { grid-column: 1 / -1; color: var(--muted); font-weight: 600; opacity: 1; }
 
+.coach-spotter-summary { margin-block-start: 20px; }
+.coach-spotter-summary-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block-end: 10px;
+}
+.coach-spotter-summary-header h3 { margin: 0; color: var(--ink); font-size: 1.15rem; }
+.coach-spotter-summary-header .button { min-height: 40px; padding: 6px 11px; font-size: .8rem; }
+.coach-spotter-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--line);
+}
+.coach-spotter-metrics > div { display: grid; align-content: space-between; gap: 7px; padding: 10px 8px; }
+.coach-spotter-metrics > div + div { border-inline-start: 1px solid var(--line); }
+.coach-spotter-metrics dt { color: var(--muted); font-size: .75rem; font-weight: 750; }
+.coach-spotter-metrics dd { margin: 0; color: var(--ink); font-size: 1.25rem; font-weight: 850; font-variant-numeric: tabular-nums; }
+.coach-spotter-summary-status { margin: 8px 0 0; color: var(--muted); font-size: .8rem; }
+
 .coach-home-disclosure { border-block-end: 1px solid var(--line); }
 .coach-home-disclosure > summary {
   display: flex;

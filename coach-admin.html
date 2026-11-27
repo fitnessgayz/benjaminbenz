@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
   <link rel="stylesheet" href="/css/coach-brand.css?v=theme-1" />
   <script defer src="/js/coach-install.js?v=1"></script>
-  <link rel="stylesheet" href="css/coach-workspace.css?v=4&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=2&amp;owner-admin=2" />
+  <link rel="stylesheet" href="css/coach-workspace.css?v=4&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;profile-feed=3&amp;props-pill=1&amp;activity-comment=3&amp;sessions-dock=1&amp;library-dock=2&amp;owner-admin=2&amp;spotter-summary=1" />
   <link rel="stylesheet" href="css/coach-clients.css?v=alex-packs-2" />
   <link rel="stylesheet" href="/css/coach-theme.css?v=2" />
 </head>
@@ -360,6 +360,18 @@
               <strong id="coach-home-needs-attention">0</strong>
             </button>
           </div>
+          <section class="coach-spotter-summary" data-coach-spotter-summary aria-labelledby="coach-spotter-summary-title">
+            <header class="coach-spotter-summary-header">
+              <h3 id="coach-spotter-summary-title">Spotter summary</h3>
+              <a class="button button-ghost" href="/gruntr-admin.html">Open GRUNTR Admin</a>
+            </header>
+            <dl class="coach-spotter-metrics">
+              <div><dt>Active profiles</dt><dd data-spotter-count="active_profiles">—</dd></div>
+              <div><dt>Photos to review</dt><dd data-spotter-count="pending_photos">—</dd></div>
+              <div><dt>Open group reports</dt><dd data-spotter-count="open_group_reports">—</dd></div>
+            </dl>
+            <p class="coach-spotter-summary-status" role="status" data-spotter-summary-status hidden></p>
+          </section>
         </section>
 
         <section class="admin-card" data-admin-panel="inbox" data-coach-messages aria-label="Coach inbox" tabindex="-1" hidden></section>
@@ -1280,6 +1292,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=2&amp;owner-admin=2"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;compact-home=2&amp;unified-activity=1&amp;activity-desk=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1&amp;client-touch-pick=1&amp;likeness-motion=1&amp;anatomy-images=1&amp;coach-brand=1&amp;activity-comment=3&amp;client-roster=3&amp;fwb-monthly-sessions=2&amp;alex-fitness-history=1&amp;personal-training-sessions=1&amp;workspace-navigation=1&amp;alex-fitness-packs=2&amp;owner-admin=2&amp;spotter-summary=1"></script>
 </body>
 </html>

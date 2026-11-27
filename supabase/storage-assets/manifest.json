@@ -1,6 +1,7 @@
 {
   "version": 1,
   "migrations": [
+    "20261127180114_gruntr_owner_spotter_summary.sql",
     "20261127161736_gruntr_owner_spotter_moderation.sql",
     "20261127161611_spotter_city_groups.sql",
     "20261127092806_spotter_coach_photo_approvals.sql",
