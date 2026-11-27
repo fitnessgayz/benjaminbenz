@@ -28,7 +28,7 @@ test("uses the dark app palette and places artwork behind the login", () => {
   assert.match(styles, /--blue: #58b5ff;/);
   assert.match(styles, /--gold: #ffd400;/);
   assert.match(styles, /\.artwork \{[^}]*opacity: \.25;/);
-  assert.match(homepage, /aria-label="GRUNTR home"><img src="\/images\/gruntr\/client-22e30eae\/icon-192\.png" alt=""[^>]*><b>GRUNTR<\/b><\/a>/);
+  assert.match(homepage, /aria-label="GRUNTR home"><img src="\/images\/gruntr\/client-pulse-1380\/icon-192\.png" alt=""[^>]*><b>GRUNTR<\/b><\/a>/);
   assert.match(homepage, /theme-color" content="#0c0d10"/);
 });
 
