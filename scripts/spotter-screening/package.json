@@ -1,0 +1,16 @@
+{
+  "name": "gruntr-spotter-screening-vendor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "4.22.0",
+    "buffer": "6.0.3",
+    "nsfwjs": "4.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}
