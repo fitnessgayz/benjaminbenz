@@ -45,8 +45,14 @@ const coachAdminTabNames = new Set([
 ]);
 
 function requestedCoachAdminTab() {
-  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "notifications";
+  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "home";
   return coachAdminTabNames.has(requestedTab) ? requestedTab : "home";
+}
+
+function requestedCoachClientsSection() {
+  const section = new URLSearchParams(window.location.search).get("section");
+  if (section === "approvals" || window.location.hash === "#coach-access-requests-title") return "approvals";
+  return section === "sessions" ? "sessions" : "roster";
 }
 
 function isWarmUpWorkoutSet(set) {
@@ -117,6 +123,7 @@ let openCoachActivityComment = null;
 let inviteClientReturnFocus = null;
 let inviteClientSavedProgram = null;
 let pendingSignupApproval = null;
+let clientAccessRequestsLoadVersion = 0;
 let clientWorkoutScheduleLoadToken = 0;
 
 function adminStatus(message) {
@@ -240,8 +247,8 @@ function sendToCoachLogin({ preserveDestination = false } = {}) {
     returnTo = "/coach-exercise-library.html";
   } else if (tab === "inbox") {
     returnTo = "/coach-admin.html?tab=inbox";
-  } else if (tab === "clients" && window.location.hash === "#coach-access-requests-title") {
-    returnTo = "/coach-admin.html?tab=clients#coach-access-requests-title";
+  } else if (tab === "clients" && requestedCoachClientsSection() === "approvals") {
+    returnTo = "/coach-admin.html?tab=clients&section=approvals";
   }
   window.location.href = returnTo
     ? `${coachLoginUrl}${coachLoginUrl.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(returnTo)}`
@@ -976,7 +983,7 @@ function updateClientViewLink(program = selectedProgram()) {
   });
 }
 
-function setAdminTab(tabName) {
+function setAdminTab(tabName, { clientSection = "roster" } = {}) {
   const nextTab = coachAdminTabNames.has(tabName) ? tabName : "home";
   const workspace = document.getElementById("coach-admin-workspace");
   const isClientTool = ["profile", "program", "workouts", "nutrition", "progress", "logs", "notes"].includes(nextTab);
@@ -1014,12 +1021,14 @@ function setAdminTab(tabName) {
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
     panel.hidden = ["notifications", "settings", "home", "inbox", "session-counts"].includes(nextTab);
   });
+  if (nextTab === "clients") setCoachClientsSection(clientSection);
 
   coachMessagesController?.setActive(nextTab === "inbox");
 
   if (nextTab === "home") {
     renderCoachHome();
     void loadCoachSpotterSummary();
+    if (workspace && !workspace.hidden) void loadClientAccessRequests();
   }
 
   if (["notifications", "settings"].includes(nextTab) && coachNotificationsController) {
@@ -4616,9 +4625,42 @@ function renderCoachClientWorkspace() {
   if (clientPanel) clientPanel.dataset.clientInView = String(clients.some((program) => program.id === selectedProgramId));
 }
 
+function setCoachClientsSection(section) {
+  for (const tab of document.querySelectorAll("[data-coach-clients-section]")) {
+    const selected = tab.dataset.coachClientsSection === section;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+  }
+  document.querySelectorAll("[data-admin-client-context], #clients .client-list-actions").forEach((panel) => {
+    panel.hidden = section !== "roster";
+  });
+  if (section === "approvals" && !document.getElementById("coach-admin-workspace")?.hidden) {
+    void loadClientAccessRequests();
+  }
+}
+
 function handleCoachClientWorkspace() {
   const panel = document.getElementById("clients");
   if (!panel) return;
+  const sections = [...panel.querySelectorAll("[data-coach-clients-section]")];
+  for (const tab of sections) {
+    tab.addEventListener("click", () => setCoachClientsSection(tab.dataset.coachClientsSection));
+  }
+  panel.querySelector(".coach-client-section-tabs").addEventListener("keydown", (event) => {
+    const index = sections.indexOf(event.target);
+    if (index < 0) return;
+    const next = {
+      Home: sections[0],
+      End: sections.at(-1),
+      ArrowLeft: sections[(index + sections.length - 1) % sections.length],
+      ArrowRight: sections[(index + 1) % sections.length]
+    }[event.key];
+    if (!next) return;
+    event.preventDefault();
+    setCoachClientsSection(next.dataset.coachClientsSection);
+    next.focus();
+  });
   const tabs = [...panel.querySelectorAll("[data-coach-clients-view]")];
   const select = (tab) => {
     if (coachClientsView === tab.dataset.coachClientsView) return;
@@ -4712,7 +4754,9 @@ function handleCoachClientWorkspace() {
     }
   });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && activeAdminTab === "session-counts") refreshSelectedCoachSessions();
+    if (document.hidden || document.getElementById("coach-admin-workspace")?.hidden) return;
+    if (activeAdminTab === "session-counts") refreshSelectedCoachSessions();
+    if (activeAdminTab === "home") void loadClientAccessRequests();
   });
   renderCoachClientWorkspace();
 }
@@ -6311,16 +6355,25 @@ function handleExerciseLibraryEditor() {
 async function loadClientAccessRequests() {
   const list = document.getElementById("coach-access-request-list");
   if (!list || !coachSupabase) return;
+  const loadVersion = ++clientAccessRequestsLoadVersion;
   list.textContent = "Loading requests…";
-  const { data, error } = await coachSupabase
+  const { data, count, error } = await coachSupabase
     .from("client_access_requests")
-    .select("id,name,email,phone,goals,created_at")
+    .select("id,name,email,phone,goals,created_at", { count: "exact" })
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+  if (loadVersion !== clientAccessRequestsLoadVersion) return;
   if (error) {
     list.textContent = "Sign-up requests are unavailable. Please refresh or try again later.";
     return;
   }
+  const homeCount = document.getElementById("coach-home-pending-approvals-count");
+  if (homeCount) {
+    const pendingCount = count ?? data?.length ?? 0;
+    homeCount.textContent = pendingCount;
+    homeCount.closest("button").hidden = pendingCount === 0;
+  }
+
   list.replaceChildren();
   if (!data?.length) {
     const empty = document.createElement("p");
@@ -6427,12 +6480,8 @@ async function showAdminWorkspace(user) {
     syncCoachAdminMobileNavigationMount();
   }
 
-  if (activeAdminTab === "clients" && window.location.hash === "#coach-access-requests-title") {
-    const heading = document.getElementById("coach-access-requests-title");
-    const disclosure = heading?.closest("details");
-    if (disclosure) disclosure.open = true;
-    heading?.focus({ preventScroll: true });
-    heading?.scrollIntoView({ block: "start" });
+  if (activeAdminTab === "clients" && requestedCoachClientsSection() === "approvals") {
+    document.getElementById("coach-access-requests-title")?.focus({ preventScroll: true });
   }
 
   if (signOutButton) {
@@ -6553,7 +6602,7 @@ function handleAdminTabs() {
     });
   });
 
-  setAdminTab(activeAdminTab);
+  setAdminTab(activeAdminTab, { clientSection: requestedCoachClientsSection() });
 }
 
 function openCoachHomeClientSection(email, tabName) {
@@ -6649,11 +6698,19 @@ function openCoachHomeShortcut(destination) {
 
   const targetIds = {
     sessions: "coach-home-sheets-title",
+    approvals: "coach-access-requests-title",
     attention: document.querySelector?.("#coach-home-membership-requests .coach-home-list-row") ? "coach-home-membership-title" : "coach-home-session-alert-title"
   };
   const target = document.getElementById(targetIds[destination]);
   if (!target) return;
-  setAdminTab(destination === "sessions" ? "session-counts" : "clients");
+  if (destination === "sessions") {
+    setAdminTab("session-counts");
+  } else {
+    const clientSection = destination === "approvals" ? "approvals"
+      : target.id === "coach-home-session-alert-title" ? "sessions"
+        : "roster";
+    setAdminTab("clients", { clientSection });
+  }
   const disclosure = target.closest("details");
   if (disclosure) disclosure.open = true;
   target.focus({ preventScroll: true });

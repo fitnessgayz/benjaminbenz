@@ -44,7 +44,7 @@ for (const email of ["client@example.com", "coach@example.com"]) {
   test(`saved ${email.split("@")[0]} login reopens the correct dashboard`, async () => {
     const h = harness({ data: { session: { user: { email } } } });
     await h.context.restorePortalLogin();
-    assert.match(h.redirects[0], email.startsWith("coach") ? /^coach-admin\.html/ : /^client-dashboard\.html/);
+    assert.equal(h.redirects[0], email.startsWith("coach") ? "/coach-admin.html?tab=home" : "client-dashboard.html");
   });
 }
 

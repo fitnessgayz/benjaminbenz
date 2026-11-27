@@ -118,7 +118,7 @@ test("notification deep links open only allowlisted coach panels", () => {
   assert.match(adminSource, /const coachAdminTabNames = new Set\(\[/);
   assert.match(adminSource, /"notifications",\s+"settings"/);
   assert.match(adminSource, /new URLSearchParams\(window\.location\.search\)\.get\("tab"\)/);
-  assert.match(adminSource, /\.get\("tab"\) \|\| "notifications"/);
+  assert.match(adminSource, /\.get\("tab"\) \|\| "home"/);
   assert.match(adminSource, /coachAdminTabNames\.has\(requestedTab\) \? requestedTab : "home"/);
   assert.match(adminSource, /let activeAdminTab = requestedCoachAdminTab\(\)/);
 });

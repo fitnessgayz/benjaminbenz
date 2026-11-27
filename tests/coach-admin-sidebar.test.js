@@ -49,7 +49,7 @@ test("collapsed sidebar controls retain accessible names and navigation state se
   assert.doesNotMatch(navMarkup, /aria-selected=/);
   assert.match(navMarkup, /data-admin-tab="home"[^>]*aria-label="Home"/);
   assert.match(navMarkup, /data-admin-tab="clients"[^>]*aria-label="Clients"/);
-  assert.match(navMarkup, /data-admin-tab="notifications"[^>]*aria-label="Activity"[^>]*aria-current="page"/);
+  assert.match(navMarkup, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
   assert.doesNotMatch(navMarkup, /data-admin-tab="(?:profile|program|workouts|nutrition|progress|notes|logs|sessions)"/);
   assert.match(adminSource, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(adminSource, /button\.removeAttribute\("aria-current"\)/);
