@@ -263,20 +263,22 @@ body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[o
   padding: 5px;
 }
 
-.client-plate-calculator {
-  border-top: 1px solid var(--fwb-border, #6b737a);
-}
-
-.client-plate-calculator > summary {
-  min-height: 44px;
-  padding-block: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 .client-plate-calculator [data-plate-calculator-fields] {
   display: grid;
   gap: 8px;
+}
+
+.client-plate-calculator label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.client-plate-calculator select {
+  width: auto;
+  max-width: 100%;
 }
 
 .client-plate-calculator input[type="number"] {
@@ -316,8 +318,7 @@ body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[o
   display: none !important;
 }
 
-#client-workouts-panel .client-logger-clock,
-#client-workouts-panel .client-logger-later {
+#client-workouts-panel :is(.client-logger-calculator, .client-logger-clock, .client-logger-later) {
   display: none;
 }
 
@@ -331,7 +332,7 @@ body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[o
   gap: 4px;
 }
 
-#client-workouts-panel.is-compact-workout-log .client-logger-clock,
+#client-workouts-panel.is-compact-workout-log :is(.client-logger-calculator, .client-logger-clock),
 #client-workouts-panel.is-compact-workout-log .client-logger-later:not([hidden]) {
   display: grid;
   min-width: 44px;
@@ -346,9 +347,17 @@ body.client-dashboard-page #client-workouts-panel .workout-preview-coach-notes[o
   cursor: pointer;
 }
 
-#client-workouts-panel.is-compact-workout-log :is(.client-logger-clock, .client-logger-later) svg {
+#client-workouts-panel.is-compact-workout-log :is(.client-logger-calculator, .client-logger-clock, .client-logger-later) svg {
   width: 21px;
   height: 21px;
+}
+
+@media (max-width: 380px) {
+  :root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-topbar h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: normal;
+  }
 }
 
 body.client-dashboard-page .rest-timer-overlay {

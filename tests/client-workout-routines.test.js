@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const routines = require("../js/client-workout-routines.js");
-const { programs } = require("../js/client-explore-programs.js");
+const { programs, sportPrograms } = require("../js/client-explore-programs.js");
 
 const days = [
   ["full-body", "Full Body Day"],
@@ -55,12 +55,18 @@ test("opens each of Benjamin’s intermediate and advanced routines by its stabl
   assert.equal(routines.find("does-not-exist"), undefined);
 });
 
-test("renders the two personal levels before the generic program catalog", () => {
+test("opens Explore on five category choices and keeps the filters inside Training Programs", () => {
   const escape = value => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;");
   const html = routines.markup(escape);
-  assert.match(html, /Benjamin’s Routine[\s\S]*>Intermediate<[\s\S]*>Advanced<[\s\S]*>Programs</);
+  const landing = html.split("</nav>")[0];
+  assert.deepEqual(Array.from(landing.matchAll(/data-client-explore-category="([^"]+)"/g), match => match[1]),
+    ["benjamin", "training", "sports", "targeted", "at-home"]);
+  assert.equal((html.match(/data-client-explore-category-panel="[^"]+" hidden/g) || []).length, 5);
+  const benjamin = html.split('data-client-explore-category-panel="benjamin"')[1].split("</section>")[0];
+  const training = html.split('data-client-explore-category-panel="training"')[1].split("</section>")[0];
+  assert.match(benjamin, /Benjamin’s Routine[\s\S]*>Intermediate<[\s\S]*>Advanced</);
   assert.match(html, />Chest &amp; Triceps</);
-  for (const field of ["level", "goal", "equipment"]) assert.match(html, new RegExp(`data-client-explore-filter="${field}"`));
+  for (const field of ["level", "goal", "equipment"]) assert.match(training, new RegExp(`data-client-explore-filter="${field}"`));
   for (const program of programs) {
     for (const routine of program.routines) {
       assert.equal(routines.find(routine.id), routine);
@@ -71,9 +77,41 @@ test("renders the two personal levels before the generic program catalog", () =>
   assert.doesNotMatch(html, /data-client-explore-routine="benjamin-(push|superset|circuit)"/);
 });
 
+test("keeps the six sports with all native sessions, timers, rests, cues and stable IDs", () => {
+  assert.deepEqual(sportPrograms.map(program => program.title), ["Pickleball", "Tennis", "Basketball", "Volleyball", "Swimming", "Running"]);
+  const html = routines.markup(String).split('data-client-explore-category-panel="sports"')[1].split("</section>")[0];
+  const identifiers = new Set();
+  for (const program of sportPrograms) {
+    assert.match(html, new RegExp(`data-client-sport-program="${program.id}"`));
+    assert.deepEqual(program.routines.map(routine => routine.title), ["Warm-up", "Mobility", "Strength"].map(label => `${program.title} ${label}`));
+    for (const routine of program.routines) {
+      assert.match(routine.id, /^[a-f\d]{8}-[a-f\d]{4}-5[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/);
+      identifiers.add(routine.id);
+      assert.equal(routines.find(routine.id), routine);
+      assert.equal(routine.format, "single");
+      assert.equal(routine.warmUpCount, 0);
+      assert.equal(routine.exercises.length, 5);
+      assert.ok(html.includes(`data-client-explore-routine="${routine.id}"`));
+      for (const exercise of routine.exercises) {
+        assert.match(exercise.rest, /^\d+s$/);
+        assert.equal(exercise.instructions.length, 1);
+        assert.ok(html.includes(exercise.instructions[0]));
+      }
+    }
+  }
+  assert.equal(identifiers.size, 18);
+  const pickleball = sportPrograms[0].routines[0].exercises;
+  assert.equal(pickleball[0].timed, true);
+  assert.equal(pickleball[0].prescription, "45 seconds x 2 sets");
+  assert.equal(pickleball[3].timed, false);
+  assert.equal(pickleball[3].prescription, "2 x 6 reps per side");
+  assert.equal(sportPrograms[4].routines[2].exercises[0].rest, "60s");
+  assert.equal(sportPrograms[5].routines[2].exercises[4].prescription, "25 sec/side x 2 sets");
+});
+
 test("keeps the four targeted workouts independent of Benjamin’s levels", () => {
   const html = routines.markup(String);
-  const section = html.split('aria-label="Targeted Routines">')[1];
+  const section = html.split('data-client-explore-category-panel="targeted"')[1].split("</section>")[0];
   for (const [id, title] of targeted) {
     const routine = routines.find(id);
     assert.equal(routine.title, title);
@@ -89,7 +127,11 @@ test("keeps the four targeted workouts independent of Benjamin’s levels", () =
 });
 
 test("uses a cover on every personal routine and generic program family", () => {
-  const html = routines.markup(String).split('aria-label="At-home routines"')[0];
+  const allMarkup = routines.markup(String);
+  const categoryArt = [...allMarkup.matchAll(/<div class="client-explore-category-art">([^<]*<img[^>]+>)<\/div>/g)].map(match => match[1]);
+  assert.equal(categoryArt.length, 5);
+  const html = allMarkup.split('data-client-explore-category-panel="at-home"')[0]
+    .replace(/<div class="client-explore-category-art">[^<]*<img[^>]+><\/div>/g, "");
   for (const [id] of days) {
     assert.equal(html.split(`src="images/routines/benjamin-${id}.webp?v=2"`).length - 1, 2);
   }
@@ -148,7 +190,7 @@ test("filters the full catalog and resets without adding duplicate dialog listen
     "[data-client-explore-results]": status
   };
   const catalog = { querySelector: selector => selectors[selector], querySelectorAll: selector => selectors[selector] };
-  const container = { querySelector: () => catalog };
+  const container = { querySelector: selector => selector === "[data-client-explore-catalog]" ? catalog : null };
   routines.bind(container);
   routines.bind(container);
   const shown = () => cards.filter(card => !card.hidden).map(card => card.dataset.id);

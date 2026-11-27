@@ -108,20 +108,32 @@ body.client-dashboard-page .client-logs-detail-primary-actions > :is(.training-l
 .client-logs-session .training-log-history-metrics > div { padding-inline: clamp(5px, 2vw, 10px); }
 .client-logs-session .training-log-history-metrics dt { font-size: clamp(.65rem, 2.8vw, .8rem); }
 .client-logs-session .training-log-history-metrics dd { font-size: clamp(.82rem, 3.8vw, 1.12rem); }
-body.client-dashboard-page .client-logs-analyze-workout {
-  width: 100%;
+body.client-dashboard-page .client-workout-analysis-button:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content !important;
+  inline-size: fit-content !important;
+  max-inline-size: 100%;
   min-height: 44px;
-  margin-top: 12px;
-  padding: 10px 14px;
+  padding: 8px 14px;
   border: 1px solid #40658a;
-  border-radius: 11px;
+  border-radius: 999px !important;
   background: #202c3a;
   color: #85c6ff;
   font: inherit;
+  font-size: .875rem;
   font-weight: 750;
   letter-spacing: 0;
   text-transform: none;
 }
+.training-log-history-card-details > .client-workout-analysis-button { margin-top: 12px; }
+.workout-completion-share-actions > .client-workout-analysis-button { grid-column: 1 / -1; justify-self: start; }
+.client-workout-analysis-button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.client-workout-analysis-symbol { display: inline-flex; flex: 0 0 auto; align-items: end; gap: 2px; height: 14px; }
+.client-workout-analysis-symbol > i { width: 3px; height: 6px; border-radius: 1px; background: currentColor; }
+.client-workout-analysis-symbol > i:nth-child(2) { height: 10px; }
+.client-workout-analysis-symbol > i:last-child { height: 14px; }
 body.client-dashboard-page .client-workout-analysis-dialog {
   box-sizing: border-box;
   width: min(calc(100% - 24px), 480px);
@@ -164,6 +176,12 @@ body.client-dashboard-page .client-workout-analysis-dialog > header button {
 .client-workout-analysis-dialog li .client-workout-analysis-metrics { gap: 6px 14px; margin-top: 5px; }
 .client-workout-analysis-metrics dt { font-size: .76rem; opacity: .8; }
 .client-workout-analysis-metrics dd { margin: 2px 0 0; font-weight: 700; }
+.client-workout-analysis-progression { margin-top: 12px; }
+.client-workout-analysis-progression > p,
+.client-workout-analysis-next p { font-size: .85rem; }
+.client-workout-analysis-next { display: grid; gap: 4px; padding-left: 10px; margin-top: 10px; border-left: 2px solid #5787aa; }
+.client-workout-analysis-next > strong { color: #85c6ff; }
+.client-workout-analysis-next > span { font-weight: 700; }
 .client-workout-analysis-dialog button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-workout-analysis-dialog {
   border-color: var(--line);
@@ -171,7 +189,8 @@ body.client-dashboard-page .client-workout-analysis-dialog > header button {
   color: var(--ink);
 }
 :root[data-client-theme="light"] .client-workout-analysis-dialog li { border-color: var(--line); }
-:root[data-client-theme="light"] body.client-dashboard-page .client-logs-analyze-workout {
+:root[data-client-theme="light"] .client-workout-analysis-next > strong { color: #193e60; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-analysis-button:not([hidden]) {
   border-color: #738fa8;
   background: #e9f3ff;
   color: #193e60;

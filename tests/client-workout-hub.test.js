@@ -48,6 +48,8 @@ test('workout chooser has centered Routines and GRUNTR Trainer tiles', () => {
   const trainer = markup.match(/id="workout-hub-trainer"[\s\S]*?<\/section>/)[0];
   assert.doesNotMatch(markup, /id="workout-hub-personal"|data-client-workout-hub-tab="personal"/);
   assert(routines.indexOf('Start Workout') < routines.indexOf('Previous Workout'));
+  assert.match(routines, /Previous Workout[\s\S]*?<a class="client-workout-hub-hiit" href="\/client-hiit.html">HIIT Timer<\/a>\s*<\/section>$/);
+  assert.doesNotMatch(trainer, /client-hiit\.html/);
   assert.match(markup, /aria-selected="true"[^>]*[\s\S]*?data-client-workout-hub-tab="routines"/);
   assert.match(routines, /client-workout-hub-start/);
   assert.doesNotMatch(routines, /Find a Gym|data-find-nearby-gym|data-client-saved-workout-plans/);

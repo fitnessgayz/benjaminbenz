@@ -3,6 +3,91 @@
   cursor: pointer;
 }
 
+.client-explore-category-list,
+.client-sport-grid {
+  display: grid;
+  align-items: start;
+  gap: .55rem;
+}
+
+.client-sport-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.client-workout-hub-section > .client-workout-hub-hiit {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding-inline: .5rem;
+  border-radius: .5rem;
+  color: var(--fwb-text, #f5f5f5);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: .22em;
+}
+
+.client-explore-category {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-block-size: 3.75rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--client-settings-line, #43484e);
+  border-radius: 14px;
+  color: var(--fwb-text, #f5f5f5);
+  background: var(--surface-soft, #25282c);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.client-explore-category > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: .2rem;
+}
+
+.client-explore-category small {
+  color: var(--muted, #aeb5bc);
+  line-height: 1.4;
+}
+
+.client-explore-category::after {
+  content: "";
+  flex: 0 0 .5rem;
+  block-size: .5rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(-45deg);
+}
+
+.client-explore-category-art .client-explore-cover {
+  display: block;
+  inline-size: 100%;
+  block-size: clamp(7rem, 28vw, 14rem);
+  object-fit: cover;
+  object-position: center;
+}
+
+.client-explore-back {
+  justify-self: start;
+}
+
+.client-explore-category:focus-visible,
+.client-explore-back:focus-visible,
+.client-workout-hub-hiit:focus-visible {
+  outline: 2px solid var(--client-settings-accent, #ffd400);
+  outline-offset: 2px;
+}
+
+.client-workout-routines :is([data-client-explore-category-panel], [data-client-explore-landing])[hidden] {
+  display: none !important;
+}
+
 .client-explore-program {
   background: var(--surface-soft, #25282c);
   border: 1px solid var(--client-settings-line, #43484e);

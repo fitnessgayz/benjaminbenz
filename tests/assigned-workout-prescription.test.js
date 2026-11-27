@@ -53,7 +53,7 @@ function api(extra = {}) {
     WorkoutLayout, escapeHtml, console, autoRestTimerEnabled: () => true,
     warmUpSetType: "warm_up", workingSetType: "working", warmUpSetNumberBase: 1000,
     warmupExerciseCode: "WU", cardioExerciseCode: "CARDIO",
-    customWorkoutDefaultWorkingSetCount: 3, activeCustomWorkoutFormat: "single",
+    customWorkoutDefaultWorkingSetCount: Number(source.match(/const customWorkoutDefaultWorkingSetCount = (\d+);/)?.[1]), activeCustomWorkoutFormat: "single",
     todayDate: () => "2026-09-22", normalizeCustomWorkoutFormat: (value) => value,
     normalizeCustomWorkoutInlineGroupType: (value) => value,
     customWorkoutFormatMarker: (_format, index) => `A${index + 1}`,
@@ -241,10 +241,17 @@ test("target labels stay visible independently of history hints and retain timed
   assert.equal(context.assignedWorkoutPrescriptionLabel(logFixture(context, "5×6–8", { assigned: false })), "");
 });
 
-test("custom workouts still default to three working sets and pad unequal grouped cards", () => {
+test("blank custom workouts start with one working set and preserve generated prescriptions", () => {
   const context = api();
-  const html = context.customWorkoutCardMarkup({ code: "CW1", name: "Custom press" }, "Custom workout");
-  assert.equal(rowsFromMarkup(html).filter((row) => row.dataset.setType === "working").length, 3);
+  for (const panelFormat of ["single", "superset", "circuit"]) {
+    const html = context.customWorkoutCardMarkup({ code: "CW1", name: "Custom press" }, "Custom workout", 0, { panelFormat });
+    const rows = rowsFromMarkup(html);
+    assert.deepEqual(rows.map((row) => row.dataset.setType), ["working"]);
+  }
+  const generated = context.customWorkoutCardMarkup({
+    code: "CW2", name: "Assisted program press", generated: true, prescription: "4 × 8–12"
+  }, "Custom workout");
+  assert.equal(rowsFromMarkup(generated).filter((row) => row.dataset.setType === "working").length, 4);
   const first = logFixture(context, "Custom sets", { assigned: false, count: 3 });
   const second = logFixture(context, "Custom sets", { assigned: false, count: 2 });
   assert.equal(context.normalizeCustomWorkoutGroupedRoundRows([first, second]), true);

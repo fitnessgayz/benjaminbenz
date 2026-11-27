@@ -195,7 +195,7 @@ const warmUpSetNumberBase = 1000;
 const workingSetType = "working";
 const warmUpSetType = "warm_up";
 const customWorkoutGroupedLogQueues = new WeakMap();
-const customWorkoutDefaultWorkingSetCount = 3;
+const customWorkoutDefaultWorkingSetCount = 1;
 const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
@@ -209,6 +209,7 @@ const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_positio
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
+const autoCollapseCompletedExercisesStorageKey = "fwb_auto_collapse_completed_exercises_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
 const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=gruntr-pulse-1380";
 let exerciseLibraryEntries = [];
@@ -227,6 +228,7 @@ let customWorkoutGroupedRestAction = null;
 let restTimerNotificationRegistrationPromise = null;
 let restTimerNotificationPreferenceFallback = null;
 let autoRestTimerPreferenceFallback = 0;
+let autoCollapseCompletedExercisesFallback = true;
 let keepWorkoutScreenAwake = false;
 let workoutWakeLock = null;
 let workoutWakeLockPending = false;
@@ -2634,6 +2636,7 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
   const fallbackArtwork = () => {
     const approved = approvedExerciseForName(name);
     const primary = normalizeMuscle(approved?.primary_muscle)
+      || normalizeMuscle(exercise.primary_muscle)
       || inferExerciseMuscles({ name })[0];
     const hasMuscleArtwork = Boolean(primary && muscleMeta[primary]);
     if (!hasMuscleArtwork && !options.defaultArtwork) return "";
@@ -2652,7 +2655,7 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
     && /\.(?:webp|gif)(?:$|[?#])/i.test(motionUrl);
   const guide = `
     <button
-      class="exercise-media-button${compact}${brandedCrop}"
+      class="exercise-media-button${compact}${brandedCrop}${options.firstPose ? " exercise-media-compact-pose" : ""}"
       type="button"
       data-exercise-media-open
       data-exercise-media-static="${escapeHtml(fullUrl)}"
@@ -2664,7 +2667,7 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
     >
       <img
         src="${escapeHtml(thumbnailUrl)}"
-        ${thumbnailUrl !== fullUrl ? `srcset="${escapeHtml(thumbnailUrl)} 480w, ${escapeHtml(fullUrl)} 768w" sizes="(max-width: 700px) 42vw, 320px"` : ""}
+        ${thumbnailUrl !== fullUrl ? `srcset="${escapeHtml(thumbnailUrl)} 480w, ${escapeHtml(fullUrl)} 768w" sizes="${options.firstPose ? "84px" : "(max-width: 700px) 42vw, 320px"}"` : ""}
         ${thumbnailUrl !== fullUrl ? `data-exercise-media-fallback="${escapeHtml(fullUrl)}"` : ""}
         alt=""
         loading="lazy"
@@ -2738,16 +2741,19 @@ function exerciseImageMarkup(exercise, options = {}) {
 
 function refreshExerciseMediaViews(root = document) {
   root.querySelectorAll("[data-workout-preview-exercise-media]").forEach((slot) => {
-    const name = String(slot.dataset.workoutPreviewExerciseMedia || "").trim();
-    slot.innerHTML = name ? exerciseMediaButtonMarkup({ name }, { compact: true }) : "";
+    const name = String(slot.dataset.workoutPreviewExerciseMedia || "").trim() || "Exercise";
+    const exercise = { name, image_url: slot.dataset.workoutPreviewImageUrl };
+    slot.innerHTML = exerciseMediaButtonMarkup(exercise, { compact: true, defaultArtwork: true, hideInfo: true, firstPose: true });
   });
 
   root.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+    if (logElement.matches("[data-cardio-log], [data-warmup-log]")) return;
     const name = String(
       exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || ""
     ).trim();
     const current = Array.from(logElement.children).find((child) => child.matches?.(".exercise-demo-image"));
-    const markup = name ? exerciseImageMarkup({ name }, { inlineMotion: true }) : "";
+    const exercise = { name, image_url: name === logElement.dataset.exerciseName ? logElement.dataset.exerciseImageUrl : "" };
+    const markup = name ? exerciseImageMarkup(exercise, { inlineMotion: true, defaultArtwork: true }) : "";
 
     if (current) {
       if (markup) current.outerHTML = markup;
@@ -2949,12 +2955,13 @@ function exerciseVideoMarkup(exercise, options = {}) {
       : exerciseImageMarkup(exercise, options);
   }
   const videoUrl = exerciseVideoUrl(exercise);
+  const artwork = options.defaultArtwork && !options.iconOnly ? exerciseImageMarkup(exercise, options) : "";
 
   if (!videoUrl) {
-    return "";
+    return artwork;
   }
 
-  return `<a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
+  return `${artwork}<a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
       ${options.iconOnly ? '<span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="12" height="14" rx="2"/><path d="m15 9 6-4v14l-6-4Z"/></svg></span>' : "View demo"}
     </a>
   `;
@@ -5602,6 +5609,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-workout-title="${escapeHtml(workoutTitle)}"
       data-exercise-code="${escapeHtml(exercise.code)}"
       data-exercise-name="${escapeHtml(exercise.name)}"
+      ${exercise.image_url ? `data-exercise-image-url="${escapeHtml(exercise.image_url)}"` : ""}
       data-exercise-rest="${escapeHtml(exercise.rest || "")}"
       data-exercise-prescription="${escapeHtml(exercise.prescription || "")}"
       data-progression-config="${escapeHtml(JSON.stringify(exercise.progression || null))}"
@@ -5627,7 +5635,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         </label>
       `}
       ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
-      ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise, { inlineMotion: true })}
+      ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise, { inlineMotion: true, defaultArtwork: true })}
       ${dateMarkup}
       <div data-workout-progression></div>
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
@@ -6470,8 +6478,9 @@ function workoutGymPickerMarkup(value = "", index = 0) {
   const fieldId = `workout-gym-location-${index}`;
   return `<div class="workout-gym-picker">
     <label for="${fieldId}">Gym location (optional)</label>
+    <p class="workout-setup-help" id="${fieldId}-help">Your gym appears in the workout log and helps match past sets and PRs on the same equipment. Set a default to prefill new workouts.</p>
     <div class="workout-gym-main-row">
-      <input id="${fieldId}" data-workout-gym type="text" maxlength="80" autocomplete="off"
+      <input id="${fieldId}" data-workout-gym type="text" maxlength="80" autocomplete="off" aria-describedby="${fieldId}-help"
         placeholder="Gym, Home, or Outdoors" value="${escapeHtml(value)}" />
       <div data-workout-gym-history>${workoutGymHistoryMarkup()}</div>
     </div>
@@ -6565,9 +6574,7 @@ function upgradeCustomWorkoutDraft(draft) {
       return exercise;
     }
 
-    const nextSets = sets.length > 0
-      ? [...sets]
-      : [{ label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "" }];
+    const nextSets = [...sets];
 
     for (let index = workingSets.length; index < customWorkoutDefaultWorkingSetCount; index += 1) {
       nextSets.push({
@@ -7783,6 +7790,8 @@ if (typeof document !== "undefined") document.addEventListener("error", (event) 
 if (typeof document !== "undefined") document.addEventListener("load", (event) => {
   const image = event.target;
   if (!(image instanceof HTMLImageElement)) return;
+  const compactPose = image.closest(".exercise-media-compact-pose");
+  if (compactPose) updateExerciseFirstPoseThumbnail(compactPose, image);
   const card = image.closest(".exercise-media-button-branded-crop");
   if (card && image.naturalHeight) {
     card.classList.toggle("is-wide-branded-card", image.naturalWidth / image.naturalHeight > 2.15);
@@ -7792,6 +7801,132 @@ if (typeof document !== "undefined") document.addEventListener("load", (event) =
     pickerImage.classList.toggle("is-wide-branded-card", image.naturalWidth / image.naturalHeight > 2.15);
   }
 }, true);
+
+function largestExercisePhotoSpan(occupied, maxGap) {
+  let best = null;
+  let start = -1;
+  let last = -1;
+  occupied.forEach((present, index) => {
+    if (!present) return;
+    if (start === -1 || index - last > maxGap) {
+      if (start !== -1 && (!best || last - start >= best[1] - best[0])) best = [start, last + 1];
+      start = index;
+    }
+    last = index;
+  });
+  if (start !== -1 && (!best || last - start >= best[1] - best[0])) best = [start, last + 1];
+  return best;
+}
+
+function exerciseFirstPoseBounds(pixels, width, height, originalRatio, branded) {
+  const offset = (x, y) => (y * width + x) * 4;
+  const nearSquarePoses = originalRatio >= 1.93 && originalRatio <= 2.08;
+  if (nearSquarePoses) {
+    const occupied = (left, right) => {
+      let count = 0;
+      for (let y = Math.floor(height * 0.1); y < height * 0.9; y++) {
+        for (let x = left; x < right; x++) {
+          const i = offset(x, y);
+          if (pixels[i + 3] > 192 && Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) < 195) count++;
+        }
+      }
+      return count;
+    };
+    const middle = Math.floor(width / 2);
+    const edge = Math.max(1, Math.round(width * 0.05));
+    const gutter = Math.max(1, Math.floor(width * 0.017));
+    if (occupied(edge, middle - edge) > width * height * 0.009 &&
+        occupied(middle + edge, width - edge) > width * height * 0.009 &&
+        occupied(middle - gutter, middle + gutter) < width * height * 0.003) {
+      return [0, 0, 0.5, 1];
+    }
+  }
+  if (!branded) return null;
+
+  const isPhoto = (x, y) => {
+    const i = offset(x, y);
+    const red = pixels[i];
+    const green = pixels[i + 1];
+    const blue = pixels[i + 2];
+    const labelMatte = green > 145 && green - blue > 32 && red > 150;
+    return pixels[i + 3] > 220 && Math.max(red, green, blue) < 220 &&
+      !labelMatte &&
+      Math.max(Math.abs(red - pixels[0]), Math.abs(green - pixels[1]), Math.abs(blue - pixels[2])) > 22;
+  };
+  const top = Math.floor(height * 0.2);
+  const bottom = Math.floor(height * 0.8);
+  const columns = Array.from({ length: Math.floor(width * 0.78) }, (_, x) => {
+    let count = 0;
+    for (let y = top; y < bottom; y++) if (isPhoto(x, y)) count++;
+    return count / (bottom - top) > 0.35;
+  });
+  const horizontal = largestExercisePhotoSpan(columns, Math.max(3, Math.floor(width * 0.016)));
+  if (!horizontal) return null;
+  const [left, right] = horizontal;
+  if (left > width * 0.12 || right - left < width * 0.35) return null;
+  const middle = (left + right) / 2;
+  const tolerance = (right - left) * 0.15;
+  let separator = null;
+  for (let x = Math.ceil(middle - tolerance); x <= Math.floor(middle + tolerance); x++) {
+    if (!columns[x] && (separator === null || Math.abs(x - middle) < Math.abs(separator - middle))) separator = x;
+  }
+  if (separator === null) return null;
+  const rows = Array.from({ length: height }, (_, y) => {
+    let count = 0;
+    for (let x = left; x < right; x++) if (isPhoto(x, y)) count++;
+    return count / (right - left) > 0.35;
+  });
+  const vertical = largestExercisePhotoSpan(rows, Math.max(2, Math.floor(height * 0.03)));
+  if (!vertical || vertical[1] - vertical[0] < height * 0.55) return null;
+  return [left / width, vertical[0] / height, (separator - left) / width, (vertical[1] - vertical[0]) / height];
+}
+
+function updateExerciseFirstPoseThumbnail(button, image) {
+  const url = image.currentSrc || image.src;
+  button.querySelector(".exercise-first-pose")?.remove();
+  const branded = isBrandedExerciseImage(url);
+  const ratio = image.naturalWidth / image.naturalHeight;
+  if (image.naturalWidth < 40 || image.naturalHeight < 40 || (!branded && (ratio < 1.93 || ratio > 2.08))) return;
+  const sample = document.createElement("canvas");
+  const sampleWidth = branded ? Math.min(480, image.naturalWidth) : 120;
+  sample.width = sampleWidth;
+  sample.height = branded ? Math.round(sampleWidth / ratio) : 60;
+  const samplingContext = sample.getContext("2d");
+  if (!samplingContext) return;
+
+  const render = (source) => {
+    if (!button.isConnected || (image.currentSrc || image.src) !== url) return true;
+    samplingContext.drawImage(source, 0, 0, sample.width, sample.height);
+    let pixels;
+    try { pixels = samplingContext.getImageData(0, 0, sample.width, sample.height).data; }
+    catch (_) { return false; }
+    const crop = exerciseFirstPoseBounds(pixels, sample.width, sample.height, ratio, branded);
+    if (!crop) return true;
+    const [x, y, width, height] = crop.map((fraction, index) =>
+      fraction * (index % 2 ? source.naturalHeight : source.naturalWidth));
+    const scale = Math.min(1, 192 / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return true;
+    context.drawImage(source, x, y, width, height, 0, 0, canvas.width, canvas.height);
+    canvas.className = "exercise-first-pose";
+    canvas.setAttribute("aria-hidden", "true");
+    button.querySelector(".exercise-first-pose")?.remove();
+    button.append(canvas);
+    return true;
+  };
+  if (render(image)) return;
+  // Read the source without credentials when the original image taints the canvas.
+  const readableImage = new Image();
+  readableImage.crossOrigin = "anonymous";
+  readableImage.addEventListener("load", () => {
+    sample.width = sampleWidth; // Reset origin cleanliness after the first draw.
+    render(readableImage);
+  }, { once: true });
+  readableImage.src = url;
+}
 
 function openClientExerciseLibrary(input, onSelect, { referenceName = "" } = {}) {
   if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;
@@ -7926,6 +8061,33 @@ function automaticRestSeconds() {
 
 function autoRestTimerEnabled() {
   return automaticRestSeconds() > 0;
+}
+
+function autoCollapseCompletedExercises() {
+  try {
+    const stored = window.localStorage.getItem(autoCollapseCompletedExercisesStorageKey);
+    if (stored !== null) return stored !== "false";
+  } catch (_) { /* Keep the choice for this visit when storage is unavailable. */ }
+  return autoCollapseCompletedExercisesFallback;
+}
+
+function syncWorkoutAutoCollapsePreference() {
+  const enabled = autoCollapseCompletedExercises();
+  document.querySelectorAll("[data-auto-collapse-exercises]").forEach((input) => { input.checked = enabled; });
+  document.querySelectorAll("[data-custom-workout-grouped='true']").forEach(refreshCustomWorkoutGroupedCompletion);
+}
+
+function configureWorkoutAutoCollapsePreference() {
+  document.addEventListener("change", ({ target }) => {
+    if (!target.matches("[data-auto-collapse-exercises]")) return;
+    autoCollapseCompletedExercisesFallback = target.checked;
+    try { window.localStorage.setItem(autoCollapseCompletedExercisesStorageKey, String(target.checked)); }
+    catch (_) { /* Keep the choice for this visit when storage is unavailable. */ }
+    syncWorkoutAutoCollapsePreference();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === autoCollapseCompletedExercisesStorageKey) syncWorkoutAutoCollapsePreference();
+  });
 }
 
 function syncAutoRestTimerPreference() {
@@ -9026,8 +9188,8 @@ function workoutCompletionSharePromptMarkup() {
         <p class="workout-completion-share-copy">Open your phone’s share menu to post this achievement to any available social app.</p>
         <p class="workout-completion-share-status" data-workout-share-status aria-live="polite"></p>
         <div class="workout-completion-share-actions">
+          ${workoutAnalysisButtonMarkup()}
           <button class="workout-completion-share-button" type="button" data-workout-share>Share Workout</button>
-          <button class="workout-completion-share-not-now" type="button" data-client-analyze-workout aria-haspopup="dialog" hidden>Analyze Workout</button>
           <button class="workout-completion-share-not-now" type="button" data-workout-share-apple hidden>Add Apple Workout</button>
           <button class="workout-completion-share-not-now" type="button" data-workout-share-dismiss>Done</button>
         </div>
@@ -10395,6 +10557,7 @@ function customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, names
 
 function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}) {
   const exerciseName = String(exercise.name || "").trim();
+  const workingSetCount = exercise.generated ? setCountFromPrescription(exercise.prescription) : customWorkoutDefaultWorkingSetCount;
   const groupIndex = Math.max(Number(exercise.group) || 0, 0);
   const panelFormat = normalizeCustomWorkoutFormat(options.panelFormat || activeCustomWorkoutFormat);
   const cardFormat = panelFormat === "single"
@@ -10430,7 +10593,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
                 role="listbox" data-custom-exercise-suggestions hidden></span>
             </span>
           </strong>
-          <small data-set-progress>0 / ${customWorkoutDefaultWorkingSetCount} working sets completed</small>
+          <small data-set-progress>0 / ${workingSetCount} working sets completed</small>
         </span>
         <div class="custom-workout-card-actions">
             <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete exercise ${index + 1}">
@@ -10450,6 +10613,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           prescription: exercise.prescription || "Custom sets",
           rest: exercise.rest || "",
           generated: Boolean(exercise.generated),
+          image_url: exercise.image_url,
           instructions: exercise.instructions,
           video: exercise.video || exercise.demo_url
         }, workoutTitle, {
@@ -10460,13 +10624,13 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           showActions: false,
           showDate: false,
           showDemo: false,
-          setCount: customWorkoutDefaultWorkingSetCount,
+          setCount: workingSetCount,
           userManagedSets: true,
           // Custom cards can be regrouped in place after they render, so every
           // card keeps a dormant slot ready for Superset or Circuit mode.
           groupActionSlot: true,
           showSetComplete: true,
-          includeWarmUp: cardFormat !== "single",
+          includeWarmUp: Boolean(exercise.generated) && cardFormat !== "single",
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
             : (isSecondSupersetExercise ? "Superset Completed" : "Set Finished"),
@@ -10749,7 +10913,7 @@ function setCustomWorkoutGroupedRowComplete(row, complete) {
   if (isComplete && row) delete row.dataset.customGroupedReopened;
 }
 
-function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "", historyHint = "", labelOverride = "") {
+function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "", historyHint = "", labelOverride = "", weightSuggested = false) {
   const fieldLabel = labelOverride || (field === "weight" ? "Weight" : "Reps");
   const step = field === "weight" ? "0.5" : "1";
 
@@ -10765,6 +10929,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
         value="${escapeHtml(value)}"
         placeholder="${escapeHtml(placeholder)}"
         data-custom-grouped-field="${field}"
+        ${weightSuggested ? 'data-history-weight-suggestion="true"' : ""}
         aria-label="${escapeHtml(`${fieldLabel}, ${context}`)}"
         ${historyHint ? `title="${escapeHtml(historyHint)}" aria-description="${escapeHtml(historyHint)}"` : ""}
       />
@@ -10774,6 +10939,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
 
 function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, roundNumber, exerciseName) {
   const values = setRowInputValues(row);
+  const weightInput = row?.querySelector("[data-set-weight]");
   const isWarmUp = setType === warmUpSetType;
   const kind = row?.dataset.timedSet === "true" ? "timed" : row?.dataset.specialSetType;
   const specialLabels = { drop: ["D", "Drop set"], failure: ["F", "Failure set"], timed: ["T", "Timed set"] };
@@ -10797,7 +10963,8 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
       ${row?.dataset.personalRecordLabel && row.dataset.personalRecordLabel !== "—" && kind !== "timed"
         ? `<button class="ios-log-previous" type="button" data-client-pr-loads aria-haspopup="dialog" aria-label="${escapeHtml(row.dataset.personalRecordDescription)}">${escapeHtml(row.dataset.personalRecordLabel)}</button>`
         : `<span class="ios-log-previous" aria-label="${escapeHtml(row?.dataset.personalRecordDescription || "No personal record")}">${escapeHtml(row?.dataset.personalRecordLabel || "—")}</span>`}
-      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
+      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, weightInput?.placeholder || "",
+        weightInput?.dataset.historyHint || "", "", weightInput?.dataset.historyWeightSuggestion === "true")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.dataset.timedSet === "true" ? "Seconds" : row?.querySelector("[data-set-reps]")?.placeholder || "", "", row?.dataset.timedSet === "true" ? "Seconds" : "")}
       <button class="custom-workout-grouped-log-check" type="button" data-custom-grouped-set-toggle
         aria-label="${escapeHtml(complete ? `Edit ${context}` : `Log ${context}`)}" aria-pressed="${complete}">
@@ -10893,8 +11060,9 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
       ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || logElement.dataset.generatedVideo || ""
       : "";
     const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }, { iconOnly: true }) : "";
+    const exercise = { name: exerciseName, image_url: exerciseName === originalName ? logElement.dataset.exerciseImageUrl : "" };
     const media = exerciseName && typeof exerciseMediaButtonMarkup === "function"
-      ? exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true }) : "";
+      ? exerciseMediaButtonMarkup(exercise, { compact: true, defaultArtwork: true }) : "";
     const marker = `${String.fromCharCode(65 + Math.min(groupIndex, 25))}${index + 1}`;
     const meta = typeof exerciseLibraryMetaLabel === "function" ? exerciseLibraryMetaLabel(exerciseName) : "";
     const target = assignedWorkoutPrescriptionLabel(logElement);
@@ -10908,7 +11076,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
           ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
           ${meta ? `<p class="custom-workout-grouped-meta">${escapeHtml(meta)}</p>` : ""}
         </span>
-        ${media ? "" : demo}
+        ${media.includes('data-exercise-media-open') ? "" : demo}
         <span class="custom-workout-grouped-chevron" aria-hidden="true">›</span>
         ${logElement.dataset.generatedExercise === "true" && logElement.dataset.generatedInstructions ? `<p class="custom-workout-grouped-target">${escapeHtml(logElement.dataset.generatedInstructions)}</p>` : ""}
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
@@ -10977,9 +11145,11 @@ function syncCustomWorkoutGroupedHistoryPlaceholders(logElement) {
     ["weight", "reps"].forEach((field) => {
       const input = visibleRow.querySelector(`[data-custom-grouped-field="${field}"]`);
       if (input) {
-        input.placeholder = canonicalRow?.querySelector(`[data-set-${field}]`)?.placeholder || "";
+        const source = canonicalRow?.querySelector(`[data-set-${field}]`);
+        input.placeholder = source?.placeholder || "";
         if (field === "weight") {
-          const hint = canonicalRow?.querySelector("[data-set-weight]")?.dataset.historyHint || "";
+          const hint = source?.dataset.historyHint || "";
+          input.dataset.historyWeightSuggestion = source?.dataset.historyWeightSuggestion || "false";
           input.title = hint;
           if (hint) input.setAttribute("aria-description", hint);
           else input.removeAttribute("aria-description");
@@ -11334,7 +11504,8 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     const marker = format === "single"
       ? String(exerciseNumber)
       : `${String.fromCharCode(65 + Math.min(Number(carousel.dataset.customWorkoutGroup || 0), 25))}${exerciseIndex + 1}`;
-    const media = exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true, hideInfo: true, inlineMotion: true, defaultArtwork: true });
+    const exercise = { name: exerciseName, image_url: exerciseName === logElement.dataset.exerciseName ? logElement.dataset.exerciseImageUrl : "" };
+    const media = exerciseMediaButtonMarkup(exercise, { compact: true, hideInfo: true, defaultArtwork: true, firstPose: true });
     const meta = exerciseLibraryMetaLabel(exerciseName);
     const warmUpRows = customWorkoutGroupedRows(logElement, warmUpSetType);
     const workingRows = customWorkoutGroupedRows(logElement, workingSetType);
@@ -11469,7 +11640,7 @@ function syncGroupedExerciseCollapse(block, logElement, rows) {
   if (!isComplete && logElement) delete logElement.dataset.exerciseManuallyExpanded;
   const saving = block.closest?.("[data-custom-workout-grouped='true']")?.dataset.customGroupedRowSaving === "true";
   const collapsed = logElement?.dataset.exerciseManuallyCollapsed === "true" ||
-    (isComplete && !saving && logElement?.dataset.exerciseManuallyExpanded !== "true");
+    (autoCollapseCompletedExercises() && isComplete && !saving && logElement?.dataset.exerciseManuallyExpanded !== "true");
   block.classList.toggle("is-exercise-collapsed", collapsed);
   const collapseButton = block.querySelector('[data-ios-log-action="collapse"]');
   if (collapseButton) collapseButton.textContent = collapsed ? "Expand exercise" : "Minimize exercise";
@@ -14392,13 +14563,18 @@ function openCustomWorkoutSetupDialog(button) {
     const formatPicker = dialog.querySelector(".custom-workout-format-picker");
     if (formatPicker) formatPicker.open = true;
   }
-  if (section === "settings") syncAutoRestTimerPreference();
+  if (section === "settings") {
+    syncAutoRestTimerPreference();
+    const collapsePreference = dialog.querySelector("[data-auto-collapse-exercises]");
+    if (collapsePreference) collapsePreference.checked = autoCollapseCompletedExercises();
+  }
   dialog.showModal();
   if (section === "gym") dialog.querySelector("[data-workout-gym]")?.focus();
 }
 
 function workoutLoggerSetupMarkup(index, { gymName, format, canChangeFormat = false } = {}) {
-  const formatLabel = format ? customWorkoutFormats[normalizeCustomWorkoutFormat(format)].label : "";
+  const formatConfig = format ? customWorkoutFormats[normalizeCustomWorkoutFormat(format)] : null;
+  const formatLabel = formatConfig?.label || "";
   return `
     <input type="hidden" value="${todayDate()}" data-workout-date />
     <div class="custom-workout-setup-summary${gymName === undefined ? " workout-setup-gear-only" : ""}" role="group" aria-label="${gymName === undefined ? "Workout settings" : "Gym, workout format, and workout settings"}">
@@ -14410,17 +14586,17 @@ function workoutLoggerSetupMarkup(index, { gymName, format, canChangeFormat = fa
       <header><h2 id="custom-workout-setup-dialog-title-${index}" data-custom-workout-setup-title>Workout Settings</h2><button type="button" data-custom-workout-setup-close aria-label="Close workout setup">Done</button></header>
       <div class="custom-workout-setup-fields">
         ${gymName === undefined ? "" : `<div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(gymName, index)}</div>`}
-        ${formatLabel ? `<div class="workout-compact-format">${canChangeFormat ? customWorkoutFormatPickerMarkup() : `<p>${escapeHtml(formatLabel)}</p>`}</div>` : ""}
+        ${formatConfig ? `<div class="workout-compact-format">
+          <p class="workout-setup-help">The format controls the order you log exercises and when you rest.</p>
+          ${canChangeFormat ? customWorkoutFormatPickerMarkup() : `<p><strong>${escapeHtml(formatLabel)}</strong></p><p class="workout-setup-help">${escapeHtml(formatConfig.guide)}</p>`}
+        </div>` : ""}
         <div class="client-logger-settings">
           <label><span>Default rest timer</span><select data-auto-rest-timer>
             <option value="0">Off</option><option value="30">30 sec</option><option value="60">1 min</option>
             <option value="90">1 min 30 sec</option><option value="120">2 min</option><option value="180">3 min</option>
           </select></label>
           <label><span>Keep screen awake</span><input type="checkbox" role="switch" data-keep-workout-awake /></label>
-          <details class="client-plate-calculator" data-client-plate-calculator>
-            <summary>Plate Calculator</summary>
-            <div data-plate-calculator-fields></div>
-          </details>
+          <label><span>Minimize completed exercises</span><input type="checkbox" role="switch" data-auto-collapse-exercises /></label>
         </div>
       </div>
     </dialog>`;
@@ -15144,6 +15320,7 @@ function clientWorkoutListMarkup(workouts) {
         ${card('data-client-planned-routines', "list", "Plan Your Routine", "Save exercises for your next visit.", "workout-planned")}
         ${card('data-client-workout-choice-menu="explore"', "calendar", "Explore Routines", "Find a prewritten routine.", "workout-explore")}
         ${card("data-client-workout-copy-history", "copy", "Previous Workout", "Repeat a completed workout.", "workout-previous")}
+        <a class="client-workout-hub-hiit" href="/client-hiit.html">HIIT Timer</a>
       `)}
       ${panel("trainer", `
         ${card('data-client-workout-choice-menu="generate"', "sparkles", "Start with GRUNTR Trainer", "Build a weekly plan or a workout for today.", "workout-fwb-trainer", "workout-choice-quick")}
@@ -15191,7 +15368,7 @@ function clientWorkoutListMarkup(workouts) {
             .join(" · ");
           return `<li class="workout-preview-exercise-card" data-preview-exercise="${exerciseIndex}">
             <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
-            <div class="workout-preview-exercise-media" data-workout-preview-exercise-media="${escapeHtml(exercise.name || "")}">${exerciseMediaButtonMarkup(exercise, { compact: true })}</div>
+            <div class="workout-preview-exercise-media" data-workout-preview-exercise-media="${escapeHtml(exercise.name || "")}" data-workout-preview-image-url="${escapeHtml(exercise.image_url || "")}">${exerciseMediaButtonMarkup(exercise, { compact: true, defaultArtwork: true, hideInfo: true, firstPose: true })}</div>
             <span class="workout-preview-exercise-copy">
               <span class="workout-row-number">${exerciseIndex + 1}</span>
               <span><strong>${escapeHtml(exercise.name || "Exercise")}</strong>${exerciseMeta ? `<small>${escapeHtml(exerciseMeta)}</small>` : ""}</span>
@@ -16370,6 +16547,7 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
         previousLog?.weight_used,
         weightInput.dataset.defaultPlaceholder || "0"
       );
+      weightInput.dataset.historyWeightSuggestion = String(Boolean(previousLog));
       const hint = setType !== warmUpSetType && best
         ? `Personal best: ${personalRecordLabel} · ${formatLogDate(best.entry_date)}`
         : "";
@@ -17332,9 +17510,10 @@ function workoutAnalysisNumbers(rows) {
     const key = `${code}|${name.toLowerCase()}`;
     if (!exercises.has(key)) {
       exercises.set(key, { name: name || (code === cardioExerciseCode ? "Cardio" : "Exercise"), sets: 0, reps: 0,
-        volume: 0, timedSeconds: 0, cardio: [] });
+        volume: 0, timedSeconds: 0, cardio: [], rows: [] });
     }
     const exercise = exercises.get(key);
+    exercise.rows.push(row);
     const duration = positive(row.duration_seconds);
     if (code === cardioExerciseCode) {
       exercise.cardio.push({ ...row, weight_used: duration ? duration / 60 : positive(row.weight_used) || null });
@@ -17372,6 +17551,45 @@ function workoutAnalysisMetricMarkup(metrics) {
     `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>` : "";
 }
 
+function workoutAnalysisButtonMarkup(sessionKey = "") {
+  return `<button class="client-workout-analysis-button" type="button" data-client-analyze-workout="${escapeHtml(sessionKey)}" aria-haspopup="dialog"${sessionKey ? "" : " hidden"}>
+    <span class="client-workout-analysis-symbol" aria-hidden="true"><i></i><i></i><i></i></span>Analyze Workout
+  </button>`;
+}
+
+function workoutAnalysisProgressionMarkup(analysis) {
+  if (!analysis) return "";
+  const weight = (value) => value.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  const set = (entry) => `${weight(entry.weight)} lb × ${entry.reps} ${entry.reps === 1 ? "rep" : "reps"}`;
+  const { thisWorkout, previous, targets, reason } = analysis;
+  const first = targets[0];
+  const uniform = first && targets.length > 1 && targets.every((target) =>
+    target.weight === first.weight && target.reps === first.reps);
+  const targetLines = uniform ? [`${targets.length} sets of ${set(first)}`] :
+    targets.map((target) => `Set ${target.setNumber}: ${set(target)}`);
+  let change = "";
+  if (previous) {
+    const pounds = thisWorkout.weight - previous.weight;
+    const reps = thisWorkout.reps - previous.reps;
+    change = [
+      pounds ? `${weight(Math.abs(pounds))} lb ${pounds > 0 ? "heavier" : "lighter"}` : "",
+      reps ? `${Math.abs(reps)} ${Math.abs(reps) === 1 ? "rep" : "reps"} ${reps > 0 ? "more" : "fewer"}` : ""
+    ].filter(Boolean).join(" · ") || "Same weight and reps.";
+  }
+  return `<div class="client-workout-analysis-progression">
+    ${workoutAnalysisMetricMarkup([
+      ["Best set this workout", set(thisWorkout)],
+      ...(previous ? [[`Previous · ${formatLogDate(previous.date)}`, set(previous)]] : [])
+    ])}
+    <p>${escapeHtml(previous ? change : "No earlier comparable sets in your logs.")}</p>
+    <div class="client-workout-analysis-next">
+      <strong>Next targets from this workout</strong>
+      ${targetLines.map((line) => `<span>${escapeHtml(line)}</span>`).join("")}
+      <p>${escapeHtml(reason)}</p>
+    </div>
+  </div>`;
+}
+
 function openClientWorkoutAnalysis(button) {
   const sessionKey = button?.dataset.clientAnalyzeWorkout;
   const rows = completedWorkoutAnalysisLogs(sessionKey);
@@ -17388,6 +17606,15 @@ function openClientWorkoutAnalysis(button) {
   const achievementKey = engine?.sessionKey(rows[0]);
   const records = clientAchievementSnapshot()?.events.filter((event) => event.kind === "pr" && event.sessionId === achievementKey) || [];
   const displayTitle = automaticCustomWorkoutDisplayTitle(rows[0].workout_title, rows);
+  const progressionController = window.FWB_WORKOUT_ANALYSIS_PROGRESSION;
+  const progression = progressionController?.prepare(rows, trainingLogs, {
+    owner: activeClientEmail,
+    historyComplete: clientAchievementHistoryStatus === "ready",
+    canonicalName: progressionController.canonicalExerciseNames(exerciseLibraryEntries, (name) =>
+      exerciseNameMatcher?.normalizeName(name) || String(name || "").trim().toLowerCase()),
+    sameGym: sameWorkoutGym,
+    sessionKey: clientWorkoutHistorySessionKey
+  });
   const exercises = summary.exercises.filter((exercise) => exercise.sets || exercise.timedSeconds ||
     exercise.cardio.some((row) => row.weight_used || workoutAnalysisPositiveNumber(row.reps) ||
       workoutAnalysisPositiveNumber(parseCardioNotes(row.notes).calories)));
@@ -17398,7 +17625,9 @@ function openClientWorkoutAnalysis(button) {
     ...(summary.cardioSeconds ? [["Cardio time", elapsed(summary.cardioSeconds)]] : [])
   ];
   const exerciseRows = exercises.map((exercise) => `
-    <li><strong>${escapeHtml(exercise.name)}</strong>${workoutAnalysisMetricMarkup(strengthMetrics(exercise))}
+    <li><strong>${escapeHtml(exercise.name)}</strong>
+      ${workoutAnalysisProgressionMarkup(progression?.(exercise.rows))}
+      ${workoutAnalysisMetricMarkup(strengthMetrics(exercise))}
       ${exercise.cardio.map((row) => `<p>${escapeHtml(cardioDisplay(row))}</p>`).join("")}</li>`).join("");
   const dialog = document.createElement("dialog");
   dialog.className = "client-workout-analysis-dialog";
@@ -17963,7 +18192,7 @@ function renderClientTrainingLogs() {
           <div class="client-logs-detail-heading"><span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span><strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong></div>
           <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
           <dl class="training-log-history-metrics"><div><dt>Exercises</dt><dd>${metrics.exerciseCount}</dd></div><div><dt>Sets</dt><dd>${metrics.workingSetCount}</dd></div><div><dt>Reps</dt><dd>${metrics.totalReps.toLocaleString("en-US")}</dd></div><div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div></dl>
-          ${canAnalyze ? `<button class="client-logs-analyze-workout" type="button" data-client-analyze-workout="${escapeHtml(workout.history_key)}" aria-haspopup="dialog">Analyze Workout</button>` : ""}
+          ${canAnalyze ? workoutAnalysisButtonMarkup(workout.history_key) : ""}
           <div class="client-logs-detail-actions client-logs-detail-primary-actions">${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}" aria-describedby="${detailsId}-repeat-help"><strong>Repeat Workout</strong><small id="${detailsId}-repeat-help">Start a fresh session now.</small></button>` : ""}
           ${canSaveRoutine ? `<button class="training-log-share-button" type="button" data-save-workout-as-routine="${escapeHtml(workout.history_key)}">Save as Routine</button>` : ""}${shareButtonMarkup}</div>
           ${appleWorkoutMarkup}${detailsHtml}
@@ -18816,6 +19045,13 @@ function handleClientWorkoutHistoryImport() {
   const confirm = document.getElementById("client-workout-import-confirm");
   const cancel = document.getElementById("client-workout-import-cancel");
   if (!input || !preview || !summary || !status || !confirm || !cancel || !window.FWBWorkoutCSVImport) return;
+
+  document.querySelector("[data-client-open-workout-import]")?.addEventListener("click", () => {
+    setClientDashboardTab("logs");
+    const logMenu = input.closest("details");
+    if (logMenu) logMenu.open = true;
+    input.click();
+  });
 
   let pending = null;
   const logKey = (row) => [row.client_email?.toLowerCase(), row.entry_date, row.workout_title,
@@ -20684,6 +20920,24 @@ function setClientSettingsView(viewName = "menu", options = {}) {
   }
 }
 
+function resetClientDashboardTab(tabName) {
+  if (tabName === "workouts" && !document.querySelector(".client-workout-panel.is-active:not([hidden])")) {
+    window.FWB_CLIENT_WORKOUT_CALENDAR?.close();
+    const picker = document.getElementById("client-workout-tabs");
+    picker?.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
+    if (clientPreviewProgramSelected) {
+      clientPreviewProgramSelected = false;
+      if (picker) picker.innerHTML = clientWorkoutListMarkup(clientWorkoutPickerItems(currentProgram?.workouts || []));
+    }
+    savedWorkoutScrollY = null;
+    selectClientWorkoutHubSection("routines");
+    showClientWorkoutPicker({ scroll: false });
+  } else if (tabName === "community") {
+    window.FWB_CLIENT_COMMUNITY?.showView("wall");
+  }
+  window.requestAnimationFrame?.(() => window.scrollTo({ top: 0, behavior: "auto" }));
+}
+
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
     const profileBack = event.target.closest("[data-client-profile-back]");
@@ -20744,17 +20998,22 @@ function handleClientDashboardTabs() {
     }
     const tab = event.target.closest("[data-client-dashboard-tab]");
 
-    if (!tab) {
+    if (!tab || tab.tagName === "A") {
       return;
     }
 
     const tabName = tab.dataset.clientDashboardTab;
+    const reselected = tab.getAttribute("aria-current") === "page";
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
     if (mobileNavigation && tabName === "workouts" && activeClientDashboardTab === "workouts" &&
         window.WorkoutExerciseDock?.toggle()) {
       return;
     }
     setClientDashboardTab(tabName);
+    if (reselected) {
+      resetClientDashboardTab(tabName);
+      return;
+    }
     if (mobileNavigation && tabName === "workouts") {
       window.requestAnimationFrame?.(() => window.WorkoutExerciseDock?.open?.());
     }
@@ -21219,7 +21478,7 @@ function handleGroupedWorkoutLogEnter(event) {
 
 function handleWorkoutInteractions() {
   document.addEventListener("error", (event) => {
-    const image = event.target?.closest?.("img[data-exercise-media-fallback], .ios-log-exercise-image .exercise-media-button > img");
+    const image = event.target?.closest?.(".exercise-media-button > img");
     if (!image) return;
     const fallback = image.dataset.exerciseMediaFallbackUsed !== "true" && trustedExerciseImageUrl(image.dataset.exerciseMediaFallback);
     if (fallback) {
@@ -21229,9 +21488,9 @@ function handleWorkoutInteractions() {
       image.src = fallback;
       return;
     }
-    const defaultArtwork = image.closest(".ios-log-exercise-image")?.querySelector("template[data-exercise-media-default]");
-    if (defaultArtwork) {
-      const media = image.closest(".exercise-inline-media") || image.closest(".exercise-media-button");
+    const media = image.closest(".exercise-inline-media") || image.closest(".exercise-media-button");
+    const defaultArtwork = media?.nextElementSibling;
+    if (defaultArtwork?.matches("template[data-exercise-media-default]")) {
       media.replaceWith(defaultArtwork.content);
       defaultArtwork.remove();
     }
@@ -24226,6 +24485,7 @@ async function handleSignOut() {
 
 initializeRestTimerNotifications();
 configureAutoRestTimerPreference();
+configureWorkoutAutoCollapsePreference();
 configureClientTrainingPreferences();
 handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();

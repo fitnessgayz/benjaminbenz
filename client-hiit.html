@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#101113">
+  <title>HIIT Timer | GRUNTR</title>
+  <link rel="icon" type="image/png" href="/images/gruntr/client-pulse-1380/icon-32.png">
+  <link rel="apple-touch-icon" href="/images/gruntr/client-pulse-1380/icon-180.png">
+  <link rel="manifest" href="/client.webmanifest?v=pulse-1380">
+  <script src="/js/client-theme.js?v=1"></script>
+  <link rel="stylesheet" href="/css/client-hiit.css?v=1">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="/js/supabase-config.js?v=manual-sessions-1"></script>
+  <script defer src="/js/auth-session.js?v=remember-login-2"></script>
+  <script defer src="/js/client-hiit.js?v=1"></script>
+</head>
+<body class="hiit-page">
+  <header class="hiit-header">
+    <a class="hiit-secondary hiit-back" href="/client-dashboard.html?tab=workouts">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg><span>Back</span>
+    </a>
+    <h1><img alt="" width="32" height="32" src="/images/gruntr/client-pulse-1380/icon-192.png"> HIIT Timer</h1>
+  </header>
+  <main class="hiit-main">
+    <p class="hiit-feedback hiit-muted" data-hiit-status role="status">Loading your timer…</p>
+    <form class="hiit-card hiit-stack" data-hiit-setup hidden>
+      <label>Workout type
+        <select name="type">
+          <option value="general">General HIIT</option>
+          <option value="running">Running</option>
+          <option value="jump-rope">Jump Rope</option>
+          <option value="cycling">Cycling</option>
+          <option value="rowing">Rowing</option>
+          <option value="bodyweight-circuit">Bodyweight Circuit</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <div class="hiit-fields">
+        <label>Work (seconds)<input name="work" type="number" inputmode="numeric" value="40" min="1" max="600" required></label>
+        <label>Rest (seconds)<input name="rest" type="number" inputmode="numeric" value="20" min="0" max="600" required></label>
+        <label>Rounds<input name="rounds" type="number" inputmode="numeric" value="6" min="1" max="99" required></label>
+      </div>
+      <label>Movements (optional)
+        <textarea name="movements" rows="3" placeholder="Squats&#10;Push-ups" aria-describedby="hiit-movement-help"></textarea>
+      </label>
+      <p class="hiit-muted" id="hiit-movement-help">Enter one movement per line. Each round includes all listed movements, then rest.</p>
+      <label class="hiit-check"><input name="sounds" type="checkbox">Play interval sounds</label>
+      <output class="hiit-muted" data-hiit-planned></output>
+      <button class="hiit-primary" type="submit">Start timer</button>
+    </form>
+    <section class="hiit-card hiit-stack" data-hiit-running aria-label="Active HIIT timer" hidden>
+      <p class="hiit-phase" data-hiit-phase aria-live="polite"></p>
+      <p class="hiit-clock" data-hiit-clock role="timer" aria-live="off"></p>
+      <progress data-hiit-progress aria-label="Workout progress"></progress>
+      <p data-hiit-round></p>
+      <p class="hiit-muted" data-hiit-next></p>
+      <p class="hiit-muted" data-hiit-screen></p>
+      <div class="hiit-actions">
+        <button class="hiit-primary" type="button" data-hiit-pause>Pause</button>
+        <button class="hiit-secondary" type="button" data-hiit-finish>Finish</button>
+      </div>
+    </section>
+    <section class="hiit-card hiit-stack" data-hiit-finished aria-labelledby="hiit-finished-heading" hidden>
+      <h2 id="hiit-finished-heading">Workout finished</h2>
+      <dl class="hiit-summary">
+        <div><dt>Workout type</dt><dd data-hiit-type></dd></div>
+        <div><dt>Duration</dt><dd data-hiit-duration></dd></div>
+        <div><dt>Rounds completed</dt><dd data-hiit-rounds></dd></div>
+      </dl>
+      <p data-hiit-save-state role="status"></p>
+      <div class="hiit-actions">
+        <button class="hiit-primary" type="button" data-hiit-retry hidden>Retry save</button>
+        <a class="hiit-primary" href="/client-dashboard.html?tab=logs" data-hiit-logs hidden>View Workout Logs</a>
+        <button class="hiit-secondary" type="button" data-hiit-new hidden>New session</button>
+      </div>
+    </section>
+    <dialog class="hiit-card hiit-finish-dialog" data-hiit-dialog aria-labelledby="hiit-dialog-heading">
+      <h2 id="hiit-dialog-heading">Finish this workout?</h2>
+      <p>Your completed time will be saved to Workout Logs.</p>
+      <form method="dialog" class="hiit-actions">
+        <button class="hiit-secondary" value="cancel" autofocus>Keep training</button>
+        <button class="hiit-primary" value="finish">Finish and save</button>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>

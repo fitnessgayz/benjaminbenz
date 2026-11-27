@@ -161,6 +161,82 @@ test("lets the Workouts tab open the active exercise list", () => {
   assert.match(tabHandlerSource, /setClientDashboardTab\(tabName\)[\s\S]*?tabName === "workouts"[\s\S]*?WorkoutExerciseDock\?\.open\?\.\(\)/);
 });
 
+test("reselecting a dock destination opens its root and keeps an active workout", () => {
+  const vm = require("node:vm");
+  const actions = [];
+  let hasWorkout = false;
+  let openExerciseList = false;
+  let selected = "workouts";
+  let click;
+  const context = vm.createContext({
+    document: {
+      addEventListener(event, listener) { if (event === "click") click = listener; },
+      querySelector: () => hasWorkout,
+      getElementById: () => ({ querySelectorAll: () => [{ close: () => actions.push("close choices") }] })
+    },
+    window: {
+      matchMedia: () => ({ matches: true }),
+      requestAnimationFrame: (action) => action(),
+      scrollTo: ({ top }) => actions.push(`scroll ${top}`),
+      WorkoutExerciseDock: { toggle: () => openExerciseList && actions.push("exercise list") },
+      FWB_CLIENT_COMMUNITY: { showView: (view) => actions.push(view) },
+      FWB_CLIENT_WORKOUT_CALENDAR: { close: () => actions.push("close calendar") }
+    },
+    activeClientDashboardTab: "workouts",
+    clientPreviewProgramSelected: false,
+    savedWorkoutScrollY: 256,
+    selectClientWorkoutHubSection: (section) => actions.push(section),
+    showClientWorkoutPicker: () => actions.push("workout choices"),
+    setClientDashboardTab: (tab) => { selected = tab; context.activeClientDashboardTab = tab; }
+  });
+  vm.runInContext(["resetClientDashboardTab", "handleClientDashboardTabs"].map(sourceForFunction).join("\n"), context);
+  context.handleClientDashboardTabs();
+  const press = (tab, tagName = "BUTTON") => click({ target: { closest: (selector) =>
+    selector === "[data-client-dashboard-tab]" ? { dataset: { clientDashboardTab: tab }, tagName, getAttribute: () => "page" } : null
+  } });
+  press("workouts");
+  assert.deepEqual(actions.splice(0), ["close calendar", "close choices", "routines", "workout choices", "scroll 0"]);
+  hasWorkout = true;
+  openExerciseList = true;
+  press("workouts");
+  assert.deepEqual(actions.splice(0), ["exercise list"]);
+  openExerciseList = false;
+  press("workouts");
+  assert.deepEqual(actions.splice(0), ["scroll 0"]);
+  press("community");
+  assert.deepEqual(actions.splice(0), ["wall", "scroll 0"]);
+  press("profile");
+  assert.equal(selected, "profile");
+  assert.deepEqual(actions.splice(0), ["scroll 0"]);
+  press("spotter", "A");
+  assert.equal(selected, "profile");
+});
+
+test("Settings opens the existing workout CSV chooser without confirming an import", () => {
+  assert.match(dashboardHtml, /data-client-open-workout-import[^>]*>[\s\S]*?Import Workout/);
+  const vm = require("node:vm");
+  const effects = [];
+  const logMenu = { open: false };
+  let startImport;
+  const input = {
+    closest: () => logMenu,
+    click: () => effects.push(`choose CSV (menu ${logMenu.open})`),
+    addEventListener() {}
+  };
+  const context = vm.createContext({
+    document: {
+      getElementById: (id) => id === "client-workout-history-import-file" ? input : { addEventListener() {} },
+      querySelector: () => ({ addEventListener: (_event, listener) => { startImport = listener; } })
+    },
+    window: { FWBWorkoutCSVImport: { parse: () => effects.push("parse") } },
+    setClientDashboardTab: (tab) => effects.push(tab)
+  });
+  vm.runInContext(sourceForFunction("handleClientWorkoutHistoryImport"), context);
+  context.handleClientWorkoutHistoryImport();
+  startImport();
+  assert.deepEqual(effects, ["logs", "choose CSV (menu true)"]);
+});
+
 test("restores, persists, and exposes the desktop sidebar state accessibly", () => {
   const restoreSource = sourceForFunction("storedClientDashboardSidebarCollapsed");
   const persistSource = sourceForFunction("persistClientDashboardSidebarCollapsed");
