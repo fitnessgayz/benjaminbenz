@@ -47,7 +47,7 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(coach.theme_color, "#f2f4f6");
   assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-pulse-1380/")));
   assert.ok(coach.icons.every((icon) => icon.src.startsWith("/images/gruntr/client-22e30eae/")));
-  assert.deepEqual(website.icons, coach.icons.filter((icon) => icon.purpose === "any"));
+  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any"));
   assert.notDeepEqual(coach.icons, client.icons);
   const exact = fs.readFileSync(path.join(root, "images/gruntr/client-pulse-1380/icon-1024.png"));
   assert.equal(createHash("sha256").update(exact).digest("hex"), "857390bf0e482587a4dd3ba9e8b94bb4a039d8f155c00e08c80f52d1e9f3cb24");
@@ -139,7 +139,7 @@ test("PWA manifests provide correctly sized product icons", () => {
 
 test("public sharing uses the GRUNTR logo and native products use the canonical monogram", () => {
   const publicHome = read("index.html");
-  assert.match(publicHome, /property="og:image" content="https:\/\/benjaminbenz\.com\/images\/gruntr\/client-22e30eae\/icon-1024\.png"/);
+  assert.match(publicHome, /property="og:image" content="https:\/\/benjaminbenz\.com\/images\/gruntr\/client-pulse-1380\/icon-1024\.png"/);
   assert.match(read("css/style.css"), /fwb-brand-icon-gold-192-v5\.png/);
 
   const nativeIcons = [
