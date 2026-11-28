@@ -42,7 +42,7 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
   for (const file of clientPages) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=pulse-1380"/);
-    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png"/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png\?v=charcoal-1"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
     assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);

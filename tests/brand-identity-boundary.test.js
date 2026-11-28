@@ -61,7 +61,7 @@ test("client auth and onboarding stay inside the GRUNTR identity", () => {
     assert.match(html, /rel="manifest" href="\/client\.webmanifest\?v=pulse-1380"/);
     assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
     assert.match(html, /application-name" content="GRUNTR"/);
-    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png"/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png\?v=charcoal-1"/);
     assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/client-pulse-1380\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
   }
 
@@ -127,7 +127,11 @@ test("PWA manifests provide correctly sized product icons", () => {
     const { icons } = JSON.parse(read(filename));
     assert.ok(sizes.every((size) => icons.some((icon) => icon.sizes === size && icon.purpose === "any")));
     for (const icon of icons) {
-      const png = fs.readFileSync(path.join(root, icon.src));
+      const url = new URL(icon.src, "https://benjaminbenz.com");
+      if (filename !== "coach.webmanifest") {
+        assert.equal(url.searchParams.get("v"), "charcoal-1");
+      }
+      const png = fs.readFileSync(path.join(root, url.pathname));
       assert.equal(png.toString("ascii", 1, 4), "PNG");
       assert.equal(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, icon.sizes);
     }
