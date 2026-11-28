@@ -2,6 +2,7 @@
   const key = "fwb-client-theme";
   const choices = new Set(["light", "dark", "system"]);
   const systemTheme = window.matchMedia?.("(prefers-color-scheme: light)");
+  const darkIconURLs = new WeakMap();
 
   function savedChoice() {
     try {
@@ -18,6 +19,13 @@
     document.documentElement.style.colorScheme = resolved;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = resolved === "light" ? "#f4f5ef" : "#050806";
+    document.querySelectorAll("[data-client-light-icon]").forEach((icon) => {
+      const attribute = icon.tagName === "LINK" ? "href" : "src";
+      const currentURL = icon.getAttribute(attribute);
+      if (!darkIconURLs.has(icon)) darkIconURLs.set(icon, currentURL);
+      const url = resolved === "light" ? icon.dataset.clientLightIcon : darkIconURLs.get(icon);
+      if (url && url !== currentURL) icon.setAttribute(attribute, url);
+    });
     document.querySelectorAll('input[name="client-theme"]').forEach((input) => {
       input.checked = input.value === choice;
     });

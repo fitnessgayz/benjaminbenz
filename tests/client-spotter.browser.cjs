@@ -88,6 +88,12 @@ async function useFixtures(page, profile, signedIn = true) {
       const button = value => page.getByRole("button", { name: value, exact: true });
       await heading(partner.name).waitFor();
       assert.equal(await page.locator("html").getAttribute("data-client-theme"), theme);
+      const iconFolder = theme === "light" ? "client-pulse-light" : "client-pulse-1380";
+      const iconURLs = await page.locator("[data-client-light-icon]").evaluateAll(icons =>
+        icons.map(icon => new URL(icon.tagName === "LINK" ? icon.href : icon.src).pathname)
+      );
+      assert.deepEqual(iconURLs, [32, 180, 192].map(size => "/images/gruntr/" + iconFolder + "/icon-" + size + ".png"));
+      await page.locator(".spotter-header img").evaluate(logo => logo.decode());
       assert.equal(await page.getByLabel("Light").count(), 0);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       const navigation = page.getByRole("navigation", { name: "Spotter sections" });
