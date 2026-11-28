@@ -52,15 +52,28 @@
 .spotter-header h1 { display: flex; min-width: min(100%, 9rem); flex: 1 1 9rem; align-items: center; gap: .45rem; letter-spacing: -.025em; }
 .spotter-header img { flex: 0 0 auto; width: clamp(1.5rem, 2.8vw, 2rem); height: auto; border-radius: .45rem; }
 .spotter-content { padding-bottom: max(2.5rem, env(safe-area-inset-bottom)); }
+:root:has(.spotter-navigation:not([hidden])) {
+  --spotter-dock-clearance: calc(max(44px, 2rem) + 1.65rem + env(safe-area-inset-bottom));
+  scroll-padding-block-end: var(--spotter-dock-clearance);
+}
+.spotter-page:has(.spotter-navigation:not([hidden])) .spotter-content {
+  padding-bottom: var(--spotter-dock-clearance);
+}
 .spotter-navigation {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .3rem;
-  padding: .3rem;
-  margin-block: .5rem 1rem;
-  border: 1px solid var(--spotter-line);
-  border-radius: 1rem;
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 3;
+  padding: .3rem max(.5rem, env(safe-area-inset-right)) max(.3rem, env(safe-area-inset-bottom)) max(.5rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--spotter-line);
   background: var(--spotter-surface);
+}
+.spotter-navigation-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(max-content, 1fr));
+  gap: .2rem;
+  max-inline-size: 32rem;
+  margin-inline: auto;
+  overflow-x: auto;
 }
 .spotter-navigation button, .spotter-primary, .spotter-secondary {
   font: inherit;
@@ -77,13 +90,15 @@
   cursor: pointer;
 }
 .spotter-navigation button {
-  flex: 1 1 auto;
-  padding-inline: .5em;
+  font-size: .75rem;
+  line-height: 1.2;
+  padding: .4em .3em;
   white-space: nowrap;
   overflow-wrap: normal;
   color: var(--spotter-ink);
   background: transparent;
 }
+.spotter-navigation button:focus-visible { outline-offset: -3px; }
 .spotter-primary, .spotter-navigation [aria-current="page"] {
   color: var(--spotter-gold-ink);
   background: var(--spotter-gold);
