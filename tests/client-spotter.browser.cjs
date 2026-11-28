@@ -90,6 +90,17 @@ async function useFixtures(page, profile, signedIn = true) {
       assert.equal(await page.locator("html").getAttribute("data-client-theme"), theme);
       assert.equal(await page.getByLabel("Light").count(), 0);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      const navigation = page.getByRole("navigation", { name: "Spotter sections" });
+      assert.deepEqual(await navigation.getByRole("button").allTextContents(), ["Discover", "Groups", "Matches", "Profile", "Inbox"]);
+      await navigation.evaluate(nav => {
+        const assert = (ok, message) => { if (!ok) throw new Error(message); };
+        const buttons = [...nav.querySelectorAll("button")].map(button => button.getBoundingClientRect());
+        const dock = nav.getBoundingClientRect();
+        assert(Math.abs(dock.bottom - innerHeight) < 1, "Spotter dock should sit at the viewport bottom");
+        assert(buttons.every(button => button.top === buttons[0].top), "All five Spotter tabs should share one row");
+        assert(buttons.every(button => button.width >= 44 && button.height >= 44), "Spotter tabs should keep 44px touch targets");
+        assert(buttons.at(-1).right <= dock.right, "Inbox should fit on screen at default text size");
+      });
       await button("View profile").click();
       await page.getByText("Strength 3× a week", { exact: true }).waitFor();
       assert.equal(await page.getByRole("button", { name: "Report photo" }).count(), 0);
@@ -121,6 +132,10 @@ async function useFixtures(page, profile, signedIn = true) {
       if (width === 320) {
         await page.addStyleTag({ content: "html { font-size: 200%; }" });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+        await navigation.getByRole("button", { name: "Discover", exact: true }).click();
+        await heading("Discover").waitFor();
+        await navigation.getByRole("button", { name: "Inbox", exact: true }).click();
+        await heading("Inbox").waitFor();
       }
       assert.deepEqual(errors, []);
       console.log("PASS Spotter controls, identity, privacy projections and " + theme + " theme at " + width + " px");
@@ -131,6 +146,7 @@ async function useFixtures(page, profile, signedIn = true) {
     await useFixtures(welcome, null);
     await welcome.goto(host + "/client-spotter.html#inbox");
     await welcome.getByRole("button", { name: "Sign up for Spotter" }).click();
+    assert.equal(await welcome.getByRole("navigation", { name: "Spotter sections" }).count(), 0);
     assert.equal(await welcome.getByRole("button", { name: "Agree and continue" }).isDisabled(), true);
     assert.deepEqual(await welcome.evaluate(() => spotterFixture.calls.map(call => call.name)), ["spotter_get_profile"]);
 
