@@ -40,6 +40,7 @@
   let tab, members = [], nextOffset = 0, more = false, cursor = 0, discoveryVersion = 0;
   let discoveryLoading = false, discoveryError = "", working = false, closed = false;
   let activeDialog = 0;
+  let dockScrollAnchor = Math.max(0, window.scrollY);
   const imageURLs = new Map();
 
   function element(tag, text, className) {
@@ -180,6 +181,11 @@
       if (dialog.open) dialog.close();
       if (tab === "discover") clearImages();
       if (tab && !["profile", "discover"].includes(tab)) networkView.dispose?.();
+      if (tab) {
+        window.scrollTo(0, 0);
+        nav.removeAttribute("data-compact");
+        dockScrollAnchor = 0;
+      }
     }
     tab = next;
     nav.hidden = profile?.active !== true;
@@ -652,6 +658,15 @@
     const target = event.target.closest?.("[data-spotter-tab]");
     if (target) { notify(); showTab(target.dataset.spotterTab); }
   });
+  window.addEventListener("scroll", () => {
+    if (nav.hidden) return;
+    const scrollTop = Math.max(0, window.scrollY);
+    const delta = scrollTop - dockScrollAnchor;
+    if (scrollTop <= 24 || Math.abs(delta) >= 24) {
+      nav.toggleAttribute("data-compact", scrollTop > 24 && delta > 0);
+      dockScrollAnchor = scrollTop;
+    }
+  }, { passive: true });
   dialog.addEventListener("close", () => { activeDialog++; dialogContent.replaceChildren(); });
   window.addEventListener("hashchange", () => { if (location.hash !== "#spotter-content") showTab(currentRequestedTab()); });
   window.addEventListener("pagehide", closePage);
