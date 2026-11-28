@@ -413,7 +413,8 @@ test("web push keeps coach artwork separate from client pulse artwork", async ()
     return notifications.at(-1).options;
   }
 
-  const icon = manifest.icons.find((entry) => entry.sizes === "192x192" && entry.purpose === "any").src;
+  const manifestIcon = manifest.icons.find((entry) => entry.sizes === "192x192" && entry.purpose === "any");
+  const icon = new URL(manifestIcon.src, "https://benjaminbenz.com").pathname;
   const badge = icon.replace("icon-192.png", "notification-badge-96.png");
   for (const artwork of [icon, badge]) assert.ok(fs.existsSync(path.join(root, artwork)));
 

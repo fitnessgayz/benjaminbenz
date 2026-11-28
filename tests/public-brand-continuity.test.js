@@ -65,14 +65,26 @@ test("sets expectations and privacy context before the public questionnaire", ()
 test("uses the approved GRUNTR brand on public client pages", () => {
   const appIcons = path.join(root, "images/gruntr/client-pulse-1380");
   assert.deepEqual(fs.readFileSync(path.join(root, "apple-touch-icon.png")), fs.readFileSync(path.join(appIcons, "icon-180.png")));
+  for (const [file, size] of [
+    ["apple-touch-icon-120x120.png", 120],
+    ["apple-touch-icon-152x152.png", 152],
+    ["apple-touch-icon-167x167.png", 167],
+    ["apple-touch-icon-180x180.png", 180],
+    ["apple-touch-icon-precomposed.png", 180],
+  ]) {
+    const icon = fs.readFileSync(path.join(root, file));
+    assert.equal(icon.readUInt32BE(16), size);
+    assert.equal(icon.readUInt32BE(20), size);
+    if (size === 180) assert.deepEqual(icon, fs.readFileSync(path.join(appIcons, "icon-180.png")));
+  }
   const favicon = fs.readFileSync(path.join(root, "favicon.ico"));
   for (const size of [16, 32]) {
     assert.ok(favicon.includes(fs.readFileSync(path.join(appIcons, `icon-${size}.png`))));
   }
   for (const page of [...publicConversionPages, read("app-preview.html")]) {
     assert.match(page, /aria-label="GRUNTR home"><img src="\/images\/gruntr\/client-pulse-1380\/icon-192\.png" alt=""[^>]*><b>GRUNTR<\/b><\/a>/);
-    assert.match(page, /rel="icon" type="image\/png" sizes="32x32" href="\/images\/gruntr\/client-pulse-1380\/icon-32\.png"/);
-    assert.match(page, /rel="apple-touch-icon" sizes="180x180" href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png"/);
+    assert.match(page, /rel="icon" type="image\/png" sizes="32x32" href="\/images\/gruntr\/client-pulse-1380\/icon-32\.png\?v=charcoal-1"/);
+    assert.match(page, /rel="apple-touch-icon" sizes="180x180" href="\/images\/gruntr\/client-pulse-1380\/icon-180\.png\?v=charcoal-1"/);
   }
   for (const page of [interest, privateInterest]) {
     assert.match(page, /GRUNTR app interest list/);
