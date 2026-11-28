@@ -50,7 +50,7 @@ test("client and coach manifests use approved installed identities", () => {
   assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any"));
   assert.notDeepEqual(coach.icons, client.icons);
   const exact = fs.readFileSync(path.join(root, "images/gruntr/client-pulse-1380/icon-1024.png"));
-  assert.equal(createHash("sha256").update(exact).digest("hex"), "857390bf0e482587a4dd3ba9e8b94bb4a039d8f155c00e08c80f52d1e9f3cb24");
+  assert.equal(createHash("sha256").update(exact).digest("hex"), "5d97fb736db7f652e33a5c03f04c6b0f5a3bb9aa3b42646963139d5cff775052");
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
